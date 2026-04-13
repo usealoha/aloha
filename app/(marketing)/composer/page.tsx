@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { makeMetadata } from "@/lib/seo";
 import { routes } from "@/lib/routes";
+import { ScreenshotPlaceholder } from "../_components/screenshot-placeholder";
 
 export const metadata = makeMetadata({
   title: "Composer — write once, speak native on every channel",
@@ -18,55 +19,6 @@ export const metadata = makeMetadata({
     "Aloha's Composer learns your cadence and rewrites a single draft into native posts for every channel — without flattening your voice into mush.",
   path: routes.product.composer,
 });
-
-// ─── Placeholder helper ─────────────────────────────────────────────────
-// Marks where a real product screenshot should replace an illustrated mock.
-// Grep the codebase for `SCREENSHOT_PLACEHOLDER` to find every slot.
-function ScreenshotPlaceholder({
-  label,
-  notes,
-  aspect = "aspect-[5/3]",
-  tone = "bg-peach-100",
-}: {
-  label: string;
-  notes: string;
-  aspect?: string;
-  tone?: string;
-}) {
-  return (
-    <div
-      className={`relative ${aspect} ${tone} rounded-3xl border border-border-strong overflow-hidden`}
-      data-placeholder="SCREENSHOT_PLACEHOLDER"
-    >
-      {/* grain */}
-      <svg aria-hidden viewBox="0 0 400 320" className="absolute inset-0 w-full h-full opacity-[0.18] mix-blend-multiply">
-        <filter id={`grain-${label}`}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" />
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#grain-${label})`} />
-      </svg>
-      {/* crosshair corners */}
-      <span aria-hidden className="absolute top-4 left-4 w-4 h-4 border-l-2 border-t-2 border-ink/30" />
-      <span aria-hidden className="absolute top-4 right-4 w-4 h-4 border-r-2 border-t-2 border-ink/30" />
-      <span aria-hidden className="absolute bottom-4 left-4 w-4 h-4 border-l-2 border-b-2 border-ink/30" />
-      <span aria-hidden className="absolute bottom-4 right-4 w-4 h-4 border-r-2 border-b-2 border-ink/30" />
-
-      <div className="absolute inset-0 p-8 flex flex-col">
-        <span className="self-start text-[9px] font-mono uppercase tracking-[0.22em] text-ink/50 bg-background-elev/80 px-2 py-1 rounded-full">
-          Screenshot · placeholder
-        </span>
-        <div className="mt-auto">
-          <p className="font-display text-[22px] lg:text-[26px] leading-[1.15] tracking-[-0.01em] text-ink max-w-md">
-            {label}
-          </p>
-          <p className="mt-3 text-[12.5px] font-mono text-ink/60 leading-[1.5] max-w-md">
-            {notes}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Page ────────────────────────────────────────────────────────────────
 export default function ComposerPage() {
