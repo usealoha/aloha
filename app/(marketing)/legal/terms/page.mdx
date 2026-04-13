@@ -1,0 +1,171 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Terms of service",
+  description:
+    "The rules for using Aloha. Short enough to read. Honest enough to trust.",
+  path: routes.legal.terms,
+});
+
+<LegalHeader
+  title="Terms of service"
+  lastUpdated="April 10, 2026"
+  description="The rules for using Aloha. Short enough to read. Honest enough to trust."
+/>
+
+<Summary>
+  Treat the product honestly and don't use it to spam, harass, or run
+  anything illegal. Pay your bill if you're on a paid plan. We can
+  suspend accounts that break the rules; you can leave any time with
+  all your data.
+
+  Everything we build belongs to us; everything you write belongs to
+  you. The free plan is free forever with limits; the paid plans renew
+  until you cancel.
+</Summary>
+
+## Agreement
+
+By signing up for Aloha you're agreeing to these terms. If you're
+using Aloha on behalf of a company, you're confirming you have the
+authority to bind that company. If you don't agree, don't create an
+account.
+
+## Your account
+
+You need to be at least 16 to use Aloha. Keep your password secret —
+anything done through your account is treated as done by you. If you
+notice unauthorised access, email
+<a href="mailto:security@aloha.social">security@aloha.social</a>
+immediately.
+
+One person, one account. Workspaces can have multiple members; fresh
+accounts can't be spun up to evade rate limits, trials, or
+suspensions.
+
+## Acceptable use
+
+Don't use Aloha to:
+
+- Post content that's illegal where you or your audience lives.
+- Harass, defame, or incite violence against people.
+- Send spam — mass unsolicited DMs or comments, sock-puppet networks,
+  engagement-farming botnets.
+- Impersonate someone you're not authorised to represent.
+- Probe, scan, or scrape our infrastructure.
+- Reverse-engineer the product to build a direct competitor. (Writing
+  *about* Aloha or building complementary tools is fine.)
+
+If you see someone violating these rules, tell us at
+<a href="mailto:abuse@aloha.social">abuse@aloha.social</a>. We
+investigate every report.
+
+## Your content
+
+Everything you post through Aloha — your drafts, your voice training
+data, your analytics exports, your templates — stays yours. We take
+the minimum licence we need to operate the service: a non-exclusive,
+worldwide, royalty-free licence to store, process, transmit, and
+display your content *so that the product works*. That licence ends
+when you delete the content.
+
+We don't claim ownership of anything you write or post, and we don't
+use your content to train public AI models.
+
+## Our content
+
+Aloha's software, UI, logo, and documentation are ours. You get the
+right to use them while you're a customer. When you stop being a
+customer, that right ends — you can keep using Aloha's public content
+(blog posts, this terms document) under the same terms as any website
+visitor.
+
+## Plans and billing
+
+Free plans are free forever, within the limits described on the
+[pricing page](/pricing). Paid plans renew automatically at the
+advertised period (monthly or yearly) until you cancel. We email you
+a receipt every time we charge you.
+
+**Refunds.** If you cancel a yearly plan mid-term and you've been a
+customer for less than 90 days, email
+<a href="mailto:billing@aloha.social">billing@aloha.social</a> for a
+prorated refund. After 90 days the plan runs to the end of its term.
+
+**Price changes.** We'll give you at least 60 days' notice before any
+price increase on a plan you're on. If you disagree, you can cancel
+without penalty within that window.
+
+**Taxes.** Prices exclude taxes. We add VAT, GST, or sales tax where
+required; you're responsible for any withholding tax in your
+jurisdiction.
+
+## Suspension and termination
+
+We can suspend or terminate your account for repeated material
+breaches of these terms — spam, abuse, non-payment after reminders,
+fraud. Where practical we'll tell you first and give you a chance to
+fix it. We can also terminate immediately in response to legal
+process or active security incidents.
+
+You can cancel at any time from Settings → Billing. When you
+terminate, your data is queued for deletion per the
+[privacy policy](/legal/privacy). You can export first.
+
+## Availability
+
+We try hard to keep Aloha up, but we don't promise 100% uptime.
+Enterprise plans come with a formal SLA (see
+[Security & compliance](/legal/security)); other plans are offered
+as-is. Live status is at [/status](/status).
+
+## Warranty disclaimer
+
+To the extent permitted by law, Aloha is provided **as-is**. We
+don't warrant that the product will be error-free, uninterrupted,
+or fit a particular purpose. Your use is at your own risk — we build
+with care but software is software.
+
+## Limitation of liability
+
+To the maximum extent permitted by law, Aloha's total liability for
+any claim arising out of these terms is capped at the amount you paid
+us in the 12 months before the claim (or US$100 if you're on a free
+plan). We aren't liable for indirect, incidental, consequential, or
+punitive damages — lost profits, lost goodwill, lost data (beyond
+what reasonable backup practice would have preserved).
+
+Some jurisdictions don't allow these limitations; where that's the
+case, our liability is limited to the minimum permitted by your law.
+
+## Indemnification
+
+You'll defend and indemnify Aloha against any claim brought by a
+third party alleging that your content or your use of the service
+violates these terms or infringes someone else's rights.
+
+## Changes to these terms
+
+When we change these terms materially, we'll email all account
+holders at least 14 days before they take effect. Continued use
+after the change date means you accept the new terms. If you don't,
+cancel before the change date and these terms as-written still apply
+to you.
+
+## Governing law
+
+These terms are governed by the laws of Portugal. Disputes go to the
+courts of Lisbon — or, if you're a consumer, the courts of your
+country of residence if local law so requires. EU consumers can also
+use the [EU Online Dispute Resolution platform](https://ec.europa.eu/consumers/odr).
+
+## Contact
+
+Legal notices: <a href="mailto:legal@aloha.social">legal@aloha.social</a>.
+For everything else, see the [contact page](/contact).
+
+<LegalFooter current={routes.legal.terms} />

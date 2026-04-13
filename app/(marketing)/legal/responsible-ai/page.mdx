@@ -1,0 +1,175 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Responsible AI",
+  description:
+    "How Aloha uses AI — what the voice model does with your posts, what we never train on, and your controls.",
+  path: routes.legal.responsibleAi,
+});
+
+<LegalHeader
+  title="Responsible AI"
+  lastUpdated="April 10, 2026"
+  description="How Aloha uses AI, what the voice model does with your content, and the controls you have over all of it."
+/>
+
+<Summary>
+  The voice model that powers the Composer learns from the posts
+  you explicitly mark as sounding like you — nothing else. It runs
+  privately in your workspace; we don't pool training data across
+  customers, and we don't sell access to any public model trained
+  on your work.
+
+  You can delete your voice model in one click. Everything the AI
+  drafts is a draft — it never auto-publishes or auto-replies
+  without your approval.
+</Summary>
+
+## What we mean by "AI"
+
+Aloha uses machine learning in a few specific, disclosed places:
+
+- **Voice model** — drafts posts in your cadence for the Composer.
+- **Channel rewrites** — converts one draft to native variants per
+  channel (length, format, tone).
+- **Inbox triage** — classifies incoming messages into question /
+  praise / needs-review buckets.
+- **Insight summaries** — plain-English weekly notes in Analytics.
+- **Best-time suggestions** — statistical model, not generative AI.
+
+We don't use AI to secretly automate your replies, to generate
+fake engagement, or to impersonate another creator's voice.
+
+## What trains on your data
+
+**Your voice model does.** It trains on the specific posts you
+mark as "sounds like me" in Settings → Voice. You can remove any
+post from the training set at any time; the model rebuilds on the
+next save (a few seconds).
+
+**Your inbox triage does.** It learns from the messages you
+classify or reclassify — "this is actually a question", "this is
+a low-touch thank-you". Learning is workspace-scoped.
+
+Nothing trained on your data is shared with other customers.
+Nothing trained on your data is shared with any external
+foundation-model provider.
+
+## What never trains on your data
+
+- **Public AI models.** Your posts are never sent to OpenAI,
+  Anthropic, Google, or any other foundation-model provider for
+  training. The OpenAI endpoints we use are covered by zero-
+  retention agreements; they see a prompt, return a response,
+  and don't log the payload.
+- **Other customers' voice models.** Your data stays in your
+  workspace. Even a shared voice model on a Team plan only trains
+  on the posts that workspace marks as voice-matching.
+- **Our marketing.** Examples in our marketing and in this
+  documentation are synthetic or used with explicit creator
+  permission.
+
+## Where the models run
+
+- **Primary voice model** — a small, workspace-scoped model we
+  train and host ourselves in the region matching your account
+  (US or EU).
+- **Inference fallback for long-form drafts** — a third-party
+  foundation model (currently OpenAI) under a zero-retention
+  agreement. Prompts are scrubbed of identifying metadata before
+  transmission. Fallback is used only when your voice model isn't
+  confident (>90% of requests are served by your model alone).
+
+You can opt out of the fallback in Settings → Voice. The model
+will still draft for you, it just won't use long-form assistance
+for out-of-distribution content.
+
+## Your controls
+
+- **Delete your voice model** — Settings → Voice → Delete. Hard
+  delete; training data and embeddings purged within 24 hours.
+- **Opt out of third-party inference** — Settings → Voice → Use
+  local model only.
+- **Opt out of analytics** — Settings → Privacy → Analytics.
+  Stops Aloha learning about which drafts you liked.
+- **Opt out of inbox classification** — Settings → Inbox → Triage
+  off. The inbox stays unsorted; no ML runs on it.
+
+## Human-in-the-loop defaults
+
+Everything the AI drafts is a draft. Aloha never:
+
+- Auto-publishes a post without an approval step you've set up.
+- Auto-replies to DMs or comments without a per-matrix approval
+  rule you've explicitly enabled.
+- Sends bulk outbound messages on your behalf with AI-generated
+  text, without your thumb on every send.
+
+The defaults are deliberately strict. Automation is opt-in, not
+opt-out.
+
+## Transparency
+
+- **Diffs.** Every AI-drafted rewrite shows you what changed
+  against the source — you can see exactly which words and line
+  breaks came from the model.
+- **Voice-match score.** Posted next to every draft. If the model
+  isn't confident, we tell you; we don't sneak generic outputs
+  past a low-confidence gate.
+- **Classification rationale.** Inbox triage decisions include a
+  one-line reason ("contains a question", "sender is a returning
+  customer") so you can retrain the classifier when it's wrong.
+
+## Content we refuse to help with
+
+The Composer won't draft:
+
+- Impersonations of real people without their consent.
+- Content designed to deceive — fake reviews, fake case studies,
+  AI-disclaimed texts stripped of the disclaimer.
+- Harassment, targeted attacks, slurs.
+- Content that violates a platform's terms in ways we can detect
+  (spam patterns, bulk cold-DM farming, engagement-bait loops).
+
+If you push against these, the Composer will say no and explain
+why. The refusal isn't a chat filter — it's a trained-in decline.
+
+## Bias and error
+
+Voice models trained on a small number of posts will pick up the
+patterns — good and bad — of those posts. If your training set
+skews in ways you don't want, the model will too. We give you the
+tools to see and fix this:
+
+- **Training-set visibility** — see every post the model trained
+  on, with "remove" buttons.
+- **Counterexamples** — mark drafts as "not how I'd have said it"
+  to downweight similar patterns.
+- **Rebuild** — reset the model to its empty state and retrain from
+  scratch, one click.
+
+## Environmental impact
+
+We run inference on GPUs in AWS regions chosen for their reported
+carbon intensity. In 2026 we're piloting carbon-aware scheduling
+for non-urgent training jobs (voice-model rebuilds, best-time
+re-learning) to shift load toward low-carbon grid hours.
+
+## Updates
+
+When our AI practices change materially, we'll update this page
+and log the change in the [changelog](/whats-new). We treat AI
+policy changes as material — this document is where we hold
+ourselves accountable.
+
+## Contact
+
+Questions or disagreements:
+<a href="mailto:ai@aloha.social">ai@aloha.social</a>. Our
+Responsible AI Lead reads every message.
+
+<LegalFooter current={routes.legal.responsibleAi} />

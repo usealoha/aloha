@@ -1,0 +1,106 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Cookie policy",
+  description:
+    "The small number of first-party cookies Aloha uses, and what each one does.",
+  path: routes.legal.cookies,
+});
+
+<LegalHeader
+  title="Cookie policy"
+  lastUpdated="April 10, 2026"
+  description="The small number of first-party cookies Aloha uses, and what each one does."
+/>
+
+<Summary>
+  We use first-party cookies only — no advertising trackers, no
+  third-party pixels, no Google Analytics. The cookies we do use are
+  for keeping you logged in, remembering your workspace, and
+  occasionally helping us understand which features work.
+
+  You can block or delete cookies from your browser settings at any
+  time. Blocking strictly-necessary cookies will break the product.
+</Summary>
+
+## What's a cookie
+
+A cookie is a small text file a website stores in your browser. The
+browser sends it back on later visits so the site can recognise you.
+Aloha uses them sparingly and exclusively as first-party — the
+domain on the cookie matches the domain you're on.
+
+## What we use cookies for
+
+### Strictly necessary
+
+These are needed for the product to work. You can't turn them off
+inside the app; you'd have to block them in your browser (and then
+Aloha wouldn't work).
+
+| Name | Purpose | Duration |
+| --- | --- | --- |
+| `aloha.session` | Keeps you logged in. Rotated on every request. | Session |
+| `aloha.auth` | Signed session token issued by next-auth. | 30 days |
+| `aloha.csrf` | CSRF protection for form submissions. | Session |
+| `aloha.workspace` | Remembers the last workspace you were in. | 90 days |
+
+### Preferences
+
+Save product preferences so you don't re-pick them every visit.
+
+| Name | Purpose | Duration |
+| --- | --- | --- |
+| `aloha.theme` | Calendar density preference — comfy vs. compact. | 365 days |
+| `aloha.tz` | Cached timezone offset to render calendar consistently. | 90 days |
+
+### Analytics
+
+First-party usage analytics, anonymised. You can opt out at any time
+from Settings → Privacy → Analytics.
+
+| Name | Purpose | Duration |
+| --- | --- | --- |
+| `aloha.anon` | Rotating session identifier for feature-usage events. Reset every 7 days. | 7 days |
+
+## What we don't use
+
+- **No advertising cookies.** Aloha has no ad business.
+- **No third-party analytics.** No Google Analytics, no Meta Pixel,
+  no Mixpanel, no Amplitude.
+- **No session replay.** We don't record your screen. Ever.
+- **No cross-site tracking.** Every cookie we set is first-party on
+  `aloha.social` only.
+
+## Your choices
+
+- **Block cookies in your browser.** Works — but the strictly-
+  necessary ones break login and the product won't function.
+- **Opt out of analytics.** Settings → Privacy → Analytics. Toggles
+  the `aloha.anon` cookie off immediately.
+- **Clear existing cookies.** Use your browser's site-data tool.
+  You'll be signed out.
+
+## Embedded content
+
+When you load a Link-in-bio page or a scheduled video preview, the
+content you embed (say, an Instagram reel) may set its own cookies.
+We can't control those — they're subject to the embedding service's
+own policies.
+
+## Updates
+
+When this list changes we update the table above and bump the "Last
+updated" date. Material changes are also logged in the
+[changelog](/whats-new).
+
+## Contact
+
+Questions:
+<a href="mailto:privacy@aloha.social">privacy@aloha.social</a>.
+
+<LegalFooter current={routes.legal.cookies} />

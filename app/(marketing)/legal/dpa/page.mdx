@@ -1,0 +1,165 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Data Processing Addendum",
+  description:
+    "Aloha's Data Processing Addendum (GDPR Art. 28) for EU and UK customers. Signable in one click from Settings → Legal.",
+  path: routes.legal.dpa,
+});
+
+<LegalHeader
+  title="Data Processing Addendum"
+  lastUpdated="April 10, 2026"
+  description="For EU and UK customers who process personal data through Aloha. Signable from Settings → Legal in one click."
+/>
+
+<Summary>
+  If you're in the EU or UK and you use Aloha to process personal
+  data about other people (your subscribers, your audience, your
+  team members), you need a DPA.
+
+  Ours is pre-signed by Aloha and lives at Settings → Legal. Click
+  to countersign; we email you the executed copy within the hour.
+  No negotiations unless you're on an Enterprise plan.
+</Summary>
+
+## Parties
+
+This Data Processing Addendum ("DPA") supplements the
+[Terms of Service](/legal/terms) between you (the "Controller") and
+Aloha, Inc. ("Aloha", the "Processor"). It forms an agreement under
+Article 28 of the GDPR and, for UK customers, the UK GDPR.
+
+## Definitions
+
+Terms capitalised in this DPA but not defined have the meaning given
+them in the GDPR. "Customer Data" means any personal data you upload
+to or process through Aloha.
+
+## Roles
+
+- **Controller.** You determine the purpose and means of the
+  processing.
+- **Processor.** Aloha processes Customer Data only on your
+  documented instructions — which, for most of our product, means
+  "the actions you take inside Aloha's UI and API."
+- **Sub-processor.** Third parties Aloha engages to help (listed
+  below).
+
+## Scope and duration
+
+Aloha processes Customer Data for the duration of your use of the
+service plus any retention period required by law. Processing
+covers: hosting, storing, transmitting, and displaying Customer Data
+so that you can use the product's features (scheduling, analytics,
+inbox, automation).
+
+## Your instructions
+
+These documented instructions are:
+
+1. The Terms of Service.
+2. This DPA.
+3. The features you invoke in the Aloha UI and API.
+4. Any lawful written instruction you give us, scoped to the
+   service.
+
+If we believe an instruction violates applicable data protection
+law, we'll tell you and stop until resolved.
+
+## Confidentiality
+
+Every Aloha employee with access to Customer Data has signed a
+written confidentiality agreement that survives termination of
+employment.
+
+## Security
+
+We implement the technical and organisational measures described in
+[Security & compliance](/legal/security): encryption in transit and
+at rest, access controls, regular audits, incident response.
+
+## Sub-processors
+
+Aloha uses the following sub-processors (full list maintained at
+[/legal/security#subprocessors](/legal/security#subprocessors)):
+
+- **Amazon Web Services** — hosting.
+- **Cloudflare** — CDN and DDoS protection.
+- **Stripe** — payment processing.
+- **Postmark** — transactional email.
+- **Upstash (QStash)** — scheduled job delivery.
+- **OpenAI** — voice model inference fallback (zero-retention).
+
+We give you **30 days' advance notice** before adding a new
+sub-processor. If you object on reasonable data-protection grounds,
+you can terminate the affected service and receive a pro-rated
+refund.
+
+## Data subject requests
+
+If a data subject (one of your users) contacts Aloha directly with
+a request, we'll redirect them to you. We'll also help you respond
+to access, correction, and deletion requests by:
+
+- Providing self-service export in Settings → Account.
+- Supporting targeted deletion via the API or a written request to
+  <a href="mailto:privacy@aloha.social">privacy@aloha.social</a>
+  within 5 business days.
+
+## Incident notification
+
+If we become aware of a personal data breach involving your
+Customer Data, we'll notify you **without undue delay** and no
+later than 48 hours after becoming aware. The notice will include
+what we know about:
+
+- The nature of the breach.
+- Categories of data subjects and records affected.
+- Likely consequences.
+- Measures taken or proposed.
+
+## International transfers
+
+Customer Data is stored in the EU region (AWS eu-west-1) for EU
+customers unless you explicitly choose otherwise. Where transfers
+outside the EEA are necessary (e.g., a sub-processor based
+elsewhere), we rely on the **Standard Contractual Clauses** (2021
+EU SCCs, Module 2 or 3 as applicable) and the **UK International
+Data Transfer Addendum** for UK customers.
+
+## Audits
+
+On 30 days' written notice, once per year, you can audit Aloha's
+compliance with this DPA. For most customers the auditor is us —
+we'll provide our SOC 2 Type II report and answer questions. On
+Enterprise plans you can send your own auditor, at your expense.
+
+## Return and deletion
+
+On termination of the service, Aloha will delete Customer Data
+within 30 days. If you need an export, request it from Settings →
+Account before termination.
+
+## Liability
+
+Liability for obligations under this DPA is subject to the
+limitations in the Terms of Service, except where local law
+disallows those limitations for data protection claims.
+
+## Signatures
+
+This DPA becomes effective when:
+
+- You countersign via Settings → Legal → Sign DPA, **or**
+- You send a signed copy to
+  <a href="mailto:legal@aloha.social">legal@aloha.social</a>.
+
+Aloha's signature is on file. No negotiations required on non-
+Enterprise plans — the DPA above is the one we sign.
+
+<LegalFooter current={routes.legal.dpa} />
