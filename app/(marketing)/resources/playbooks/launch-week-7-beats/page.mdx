@@ -1,0 +1,165 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { getPlaybook, relatedPlaybooks } from "@/lib/playbooks";
+import { ArticleShell } from "../../_components/article-shell";
+
+export const playbook = getPlaybook("launch-week-7-beats");
+
+export const metadata = makeMetadata({
+  title: playbook.title,
+  description: playbook.lead,
+  path: `${routes.resources.playbooks}/${playbook.slug}`,
+});
+
+<ArticleShell
+  collection={{ name: "Playbooks", href: routes.resources.playbooks }}
+  title={playbook.title}
+  lead={playbook.lead}
+  date={playbook.date}
+  dateLabel={playbook.dateLabel}
+  readTime={playbook.readTime}
+  author={playbook.author}
+  accent={playbook.accent}
+  related={relatedPlaybooks(playbook.slug)}
+  collectionPitch="Want a tactical playbook every other Friday? The newsletter sends both essays and playbooks."
+>
+
+Most launches lose more reach to *bad scheduling* than to bad
+copy. The piece is good; the timing is off; the third post never
+shipped because Wednesday got busy. The seven-beat plan below is
+how creators with no team consistently out-perform creators with
+five. It's mechanical, opinionated, and works in any
+content-production reality I've seen.
+
+This is what happens at six weeks before launch, on launch day,
+and over the seven days after. Each beat names what to publish,
+where, and roughly when.
+
+## The principle
+
+Audiences don't show up because they're paying close attention
+the day you launch. They show up because the launch *catches them
+on a different day*. The seven-beat plan multiplies the surface
+area of "different day."
+
+Read [the seventh telling](/resources/field-notes/seventh-telling)
+for the longer essay; this playbook is the operational version.
+
+## Beat 1 — Six weeks out: The seed
+
+A single post, one channel, that names what you're working on
+without any of the sales energy. The point is to plant the
+expectation, not to sell anything. Examples:
+
+- A field-note style post: "Spent the last few months thinking
+  about X. About to start sharing what I learned."
+- A short reply in a community space: "Working on Y. Anyone else
+  wrestling with this?"
+
+What to write it in: the [Composer voice model](/composer) so it
+genuinely sounds like the rest of your work, not a launch
+announcement.
+
+## Beat 2 — Three weeks out: The teaser
+
+A short, specific tease that hints at the form. Show the *shape*
+of the thing, not the thing itself. A photo of the work in
+progress. A pull quote from the introduction. A note about why
+you're making this — not what it does.
+
+Cross-post to two channels. The Composer should rewrite for
+each — long for LinkedIn, sharp for X. Don't manually re-type;
+that's where most launches lose 90 minutes.
+
+## Beat 3 — One week out: The "soon" post
+
+The first post that's *explicitly* about the launch. Time-stamped:
+"a week from today." A clear what-and-when, plus a low-friction
+way to be notified. Email signup, follow notification, a calendar
+invite.
+
+This is the post most creators skip and most successful launches
+lean on. It catches the people who like you but don't check your
+feed daily.
+
+## Beat 4 — Launch day: The drop
+
+The actual launch post. Across every channel that matters for
+this work. Two important rules:
+
+1. **Schedule it the day before.** Don't post manually on launch
+   day; the launch day is for replying to early reactions, not
+   wrestling with the scheduler.
+2. **Use the Composer's per-channel rewrite** rather than copy-
+   pasting. LinkedIn wants long; X wants tight; Threads wants
+   conversational. Same idea, three native versions.
+
+Pin the post to your profile if the platform allows it.
+
+## Beat 5 — Day +1: Social proof
+
+Find one early reaction that captures something true and share
+it. Not "look at this nice review of my thing" — instead share
+the thought the reaction sparked. The work is the focus; the
+proof is the side door.
+
+If no organic reaction has landed yet, share a behind-the-scenes
+detail instead. The construction of the work is content too.
+
+<blockquote>
+A launch is not a single post — it's a story you tell over six
+weeks. Most creators tell three chapters and wonder why nobody
+remembers chapter one.
+</blockquote>
+
+## Beat 6 — Day +3: The objection
+
+Whatever question keeps coming up in your DMs and comments —
+write the answer publicly. "A few people asked X. Here's the
+short version." This catches the audience that almost engaged
+but had a quiet doubt that stopped them.
+
+Keep it short. The objection post isn't the place for nuance;
+it's the place for clarity. If the answer is genuinely complex,
+write a longer field note for [Resources](/resources/field-notes)
+and link it.
+
+## Beat 7 — Day +7: The "for the late arrivals" post
+
+A retrospective, gentle re-surfacing for the people who missed
+the launch. "Last week I shipped X. Here's where to start if
+you're just hearing about it." This is the post that catches the
+people who come back from holiday and scroll your last week.
+
+Treat this post as the *true close* of the launch — not the
+launch day itself.
+
+## What the calendar looks like
+
+Aloha's [Calendar](/calendar) accepts a campaign template you can
+clone in two clicks: "Launch week — 7 beats." It pre-populates the
+seven posts on the right days and lets you fill in the bodies in
+order. The matrix wires the cross-channel rewrites automatically
+so you only edit once.
+
+If you don't use Aloha, build the same seven beats in whatever
+your scheduler is. Naming them helps. Treat each beat as a
+non-negotiable; if you can't ship a beat, move it, but don't
+silently drop it.
+
+## What this playbook isn't
+
+This isn't a growth-hacking framework. It won't 10x your launch.
+It will, reliably, get more of the audience you already have to
+notice the work — which is almost always where launches actually
+fail.
+
+You can run this for a tiny launch (a single newsletter issue) or
+a big one (a product, a book, a major campaign). Adjust the
+content per beat; keep the cadence.
+
+Ship the work, then tell the story it deserves. Seven times,
+across six weeks. Not because the algorithm needs it — because
+the audience can't find you in one pass.
+
+</ArticleShell>

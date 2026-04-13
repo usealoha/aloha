@@ -1,0 +1,142 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { getPlaybook, relatedPlaybooks } from "@/lib/playbooks";
+import { ArticleShell } from "../../_components/article-shell";
+
+export const playbook = getPlaybook("inbox-sla-30-min");
+
+export const metadata = makeMetadata({
+  title: playbook.title,
+  description: playbook.lead,
+  path: `${routes.resources.playbooks}/${playbook.slug}`,
+});
+
+<ArticleShell
+  collection={{ name: "Playbooks", href: routes.resources.playbooks }}
+  title={playbook.title}
+  lead={playbook.lead}
+  date={playbook.date}
+  dateLabel={playbook.dateLabel}
+  readTime={playbook.readTime}
+  author={playbook.author}
+  accent={playbook.accent}
+  related={relatedPlaybooks(playbook.slug)}
+  collectionPitch="Want operational playbooks like this in your inbox? The newsletter sends both essays and playbooks."
+>
+
+There's a tax small businesses don't talk about. It's the
+"someone-needs-to-be-on" tax — the silent expectation that one
+person on the team is always near a phone in case a customer
+DMs at 9pm.
+
+This tax is bad for the team and bad for the customer. Bad for
+the team because nobody actually committed to being on. Bad for
+the customer because the response time is *unreliable* — sometimes
+fast, sometimes a day, sometimes never.
+
+This playbook is the four rules we wrote at Aloha when we
+started Aloha-the-business and had this exact problem. It turns
+"always on" into "reliably responsive in 30 minutes during
+weekday business hours." Most small teams can run it with three
+or four people.
+
+## The four rules
+
+### 1. Define the SLA *out loud*
+
+Pick a number. Ours is **30 minutes during weekday business
+hours** (Lisbon morning + late afternoon overlap). Communicate it
+publicly — on the link-in-bio, on the contact page, in the auto-
+reply. The SLA isn't a promise to be on, it's a promise to *say*
+when you're on.
+
+The auto-reply matters as much as the SLA itself. We use the
+[Inbox](/inbox) to set one that says: "We see your message. A
+human will reply within 30 minutes between 9am-noon and 4-6pm
+Lisbon time. Outside those hours, by 9:30am the next business
+day."
+
+Customers who get this auto-reply almost never message again to
+ask if you're there. The SLA does the calming.
+
+### 2. One person on at a time, never overlapping
+
+The "everyone is on Slack on weekends" pattern fails because
+nobody knows whose job it is. The fix: a single named person on
+during the SLA window, with explicit hand-offs.
+
+A team of three covers two two-hour windows a day, three days a
+week each. That's the entire structure. The Inbox surfaces unread
+threads to the on-person; the off-people don't see notifications.
+
+### 3. Triage, don't reply
+
+The 30-minute SLA is for *triage*, not full reply. The on-person
+opens the message and decides:
+
+- **Quick answer** — reply now (under five minutes).
+- **Real answer needed** — acknowledge now ("Thanks — I'll get
+  you a real answer by tomorrow morning"), put a real reply on
+  tomorrow's calendar.
+- **Wrong inbox** — reroute to the right person, tag them, close
+  the thread on this side.
+
+The Inbox triage view sorts by message shape — questions, praise,
+needs-review — so this decision takes about ten seconds per
+thread.
+
+<blockquote>
+You don't need to be always on to feel responsive. You need to
+be reliably present in announced windows.
+</blockquote>
+
+### 4. Auto-handle the easy ones
+
+Praise, emoji reactions, "thanks for following," people simply
+saying hi — these don't need the on-person's time. The Inbox can
+auto-reply with a warm one-line response on a per-thread basis;
+the on-person just confirms with one tap.
+
+We measured this at Aloha: about 60% of weekday inbox volume
+falls into the auto-handle category. Removing it from the
+on-person's queue is the difference between a manageable shift
+and a frantic one.
+
+## What the schedule looks like
+
+For a three-person team:
+
+| Person | Mon-Wed | Thu-Fri |
+| --- | --- | --- |
+| A | 9-11am, 4-6pm | rest |
+| B | rest | 9-11am, 4-6pm |
+| C | covers both halves | covers both halves |
+
+C is the rotating gap-filler — one of the three rotates into the
+"covers" seat each week so nobody burns out on the edges. Holidays
+and sick days swap into the covers seat first.
+
+## What this playbook isn't
+
+This isn't customer-care at scale. If you have hundreds of DMs a
+day, you need a real CS tool ([Sprout Social](/compare/sprout-social)
+is good for that). This is for the team that has 30-50 weekday
+DMs and wants to feel responsive without anyone feeling
+permanently on.
+
+It's also not 24-hour coverage. Weekend and after-hours messages
+get the auto-reply explicitly setting expectations. Customers
+respect this when you're transparent.
+
+## The compounding effect
+
+Six months in, our team has not lost a single weekend, and our
+customer satisfaction on response time is the highest it's ever
+been. The two are causally related. Reliable presence beats
+performative availability every time.
+
+If you set this up and the SLA turns out to be wrong for your
+volume — you're getting more or less than expected — adjust the
+windows, not the rule. The shape of the playbook holds.
+
+</ArticleShell>
