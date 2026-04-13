@@ -47,7 +47,7 @@ export function ArticleShell({
   dateLabel,
   readTime,
   author,
-  accent = "bg-peach-100",
+  accent = "bg-peach-200",
   children,
   related = [],
   collectionPitch,
@@ -55,7 +55,7 @@ export function ArticleShell({
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className={`relative overflow-hidden ${accent} pb-16 lg:pb-20`}>
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[18%] left-[5%] font-display text-[28px] text-ink/20 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-ink/15 rotate-[14deg] select-none">+</span>
 

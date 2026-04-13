@@ -77,12 +77,12 @@ export default function CareersPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[8%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <span className="w-6 h-px bg-ink/40" />
@@ -124,7 +124,7 @@ export default function CareersPage() {
       {/* ─── VALUES ──────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 What we hire for
@@ -161,7 +161,7 @@ export default function CareersPage() {
 
       {/* ─── HOW WE WORK ────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
           <div className="col-span-12 lg:col-span-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               How we actually work
@@ -222,7 +222,7 @@ export default function CareersPage() {
               <a
                 key={r.title}
                 href={r.href}
-                className={`group block md:grid md:grid-cols-12 px-6 py-6 md:py-5 gap-4 items-center border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors ${
+                className={`group block md:grid md:grid-cols-12 px-6 py-6 md:py-5 gap-x-0 gap-y-4 lg:gap-4 items-center border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors ${
                   i % 2 === 1 ? "bg-muted/10" : ""
                 }`}
               >
@@ -314,7 +314,7 @@ export default function CareersPage() {
       {/* ─── PROCESS ─────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-start">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-start">
             <div className="col-span-12 lg:col-span-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Hiring process
@@ -355,7 +355,7 @@ export default function CareersPage() {
       {/* ─── FINAL CTA ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 Taste and patience.

@@ -122,7 +122,7 @@ export default function SpotlightPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -156,7 +156,7 @@ export default function SpotlightPage() {
             className="max-w-[1180px] mx-auto px-6 lg:px-10"
           >
             <div className={`${s.accent} rounded-3xl overflow-hidden`}>
-              <div className="grid grid-cols-12 gap-0">
+              <div className="grid grid-cols-12 gap-x-0 gap-y-0 lg:gap-0">
                 {/* portrait */}
                 <div className="col-span-12 lg:col-span-5 p-8 lg:p-10 lg:border-r border-ink/10">
                   <StockPhotoPlaceholder
@@ -239,7 +239,7 @@ export default function SpotlightPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <Mail className="w-7 h-7 text-peach-300 mb-5" />
                 <h2 className="font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em]">

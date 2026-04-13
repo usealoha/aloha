@@ -116,7 +116,7 @@ export default function VoiceFoundationsGuidePage() {
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-ink/15 rotate-[14deg] select-none">+</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="flex flex-wrap items-center gap-3 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <Link href={routes.resources.creatorGuides} className="pencil-link">
@@ -196,7 +196,7 @@ export default function VoiceFoundationsGuidePage() {
             <article
               key={l.n}
               id={`lesson-${l.n}`}
-              className="grid grid-cols-12 gap-0 rounded-3xl overflow-hidden bg-background-elev border border-border scroll-mt-24"
+              className="grid grid-cols-12 gap-x-0 gap-y-0 lg:gap-0 rounded-3xl overflow-hidden bg-background-elev border border-border scroll-mt-24"
             >
               {/* sidebar */}
               <div className="col-span-12 md:col-span-3 p-7 lg:p-8 bg-muted/20 md:border-r border-border flex flex-col justify-between gap-6">
@@ -252,7 +252,7 @@ export default function VoiceFoundationsGuidePage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <Sparkle className="w-7 h-7 text-peach-300 mb-5" />
                 <h2 className="font-display text-[28px] lg:text-[40px] leading-[1.15] tracking-[-0.015em]">

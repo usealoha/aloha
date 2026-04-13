@@ -186,7 +186,7 @@ export function PostCritic() {
   }, [results]);
 
   return (
-    <div className="grid grid-cols-12 gap-6 lg:gap-8">
+    <div className="grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-8">
       {/* input */}
       <div className="col-span-12 lg:col-span-5">
         <div className="p-7 lg:p-8 rounded-3xl bg-peach-100 border border-peach-300/40 space-y-6">
@@ -262,7 +262,7 @@ export function PostCritic() {
                 const meta = ICON[r.status];
                 const Icon = meta.icon;
                 return (
-                  <div key={r.id} className="p-5 lg:p-6 grid grid-cols-12 gap-4 items-start">
+                  <div key={r.id} className="p-5 lg:p-6 grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-4 items-start">
                     <div className="col-span-12 md:col-span-3">
                       <p className="font-display text-[16px] leading-[1.2] text-ink">{r.label}</p>
                       <span className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold uppercase tracking-[0.14em] ${meta.tone}`}>

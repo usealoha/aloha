@@ -175,12 +175,12 @@ export default function TemplatesPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="flex flex-wrap items-center gap-3 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <Link href={routes.resources.index} className="pencil-link">
@@ -235,7 +235,7 @@ export default function TemplatesPage() {
       {featured && (
         <section className="py-12 lg:py-16">
           <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-            <article className={`${featured.tone} rounded-3xl p-10 lg:p-14 grid grid-cols-12 gap-8 items-end`}>
+            <article className={`${featured.tone} rounded-3xl p-10 lg:p-14 grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-end`}>
               <div className="col-span-12 lg:col-span-8">
                 <div className="flex items-center gap-2 text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/55 mb-5">
                   <Sparkle className="w-3 h-3 text-primary" />
@@ -293,7 +293,7 @@ export default function TemplatesPage() {
             className={`py-16 lg:py-20 ${cat === "matrix" || cat === "post" ? "bg-background-elev" : ""}`}
           >
             <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-              <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+              <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
                 <div className="col-span-12 lg:col-span-7">
                   <div className="inline-flex items-center gap-2 mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
                     <meta.icon className={`w-3.5 h-3.5 ${meta.tone}`} />
@@ -359,7 +359,7 @@ export default function TemplatesPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <Layers className="w-7 h-7 text-peach-300 mb-5" />
                 <h2 className="font-display text-[28px] lg:text-[40px] leading-[1.15] tracking-[-0.015em] max-w-2xl">

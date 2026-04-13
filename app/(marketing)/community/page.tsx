@@ -105,13 +105,13 @@ export default function CommunityHubPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <span className="w-6 h-px bg-ink/40" />
@@ -202,7 +202,7 @@ export default function CommunityHubPage() {
       {/* ─── VALUES ─────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 How we keep it calm
@@ -269,7 +269,7 @@ export default function CommunityHubPage() {
       {/* ─── READ LONGER STORIES ─────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-end mb-10">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end mb-10">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Longer stories
@@ -325,7 +325,7 @@ export default function CommunityHubPage() {
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
           <div className="p-10 lg:p-14 rounded-3xl bg-ink text-background-elev">
-            <div className="grid grid-cols-12 gap-8 items-end">
+            <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-end">
               <div className="col-span-12 lg:col-span-8">
                 <Sparkle className="w-7 h-7 text-peach-300 mb-5" />
                 <p className="font-display text-[32px] lg:text-[42px] leading-[1.1] tracking-[-0.015em] max-w-2xl">

@@ -85,7 +85,7 @@ export default function CreatorGuidesIndexPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -123,7 +123,7 @@ export default function CreatorGuidesIndexPage() {
               Start here
             </div>
 
-            <div className="grid grid-cols-12 gap-8 items-end">
+            <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-end">
               <div className="col-span-12 lg:col-span-8">
                 <featured.icon className="w-7 h-7 text-ink mb-4" />
                 <h2 className="font-display text-[36px] lg:text-[52px] leading-[1.05] tracking-[-0.02em] text-ink group-hover:text-primary transition-colors">
@@ -192,7 +192,7 @@ export default function CreatorGuidesIndexPage() {
 
       {/* ─── HOW THESE WORK ──────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
           <div className="col-span-12 lg:col-span-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               The shape of a path
@@ -222,7 +222,7 @@ export default function CreatorGuidesIndexPage() {
       {/* ─── CTA ───────────────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-[1] tracking-[-0.02em]">
                 Pair the path

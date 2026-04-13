@@ -59,7 +59,7 @@ export default function SlackCommunityPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -120,7 +120,7 @@ export default function SlackCommunityPage() {
       {/* ─── CHANNELS ───────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 What happens here
@@ -154,7 +154,7 @@ export default function SlackCommunityPage() {
       {/* ─── CITY PULSE ─────────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Where members are
@@ -191,7 +191,7 @@ export default function SlackCommunityPage() {
       {/* ─── RULES ──────────────────────────────────────────────────── */}
       <section id="rules" className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Community rules

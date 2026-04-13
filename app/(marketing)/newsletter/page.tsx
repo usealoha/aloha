@@ -78,7 +78,7 @@ export default function NewsletterPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -147,7 +147,7 @@ export default function NewsletterPage() {
       {/* ─── WHAT YOU'LL GET ─────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 What you'll get
@@ -197,7 +197,7 @@ export default function NewsletterPage() {
       {/* ─── ARCHIVE ────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Recent issues
@@ -251,7 +251,7 @@ export default function NewsletterPage() {
       {/* ─── FROM THE TEAM ───────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 lg:gap-16 items-center">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
             <div className="col-span-12 lg:col-span-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Who writes it

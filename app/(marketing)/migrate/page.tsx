@@ -26,7 +26,7 @@ export default function MigrationGuidePage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[8%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -67,7 +67,7 @@ export default function MigrationGuidePage() {
       {/* ─── 3-STEP OVERVIEW ─────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 How it works
@@ -126,7 +126,7 @@ export default function MigrationGuidePage() {
 
       {/* ─── VISUAL — IMPORT PANEL ──────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
-        <div className="max-w-[1100px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 items-center">
+        <div className="max-w-[1100px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-center">
           <div className="col-span-12 lg:col-span-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               What the import looks like
@@ -223,7 +223,7 @@ export default function MigrationGuidePage() {
                   </div>
                 </summary>
 
-                <div className="px-6 lg:px-8 pb-7 pt-2 grid grid-cols-12 gap-6">
+                <div className="px-6 lg:px-8 pb-7 pt-2 grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-6">
                   <ol className="col-span-12 lg:col-span-8 space-y-4 relative border-l-2 border-border-strong/60 pl-6">
                     {c.migration.steps.map((s, k) => (
                       <li key={k} className="relative">
@@ -296,7 +296,7 @@ export default function MigrationGuidePage() {
       {/* ─── FINAL CTA ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 Your content comes

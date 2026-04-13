@@ -21,7 +21,7 @@ export default function PlaybooksIndexPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -113,7 +113,7 @@ export default function PlaybooksIndexPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-peach-200 mb-5">
                   Run a workflow worth writing up?

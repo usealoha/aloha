@@ -68,7 +68,7 @@ export function BioGenerator() {
   };
 
   return (
-    <div className="grid grid-cols-12 gap-6 lg:gap-8">
+    <div className="grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-8">
       {/* form */}
       <div className="col-span-12 lg:col-span-5">
         <div className="p-7 lg:p-8 rounded-3xl bg-peach-100 border border-peach-300/40 space-y-6">

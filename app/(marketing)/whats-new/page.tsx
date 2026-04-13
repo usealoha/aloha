@@ -131,7 +131,7 @@ export default function WhatsNewPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-20 lg:pb-24">
+      <header className="relative overflow-hidden bg-peach-200 pb-20 lg:pb-24">
         <span aria-hidden className="absolute top-[24%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[70%] right-[8%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -177,7 +177,7 @@ export default function WhatsNewPage() {
       <section className="py-10 lg:py-14">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
           <article className="rounded-3xl bg-primary-soft border border-primary/15 overflow-hidden">
-            <div className="p-8 lg:p-12 grid grid-cols-12 gap-8 lg:gap-12">
+            <div className="p-8 lg:p-12 grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12">
               <div className="col-span-12 lg:col-span-5">
                 <div className="inline-flex items-center gap-2 text-[10.5px] font-mono uppercase tracking-[0.22em] text-primary">
                   <Sparkle className="w-3 h-3" />
@@ -237,7 +237,7 @@ export default function WhatsNewPage() {
 
             <ol className="space-y-14 lg:space-y-16">
               {rest.map((r) => (
-                <li key={r.version} className="relative grid grid-cols-12 gap-4 lg:gap-8">
+                <li key={r.version} className="relative grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-8">
                   {/* date spine (left) */}
                   <div className="col-span-12 lg:col-span-2 relative pl-6 lg:pl-0">
                     <span
@@ -296,7 +296,7 @@ export default function WhatsNewPage() {
       {/* ─── FOOTER CTA ──────────────────────────────────────────────── */}
       <section className="py-24 lg:py-28 bg-background-elev">
         <div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-center">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-center">
             <div className="col-span-12 lg:col-span-7">
               <h2 className="font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em]">
                 We ship every two weeks.

@@ -17,7 +17,7 @@ export default function FieldNotesIndexPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -115,7 +115,7 @@ export default function FieldNotesIndexPage() {
                 >
                   <Link
                     href={`${routes.resources.fieldNotes}/${n.slug}`}
-                    className="group grid grid-cols-12 gap-4 px-6 lg:px-8 py-7 items-start hover:bg-muted/25 transition-colors"
+                    className="group grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-4 px-6 lg:px-8 py-7 items-start hover:bg-muted/25 transition-colors"
                   >
                     <div className="col-span-12 md:col-span-2">
                       <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-ink/55">
@@ -163,7 +163,7 @@ export default function FieldNotesIndexPage() {
       {/* ─── FINAL CTA ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-[1] tracking-[-0.02em]">
                 Don't want to check the page?

@@ -50,7 +50,7 @@ export default function MobilePage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-24 lg:pb-32">
+      <header className="relative overflow-hidden bg-peach-200 pb-24 lg:pb-32">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] left-[11%] font-display text-[22px] text-primary/55 rotate-[12deg] select-none">+</span>
         <span aria-hidden className="absolute top-[22%] right-[8%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -242,7 +242,7 @@ export default function MobilePage() {
       {/* ─── PREVIEW ROW ─────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
         <div className="max-w-[1320px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Every surface, in your hand

@@ -85,7 +85,7 @@ export default function HelpCenterPage() {
   return (
     <>
       {/* ─── HERO with SEARCH ───────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -170,7 +170,7 @@ export default function HelpCenterPage() {
       {/* ─── TOP 10 ─────────────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-end mb-10">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end mb-10">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Top ten articles
@@ -195,7 +195,7 @@ export default function HelpCenterPage() {
               >
                 <Link
                   href="#"
-                  className="group grid grid-cols-12 gap-4 px-6 lg:px-8 py-5 items-center hover:bg-muted/25 transition-colors"
+                  className="group grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-4 px-6 lg:px-8 py-5 items-center hover:bg-muted/25 transition-colors"
                 >
                   <div className="col-span-1 font-display text-[22px] text-ink/45 leading-none">
                     {String(i + 1).padStart(2, "0")}
@@ -230,7 +230,7 @@ export default function HelpCenterPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <LifeBuoy className="w-7 h-7 text-peach-300 mb-5" />
                 <h2 className="font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em]">

@@ -96,13 +96,13 @@ export default function ResourcesHubPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <span className="w-6 h-px bg-ink/40" />
@@ -181,7 +181,7 @@ export default function ResourcesHubPage() {
       {/* ─── RECENT FIELD NOTES ─────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Recent field notes
@@ -227,7 +227,7 @@ export default function ResourcesHubPage() {
       {/* ─── NEWSLETTER NUDGE ──────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-[1] tracking-[-0.02em]">
                 Want one of these

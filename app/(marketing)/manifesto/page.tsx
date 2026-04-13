@@ -14,7 +14,7 @@ export default function ManifestoPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[18%] left-[5%] font-display text-[34px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[72%] right-[10%] font-display text-[26px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[34%] right-[6%] font-display text-[40px] text-ink/15 rotate-[18deg] select-none">※</span>

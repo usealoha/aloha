@@ -81,13 +81,13 @@ export default function BrandPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[8%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <span className="w-6 h-px bg-ink/40" />
@@ -127,7 +127,7 @@ export default function BrandPage() {
       {/* ─── LOGO ────────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 The wordmark
@@ -205,7 +205,7 @@ export default function BrandPage() {
       {/* ─── COLOUR ─────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Colour
@@ -249,10 +249,12 @@ export default function BrandPage() {
             ))}
           </div>
 
-          <div className="mt-10 p-6 rounded-2xl bg-background border border-border flex items-center gap-3 text-[13.5px] text-ink/75">
-            <Copy className="w-4 h-4 text-ink/50 shrink-0" />
-            Tokens are exported as CSS variables in <code className="font-mono text-[12.5px] bg-muted px-1.5 py-0.5 rounded">app/globals.css</code>{" "}
-            and mapped to Tailwind via <code className="font-mono text-[12.5px] bg-muted px-1.5 py-0.5 rounded">@theme inline</code>.
+          <div className="mt-10 p-6 rounded-2xl bg-background border border-border flex items-start gap-3 text-[13.5px] text-ink/75">
+            <Copy className="w-4 h-4 text-ink/50 shrink-0 mt-0.5" />
+            <p className="min-w-0 break-words">
+              Tokens are exported as CSS variables in <code className="font-mono text-[12.5px] bg-muted px-1.5 py-0.5 rounded">app/globals.css</code>{" "}
+              and mapped to Tailwind via <code className="font-mono text-[12.5px] bg-muted px-1.5 py-0.5 rounded">@theme inline</code>.
+            </p>
           </div>
         </div>
       </section>
@@ -260,7 +262,7 @@ export default function BrandPage() {
       {/* ─── TYPOGRAPHY ─────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Typography
@@ -326,7 +328,7 @@ export default function BrandPage() {
       {/* ─── VOICE ─────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Voice
@@ -367,7 +369,7 @@ export default function BrandPage() {
       {/* ─── MOTION ─────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Motion
@@ -449,7 +451,7 @@ export default function BrandPage() {
       {/* ─── FINAL CTA ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 One family of marks.

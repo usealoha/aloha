@@ -79,7 +79,7 @@ export default function TrustPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-20 lg:pb-24">
+      <header className="relative overflow-hidden bg-peach-200 pb-20 lg:pb-24">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[8%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -150,7 +150,7 @@ export default function TrustPage() {
       {/* ─── COMPLIANCE ──────────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Compliance
@@ -192,7 +192,7 @@ export default function TrustPage() {
       {/* ─── SUBPROCESSORS ───────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev" id="subprocessors">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Subprocessors
@@ -240,7 +240,7 @@ export default function TrustPage() {
 
       {/* ─── DATA RESIDENCY ──────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-center">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
           <div className="col-span-12 lg:col-span-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               Data residency
@@ -438,7 +438,7 @@ export default function TrustPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative p-10 lg:p-14 grid grid-cols-12 gap-10 items-start">
+            <div className="relative p-10 lg:p-14 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-start">
               <div className="col-span-12 lg:col-span-5">
                 <AlertTriangle className="w-8 h-8 text-peach-300 mb-6" />
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-peach-200 mb-4">
@@ -543,7 +543,7 @@ export default function TrustPage() {
       {/* ─── FINAL CTA ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 We don't ask for trust.

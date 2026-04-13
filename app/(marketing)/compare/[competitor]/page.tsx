@@ -90,7 +90,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg">
+      <header className="relative overflow-hidden bg-peach-200">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] left-[11%] font-display text-[22px] text-primary/55 rotate-[12deg] select-none">+</span>
         <span aria-hidden className="absolute top-[22%] right-[8%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -137,7 +137,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
       {/* ─── WHERE THEY'RE STRONGER ──────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Where {c.name} is stronger
@@ -174,7 +174,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
       {/* ─── WHERE WE'RE STRONGER ────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Where Aloha is stronger
@@ -289,7 +289,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
       {/* ─── MIGRATION ───────────────────────────────────────────────── */}
       <section className="py-20 lg:py-28 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 items-start">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-start">
             <div className="col-span-12 lg:col-span-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Switching from {c.name}
@@ -369,7 +369,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
       {/* ─── OTHER COMPARISONS ────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Other comparisons
@@ -411,7 +411,7 @@ export default async function ComparePage({ params }: { params: Promise<Params> 
       {/* ─── FINAL CTA ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 Good tools don't

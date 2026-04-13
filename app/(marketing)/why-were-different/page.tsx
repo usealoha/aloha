@@ -14,7 +14,7 @@ export default function WhyWereDifferentPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg">
+      <header className="relative overflow-hidden bg-peach-200">
         <span aria-hidden className="absolute top-[18%] left-[5%] font-display text-[32px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[72%] right-[10%] font-display text-[26px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[34%] right-[6%] font-display text-[40px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -167,7 +167,7 @@ export default function WhyWereDifferentPage() {
                 ),
               },
             ].map((c, i) => (
-              <li key={i} className="relative grid grid-cols-12 gap-6 lg:gap-10">
+              <li key={i} className="relative grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-10">
                 <div className="col-span-12 lg:col-span-2">
                   <p className="font-display italic text-[56px] lg:text-[72px] leading-[0.9] text-peach-300">
                     0{i + 1}

@@ -28,7 +28,7 @@ export function ToolShell({
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
@@ -62,7 +62,7 @@ export function ToolShell({
 
       {/* ─── HOW IT WORKS ──────────────────────────────────────────── */}
       <section className="py-16 lg:py-20">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
           <div className="col-span-12 lg:col-span-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               How this works

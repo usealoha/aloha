@@ -45,12 +45,12 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg">
+      <header className="relative overflow-hidden bg-peach-200">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] left-[11%] font-display text-[22px] text-primary/55 rotate-[12deg] select-none">+</span>
         <span aria-hidden className="absolute top-[22%] right-[8%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
 
-        <div className="relative max-w-[1320px] w-full mx-auto px-6 lg:px-10 pt-20 lg:pt-28 pb-24 lg:pb-32 grid grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="relative max-w-[1320px] w-full mx-auto px-6 lg:px-10 pt-20 lg:pt-28 pb-24 lg:pb-32 grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-center">
           <div className="col-span-12 lg:col-span-7">
             <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
               <span className="w-6 h-px bg-ink/40" />
@@ -118,7 +118,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
       {/* ─── PAINS → RESOLUTIONS ─────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-14 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-14 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 What actually changes
@@ -140,7 +140,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
             {p.pains.map((item, i) => (
               <li
                 key={i}
-                className="grid grid-cols-12 gap-4 lg:gap-8 rounded-3xl overflow-hidden border border-border bg-background"
+                className="grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-8 rounded-3xl overflow-hidden border border-border bg-background"
               >
                 <div className="col-span-12 md:col-span-5 p-8 lg:p-10 bg-ink text-background-elev flex flex-col justify-between min-h-[200px]">
                   <div className="flex items-center gap-3 mb-6">
@@ -181,7 +181,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
 
       {/* ─── A DAY IN THE LIFE ───────────────────────────────────────── */}
       <section id="day" className="py-24 lg:py-32 bg-background-elev">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
           <div className="col-span-12 lg:col-span-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               A typical day
@@ -264,7 +264,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
       {/* ─── CHANNELS THEY LIVE ON ───────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Channels {p.name.toLowerCase()} live on
@@ -317,7 +317,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
       {/* ─── RECOMMENDED PLAN ────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 lg:gap-16 items-center">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
             <div className="col-span-12 lg:col-span-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Our honest recommendation
@@ -409,7 +409,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
       {/* ─── OTHER PERSONAS ─────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-10 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Other shapes of work
@@ -451,7 +451,7 @@ export default async function PersonaPage({ params }: { params: Promise<Params> 
       {/* ─── FINAL CTA ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[44px] sm:text-[56px] lg:text-[80px] leading-[0.98] tracking-[-0.025em]">
                 {p.cta.line1}

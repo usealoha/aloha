@@ -62,12 +62,12 @@ export default function ApiDocsPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-8">
               <div className="inline-flex items-center gap-3 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <Link href={routes.resources.index} className="pencil-link">
@@ -154,7 +154,7 @@ export default function ApiDocsPage() {
       {/* ─── BODY (two-col docs layout) ─────────────────────────────── */}
       <section className="py-12 lg:py-16 border-t border-border bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 lg:gap-12 items-start">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-12 items-start">
             {/* sidebar */}
             <aside className="hidden lg:block lg:col-span-3">
               <nav className="sticky top-[96px]">
@@ -254,7 +254,7 @@ export default function ApiDocsPage() {
                   ].map((e) => (
                     <div
                       key={e.p}
-                      className="grid grid-cols-12 gap-4 items-center px-5 py-3 rounded-xl bg-background border border-border"
+                      className="grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-4 items-center px-5 py-3 rounded-xl bg-background border border-border"
                     >
                       <span className={`col-span-2 font-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded-md inline-block w-fit ${e.m === "GET" ? "bg-primary-soft text-primary" : "bg-peach-200 text-ink"}`}>
                         {e.m}

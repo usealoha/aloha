@@ -84,12 +84,12 @@ export default function PodcastPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
 
         <div className="relative max-w-[1180px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28">
-          <div className="grid grid-cols-12 gap-8 lg:gap-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
                 <span className="w-6 h-px bg-ink/40" />
@@ -154,7 +154,7 @@ export default function PodcastPage() {
           </div>
 
           <article className={`relative rounded-3xl ${latest.tone} overflow-hidden`}>
-            <div className="grid grid-cols-12 gap-8 lg:gap-12">
+            <div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12">
               {/* cover */}
               <div className="col-span-12 lg:col-span-5 p-8 lg:p-10">
                 <StockPhotoPlaceholder
@@ -226,7 +226,7 @@ export default function PodcastPage() {
       {/* ─── EPISODE LIST ───────────────────────────────────────────── */}
       <section className="py-20 lg:py-24 bg-background-elev">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 Past episodes
@@ -248,7 +248,7 @@ export default function PodcastPage() {
               <a
                 key={e.n}
                 href="#"
-                className={`group grid grid-cols-12 gap-4 px-6 lg:px-8 py-5 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors ${
+                className={`group grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-4 px-6 lg:px-8 py-5 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors ${
                   i % 2 === 1 ? "bg-muted/10" : ""
                 }`}
               >
@@ -280,7 +280,7 @@ export default function PodcastPage() {
 
       {/* ─── HOSTS ──────────────────────────────────────────────────── */}
       <section className="py-24 lg:py-32">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
           <div className="col-span-12 lg:col-span-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
               Your hosts
@@ -339,7 +339,7 @@ export default function PodcastPage() {
               aria-hidden
               className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(var(--peach-300)_1px,transparent_1px)] [background-size:28px_28px]"
             />
-            <div className="relative grid grid-cols-12 gap-8 items-center">
+            <div className="relative grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-8 items-center">
               <div className="col-span-12 lg:col-span-8">
                 <Mic className="w-7 h-7 text-peach-300 mb-5" />
                 <h2 className="font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em]">

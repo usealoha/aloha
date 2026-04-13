@@ -19,7 +19,7 @@ export default function CustomersIndexPage() {
   return (
     <>
       {/* ─── HERO ────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden hero-bg pb-16 lg:pb-20">
+      <header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
         <span aria-hidden className="absolute top-[14%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none">✳</span>
         <span aria-hidden className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-[14deg] select-none">+</span>
         <span aria-hidden className="absolute top-[28%] right-[6%] font-display text-[38px] text-ink/15 rotate-[18deg] select-none">※</span>
@@ -46,7 +46,7 @@ export default function CustomersIndexPage() {
       <section className="py-16 lg:py-20">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
           <article className={`relative ${featured.accent} rounded-3xl p-10 lg:p-14 overflow-hidden`}>
-            <div className="grid grid-cols-12 gap-10 items-end">
+            <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
               <div className="col-span-12 lg:col-span-8">
                 <div className="flex items-center gap-3 text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/55 mb-6">
                   <span>Featured · {featured.customer.business}</span>
@@ -88,7 +88,7 @@ export default function CustomersIndexPage() {
       {/* ─── LIST ───────────────────────────────────────────────────── */}
       <section className="py-20 lg:py-24">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-12 gap-10 mb-12 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
             <div className="col-span-12 lg:col-span-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
                 More stories
@@ -204,7 +204,7 @@ export default function CustomersIndexPage() {
       {/* ─── FINAL CTA ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
-          <div className="grid grid-cols-12 gap-10 items-end">
+          <div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
             <div className="col-span-12 lg:col-span-8">
               <h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
                 Your story,
