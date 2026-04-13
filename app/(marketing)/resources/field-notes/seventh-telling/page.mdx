@@ -1,0 +1,123 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { getFieldNote, relatedFieldNotes } from "@/lib/field-notes";
+import { ArticleShell } from "../../_components/article-shell";
+
+export const note = getFieldNote("seventh-telling");
+
+export const metadata = makeMetadata({
+  title: note.title,
+  description: note.lead,
+  path: `${routes.resources.fieldNotes}/${note.slug}`,
+});
+
+<ArticleShell
+  collection={{ name: "Field notes", href: routes.resources.fieldNotes }}
+  title={note.title}
+  lead={note.lead}
+  date={note.date}
+  dateLabel={note.dateLabel}
+  readTime={note.readTime}
+  author={note.author}
+  accent={note.accent}
+  related={relatedFieldNotes(note.slug)}
+>
+
+Last quarter I launched a newsletter issue. I posted about it on X
+twice, on LinkedIn once, and in a Slack community. Roughly 14,000
+people saw those posts. The newsletter got 48 new subscribers.
+
+Two weeks later I posted about the same issue again — not a
+recycle, a reframe. "Here's what happened because of this piece."
+Another 3,200 people saw it. 112 new subscribers.
+
+Two weeks after that, a member emailed to ask if I could link the
+piece they'd heard me mention on a podcast. The podcast episode
+had gone out four days after the original launch. That email
+triggered a seventh re-surfacing — a quote post, with the member's
+permission — which drove another 86 subs.
+
+By my count, I had told people about the piece **seven distinct
+times** across about six weeks. The final number of subscribers
+was 412. The first three tellings had produced 48. The next four
+produced 364.
+
+This is not a story about social algorithms. It's a story about
+patience, and about the ratio nobody tells you.
+
+## The ratio
+
+Making the thing is 20% of the job. Caring enough to tell people
+about it — seven times, ten times, on whatever channel they
+happen to be on — is the other 80%. Almost nobody writes about
+this ratio, because it's embarrassing. Most of us want the work
+to sell itself; it rarely does.
+
+The first telling reaches the people who were already paying
+attention. That's roughly 10% of your eventual audience for the
+piece. They respond quickly, which is confusing — they make you
+think you're done. You're not.
+
+The second through fourth tellings reach the people who were
+almost paying attention. They saw the first telling and kept
+scrolling. They see the second or third and remember the first.
+Their mental model of your work gets one degree more specific
+every time. You pick up another 20%.
+
+The fifth through seventh tellings reach the people who weren't
+paying attention the first time. Their friend shared it. They
+saw it referenced in a podcast. They saw a quote that wasn't the
+original. *These are where most of your eventual audience comes
+from.*
+
+<blockquote>
+The seventh telling is when the audience you weren't sure existed
+finally answers.
+</blockquote>
+
+## Why most creators stop at three
+
+We stop at three because telling a fourth time feels like
+self-promotion. We've internalised a norm that equates repetition
+with desperation. This norm is, I think, almost entirely wrong.
+Repetition looks like desperation when the thing being repeated
+isn't worth repeating. When it is, repetition looks like care.
+
+The other reason we stop is operational. The third telling is
+usually a different format — a quote post, a reply, a mention —
+and by the third we've exhausted our obvious hooks. Without a
+tool that helps us keep going, we peter out.
+
+The Composer, for whatever it's worth, was built with this exact
+problem in mind. Rewriting the same piece for four channels on
+launch day is one thing. [The seven-beat launch template](/resources/templates)
+is what happens when you want to do it properly.
+
+## A rule you can steal
+
+If you ship something you're proud of, commit in advance to
+seven tellings. Write them down. Space them across six weeks.
+Vary the format — first-person, quote, reply, community-member-
+shared, podcast-reference, "here's what I learned after posting
+this", "did anyone else notice this."
+
+Put them in your calendar. Treat the calendar as a promise to
+your past self. The version of you that shipped the thing wanted
+the world to know. The version of you six weeks later has
+already moved on. The calendar is how those two selves
+negotiate.
+
+## The quiet version of this
+
+This rule can be practised with restraint. Seven tellings in six
+weeks is one per week; it's not a daily push. You don't need to
+be loud. You need to be *present*. The audience you're trying to
+reach is distracted — you're competing with everybody else's
+content for thirty seconds of attention. Being present seven
+times over six weeks is a small ask. It's also the minimum.
+
+Ship the work, then tell the story it deserves. Seven times. Not
+because the algorithm needs it, but because the audience can't
+find you in one pass.
+
+</ArticleShell>
