@@ -1,79 +1,133 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { AlertCircle } from "lucide-react";
 import { signIn } from "@/auth";
-import { Heart, Globe, Share2, Sparkles } from "lucide-react";
+import { AuthShell } from "../_components/auth-shell";
+import { ProviderButton } from "../_components/provider-button";
 
-export default function SignInPage() {
+export const metadata: Metadata = {
+  title: "Sign in — Aloha",
+  description: "Sign in to your Aloha workspace.",
+};
+
+const ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "This email is already linked to a different sign-in method. Use the provider you signed up with.",
+  AccessDenied:
+    "Access denied. Try again, or use a different account.",
+  Verification: "That sign-in link has expired. Request a new one.",
+  Configuration:
+    "We hit a configuration issue on our end. Please try again in a moment.",
+  default: "Something went wrong. Please try again.",
+};
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const first = (v: string | string[] | undefined) =>
+  Array.isArray(v) ? v[0] : v;
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const callbackUrl = first(params.callbackUrl);
+  const error = first(params.error);
+
+  // Only allow same-origin relative paths. Anything else falls back.
+  const redirectTo =
+    callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+      ? callbackUrl
+      : "/app/dashboard";
+
+  const errorMessage = error
+    ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.default)
+    : null;
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans bg-paper flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-10 relative">
-        {/* Branding */}
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg transform rotate-3">
-            <Heart className="w-8 h-8 fill-current" />
+    <AuthShell
+      eyebrow="Welcome back"
+      title={
+        <>
+          Sign in to your
+          <br />
+          <span className="text-primary font-light italic">workspace.</span>
+        </>
+      }
+      subtitle="Pick the account you signed up with. We don't email you marketing and we don't sell your data."
+      footer={
+        <p>
+          New to Aloha? Continuing with any provider below creates your
+          workspace — no separate signup needed.
+        </p>
+      }
+    >
+      <div className="space-y-3">
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-2xl border border-border-strong bg-peach-100/60 px-4 py-3 text-[13.5px] text-ink"
+          >
+            <AlertCircle className="w-4 h-4 mt-[2px] text-primary shrink-0" />
+            <span className="leading-[1.45]">{errorMessage}</span>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-display font-bold tracking-tight">Welcome home.</h1>
-            <p className="text-sm font-medium text-muted-foreground/80 uppercase tracking-widest">Connect to your digital garden</p>
-          </div>
+        ) : null}
+
+        <form
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo });
+          }}
+        >
+          <ProviderButton provider="google" variant="primary" />
+        </form>
+
+        <div className="flex items-center gap-4 py-1 text-[11px] uppercase tracking-[0.22em] text-ink/45">
+          <span className="h-px flex-1 bg-border" />
+          or continue with
+          <span className="h-px flex-1 bg-border" />
         </div>
 
-        {/* Login Card */}
-        <div className="bg-background border border-border/50 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-             <Sparkles className="w-12 h-12 text-primary" />
-          </div>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("linkedin", { redirectTo });
+          }}
+        >
+          <ProviderButton provider="linkedin" />
+        </form>
 
-          <div className="space-y-6 relative z-10">
-            <div className="space-y-4">
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("google", { redirectTo: "/app/dashboard" });
-                }}
-              >
-                <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-background border-2 border-border rounded-full font-bold text-sm transition-all hover:bg-muted/50 hover:border-primary/30 group">
-                  <Globe className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  Continue with Google
-                </button>
-              </form>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("github", { redirectTo });
+          }}
+        >
+          <ProviderButton provider="github" />
+        </form>
 
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("github", { redirectTo: "/app/dashboard" });
-                }}
-              >
-                <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-background border-2 border-border rounded-full font-bold text-sm transition-all hover:bg-muted/50 hover:border-primary/30 group">
-                  <Globe className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  Continue with GitHub
-                </button>
-              </form>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("twitter", { redirectTo });
+          }}
+        >
+          <ProviderButton provider="twitter" />
+        </form>
 
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("twitter", { redirectTo: "/app/dashboard" });
-                }}
-              >
-                <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-background border-2 border-border rounded-full font-bold text-sm transition-all hover:bg-muted/50 hover:border-primary/30 group">
-                  <Share2 className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  Continue with X / Twitter
-                </button>
-              </form>
-            </div>
-
-            <div className="pt-6 text-center">
-               <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                 By joining Aloha, you agree to nurture your community with kindness and respect.
-               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Support Link */}
-        <div className="text-center">
-           <a href="#" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors underline underline-offset-4 decoration-primary/30">Need help accessing your terminal?</a>
-        </div>
+        <p className="pt-4 text-[12px] text-ink/55 leading-[1.55]">
+          By continuing you agree to our{" "}
+          <Link href="/legal/terms" className="pencil-link text-ink">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/legal/privacy" className="pencil-link text-ink">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }
