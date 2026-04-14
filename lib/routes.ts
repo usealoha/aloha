@@ -123,6 +123,9 @@ export const routes = {
 	// Phase 11 — Trust
 	trust: "/trust",
 
+	// Standalone pricing page
+	pricing: "/pricing",
+
 	// Utility
 	misc: {
 		sitemap: "/sitemap",
@@ -264,6 +267,6 @@ export const navItems = [
 	{ label: "Product", href: `${routes.home}#product` },
 	{ label: "Channels", href: `${routes.home}#channels` },
 	{ label: "Stories", href: `${routes.home}#stories` },
-	{ label: "Pricing", href: `${routes.home}#pricing` },
+	{ label: "Pricing", href: routes.pricing },
 	{ label: "Resources", href: routes.resources.index },
 ] as const;

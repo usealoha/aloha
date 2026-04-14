@@ -109,5 +109,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Trust.
   entries.push(entry(routes.trust, 0.6, "monthly"));
 
+  // Pricing.
+  entries.push(entry(routes.pricing, 0.95, "weekly"));
+
   return entries;
 }
