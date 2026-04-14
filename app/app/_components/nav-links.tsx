@@ -2,35 +2,125 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType } from "react";
+import {
+  CalendarDays,
+  LayoutDashboard,
+  PenSquare,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type NavItem = { label: string; href: string };
+type NavItem = {
+  label: string;
+  href: string;
+  icon: ComponentType<{ className?: string }>;
+};
 
-export function NavLinks({ items }: { items: NavItem[] }) {
+export const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
+  { label: "Calendar", href: "/app/calendar", icon: CalendarDays },
+  { label: "Composer", href: "/app/composer", icon: PenSquare },
+  { label: "Audience", href: "/app/audience", icon: Users },
+  { label: "Automations", href: "/app/automations", icon: Sparkles },
+];
+
+type Variant = "horizontal" | "sidebar";
+
+export function NavLinks({
+  variant = "horizontal",
+  collapsed = false,
+}: {
+  variant?: Variant;
+  collapsed?: boolean;
+}) {
   const pathname = usePathname();
 
+  if (variant === "sidebar") {
+    return (
+      <ul className="flex flex-col gap-1">
+        {NAV_ITEMS.map((i) => {
+          const isActive =
+            pathname === i.href || pathname.startsWith(`${i.href}/`);
+          const Icon = i.icon;
+          return (
+            <li key={i.href}>
+              <Link
+                href={i.href}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "group relative flex items-center gap-3 h-10 px-3 rounded-xl text-[14px] font-medium transition-colors",
+                  isActive
+                    ? "bg-peach-100/70 text-ink"
+                    : "text-ink/70 hover:text-ink hover:bg-muted/60",
+                )}
+              >
+                {isActive ? (
+                  <span
+                    aria-hidden
+                    className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
+                  />
+                ) : null}
+                <Icon
+                  className={cn(
+                    "w-[18px] h-[18px] shrink-0 transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-ink/50 group-hover:text-ink",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "whitespace-nowrap overflow-hidden transition-opacity",
+                    collapsed
+                      ? "w-0 opacity-0 pointer-events-none"
+                      : "opacity-100",
+                  )}
+                >
+                  {i.label}
+                </span>
+                {collapsed ? (
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-ink text-background text-[12px] font-medium whitespace-nowrap opacity-0 translate-x-[-4px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shadow-[0_8px_24px_-8px_rgba(26,22,18,0.3)] z-50"
+                  >
+                    {i.label}
+                  </span>
+                ) : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
   return (
-    <ul className="hidden md:flex items-center gap-1">
-      {items.map((i) => {
+    <ul className="flex items-center gap-1 overflow-x-auto -mx-1 px-1">
+      {NAV_ITEMS.map((i) => {
         const isActive =
           pathname === i.href || pathname.startsWith(`${i.href}/`);
+        const Icon = i.icon;
         return (
           <li key={i.href}>
             <Link
               href={i.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative inline-flex items-center h-10 px-3.5 text-[14px] font-medium transition-colors",
-                isActive ? "text-ink" : "text-ink/65 hover:text-ink"
+                "relative inline-flex items-center gap-2 h-10 px-3 rounded-full text-[13.5px] font-medium transition-colors whitespace-nowrap",
+                isActive
+                  ? "bg-peach-100/70 text-ink"
+                  : "text-ink/65 hover:text-ink hover:bg-muted/60",
               )}
             >
+              <Icon
+                className={cn(
+                  "w-4 h-4 shrink-0",
+                  isActive ? "text-primary" : "text-ink/55",
+                )}
+              />
               {i.label}
-              {isActive ? (
-                <span
-                  aria-hidden
-                  className="absolute left-3.5 right-3.5 -bottom-[1px] h-[2px] bg-primary rounded-full"
-                />
-              ) : null}
             </Link>
           </li>
         );

@@ -11,11 +11,15 @@ export function AvatarMenu({
   email,
   image,
   workspaceName,
+  placement = "bottom",
+  expandedLabel = false,
 }: {
   name: string | null;
   email: string;
   image: string | null;
   workspaceName: string | null;
+  placement?: "bottom" | "top";
+  expandedLabel?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -43,35 +47,63 @@ export function AvatarMenu({
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 
+  const avatarBox = (
+    <span
+      className={cn(
+        "h-9 w-9 shrink-0 rounded-full overflow-hidden border border-border-strong grid place-items-center bg-peach-100 text-ink text-[12px] font-semibold transition-colors",
+        open && "ring-2 ring-ink/15",
+      )}
+    >
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt=""
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        initials || "A"
+      )}
+    </span>
+  );
+
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative flex-1 min-w-0">
       <button
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "h-9 w-9 rounded-full overflow-hidden border border-border-strong grid place-items-center bg-peach-100 text-ink text-[12px] font-semibold transition-colors",
-          open && "ring-2 ring-ink/15"
+          "flex items-center gap-2.5 text-left rounded-full transition-colors",
+          expandedLabel
+            ? "w-full px-1 py-1 pr-3 hover:bg-muted/60"
+            : "",
         )}
       >
-        {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={image}
-            alt=""
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          initials || "A"
-        )}
+        {avatarBox}
+        {expandedLabel ? (
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13px] text-ink truncate">
+              {name ?? email}
+            </span>
+            <span className="block text-[11.5px] text-ink/55 truncate">
+              {email}
+            </span>
+          </span>
+        ) : null}
       </button>
 
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-[280px] rounded-2xl border border-border-strong bg-background-elev shadow-[0_18px_48px_-24px_rgba(26,22,18,0.25)] overflow-hidden z-50"
+          className={cn(
+            "absolute w-[280px] rounded-2xl border border-border-strong bg-background-elev shadow-[0_18px_48px_-24px_rgba(26,22,18,0.25)] overflow-hidden z-50",
+            placement === "top"
+              ? "bottom-full mb-2 left-0"
+              : "right-0 mt-2",
+          )}
         >
           <div className="px-4 py-4 border-b border-border">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55">

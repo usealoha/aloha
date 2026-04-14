@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Fraunces, Outfit, Geist } from "next/font/google";
 import "./globals.css";
 import { DEFAULT_DESCRIPTION, SITE_LOCALE, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -9,11 +10,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-const outfit = Outfit({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -55,7 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${outfit.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", fraunces.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
