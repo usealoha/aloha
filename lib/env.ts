@@ -28,6 +28,10 @@ const envSchema = z.object({
   AUTH_TIKTOK_ID: z.string().optional(),
   AUTH_TIKTOK_SECRET: z.string().optional(),
   
+  // Email
+  RESEND_API_KEY: z.string().min(1),
+  EMAIL_FROM: z.string().default("Aloha <hey@usealoha.app>"),
+
   // AI
   GEMINI_API_KEY: z.string().min(1),
   
