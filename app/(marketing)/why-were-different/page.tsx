@@ -215,7 +215,7 @@ export default function WhyWereDifferentPage() {
                 — the Aloha team
               </p>
               <p className="mt-2 text-[13px] text-ink/55 font-mono uppercase tracking-[0.18em]">
-                Lisbon · Oakland · Jakarta
+                Bengaluru, India
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:items-end">

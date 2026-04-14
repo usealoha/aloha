@@ -82,25 +82,11 @@ const ROUTES = [
 
 const CITIES = [
 	{
-		city: "Lisbon",
-		region: "Portugal",
-		address: "Rua do Alecrim 12, 1200-012",
-		tz: "UTC+1",
-		mapLabel: "LIS",
-	},
-	{
-		city: "Oakland",
-		region: "California",
-		address: "1150 Harrison St, Oakland CA 94607",
-		tz: "UTC−8",
-		mapLabel: "OAK",
-	},
-	{
-		city: "Jakarta",
-		region: "Indonesia",
-		address: "Jl. Senopati No. 88, South Jakarta",
-		tz: "UTC+7",
-		mapLabel: "CGK",
+		city: "Bengaluru",
+		region: "Karnataka, India",
+		address: "Indiranagar, Bengaluru 560038",
+		tz: "UTC+5:30",
+		mapLabel: "BLR",
 	},
 ];
 
@@ -150,11 +136,11 @@ export default function ContactPage() {
 								<p className="font-display text-[26px] leading-[1.15] tracking-[-0.01em]">
 									Humans online,
 									<br />
-									<span className="text-primary">most hours.</span>
+									<span className="text-primary">working hours IST.</span>
 								</p>
 								<p className="mt-4 text-[12.5px] text-ink/65 leading-[1.55]">
-									Three cities, three timezones. Pacific, Lisbon, Jakarta —
-									collectively we cover almost every working hour.
+									One studio, in Bengaluru. Replies land in IST working hours
+									— the inbox labels carry the SLA we actually hold.
 								</p>
 							</div>
 						</div>
@@ -276,7 +262,7 @@ export default function ContactPage() {
 							</h2>
 						</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
 							{CITIES.map((c, i) => (
 								<article
 									key={c.city}
@@ -308,8 +294,8 @@ export default function ContactPage() {
 						</div>
 
 						<p className="mt-8 text-[13px] text-ink/55 max-w-xl">
-							For legal notices: Aloha, Inc., c/o the Lisbon address above.
-							Registered company 514 829 117, Portugal.
+							For legal notices: Aloha, Inc., c/o the Bengaluru address above.
+							Registered in India.
 						</p>
 					</div>
 				</section>

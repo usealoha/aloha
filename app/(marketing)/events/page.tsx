@@ -28,7 +28,7 @@ type EventItem = {
 	title: string;
 	lead: string;
 	kind: "AMA" | "Reading" | "Meet-up" | "Workshop";
-	format: "Virtual" | "Lisbon" | "Oakland" | "Jakarta" | "New York" | "London";
+	format: "Virtual" | "Bengaluru" | "New York" | "London" | "Singapore";
 	host: string;
 	rsvp?: boolean; // upcoming vs past
 	recordingUrl?: string;
@@ -40,7 +40,7 @@ const UPCOMING: EventItem[] = [
 		slug: "ama-voice-models",
 		date: "2026-04-24",
 		dateLabel: "Fri, Apr 24",
-		timeLabel: "5pm Lisbon · 12pm EDT",
+		timeLabel: "7:30pm IST · 10am EDT",
 		title: "AMA · how the voice model actually works",
 		lead: "Aarohi + the Composer team answer unfiltered questions about the voice model — training data, privacy boundaries, how we built the 'teach me' loop. Submit questions in advance.",
 		kind: "AMA",
@@ -50,14 +50,14 @@ const UPCOMING: EventItem[] = [
 		tone: "bg-peach-200",
 	},
 	{
-		slug: "field-note-reading-lisbon-02",
+		slug: "field-note-reading-bengaluru-02",
 		date: "2026-05-08",
 		dateLabel: "Thu, May 8",
-		timeLabel: "7pm",
-		title: "Field-note reading · Lisbon",
-		lead: "Four Aloha members read five-minute pieces from their best posts of the quarter. Wine, sparkling water, short Q&A after. Room holds 40; first-come on the list.",
+		timeLabel: "7pm IST",
+		title: "Field-note reading · Bengaluru",
+		lead: "Four Aloha members read five-minute pieces from their best posts of the quarter. Filter coffee, sparkling water, short Q&A after. Room holds 40; first-come on the list.",
 		kind: "Reading",
-		format: "Lisbon",
+		format: "Bengaluru",
 		host: "Leilani O.",
 		rsvp: true,
 		tone: "bg-primary-soft",
@@ -66,7 +66,7 @@ const UPCOMING: EventItem[] = [
 		slug: "agency-workshop",
 		date: "2026-05-22",
 		dateLabel: "Thu, May 22",
-		timeLabel: "4pm Lisbon · 11am EDT",
+		timeLabel: "8:30pm IST · 11am EDT",
 		title: "Workshop · running multi-client workspaces",
 		lead: "A hands-on workshop with Leah S. (North Handle) and our platform team. Audit your agency setup; 2 hours; tight format, 30 seats.",
 		kind: "Workshop",
@@ -92,27 +92,27 @@ const PAST: EventItem[] = [
 		tone: "bg-peach-100",
 	},
 	{
-		slug: "oakland-meetup-q1",
+		slug: "bengaluru-meetup-q1",
 		date: "2026-03-14",
 		dateLabel: "Mar 14, 2026",
 		timeLabel: "Recap",
-		title: "Oakland meet-up · Q1",
-		lead: "Quarterly in-person meet-up for Bay Area members. 80 people, informal format, three creator lightning talks.",
+		title: "Bengaluru meet-up · Q1",
+		lead: "Quarterly in-person meet-up for members. 80 people, informal format, three creator lightning talks.",
 		kind: "Meet-up",
-		format: "Oakland",
+		format: "Bengaluru",
 		host: "Kashyap G.",
 		recordingUrl: "#",
 		tone: "bg-peach-200",
 	},
 	{
-		slug: "field-note-reading-lisbon-01",
+		slug: "field-note-reading-bengaluru-01",
 		date: "2026-02-20",
 		dateLabel: "Feb 20, 2026",
 		timeLabel: "Recap + transcript",
-		title: "Field-note reading · Lisbon (first one)",
+		title: "Field-note reading · Bengaluru (first one)",
 		lead: "First-ever field-note reading. Four members, five minutes each, a room of 30. Recording and transcripts linked.",
 		kind: "Reading",
-		format: "Lisbon",
+		format: "Bengaluru",
 		host: "Leilani O.",
 		recordingUrl: "#",
 		tone: "bg-primary-soft",
@@ -134,11 +134,10 @@ const PAST: EventItem[] = [
 
 const FORMAT_ICON: Record<EventItem["format"], typeof Video> = {
 	Virtual: Video,
-	Lisbon: MapPin,
-	Oakland: MapPin,
-	Jakarta: MapPin,
+	Bengaluru: MapPin,
 	"New York": MapPin,
 	London: MapPin,
+	Singapore: MapPin,
 };
 
 export default function EventsPage() {

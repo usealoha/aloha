@@ -33,7 +33,7 @@ const ROOMS = [
 	{
 		icon: Mail,
 		h: "Newsletter",
-		meta: "Weekly · Friday 9am Lisbon",
+		meta: "Weekly · Friday 9am IST",
 		p: "An essay, what shipped, a handful of good links. 28K readers, most of them quiet. One unsubscribe link, one click.",
 		cta: "Subscribe",
 		href: routes.connect.newsletter,
@@ -95,7 +95,7 @@ const STORIES = [
 		tone: "bg-peach-200",
 	},
 	{
-		q: "Met my co-founder at an Aloha meet-up in Lisbon. Genuinely.",
+		q: "Met my co-founder at an Aloha meet-up in Bengaluru. Genuinely.",
 		who: "Jonas · #meetups",
 		tone: "bg-peach-300",
 	},

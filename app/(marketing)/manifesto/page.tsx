@@ -324,7 +324,7 @@ export default function ManifestoPage() {
 									— the Aloha team
 								</p>
 								<p className="mt-2 text-[13px] text-ink/55 font-mono uppercase tracking-[0.18em]">
-									Lisbon · Oakland · Jakarta · April 2026
+									Bengaluru · April 2026
 								</p>
 							</div>
 							<div className="flex flex-col gap-2 sm:items-end">

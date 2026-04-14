@@ -22,7 +22,7 @@ export const metadata = makeMetadata({
 const FAST_FACTS = [
 	{ v: "2025", l: "founded" },
 	{ v: "6", l: "team members" },
-	{ v: "3", l: "cities · Lisbon · Oakland · Jakarta" },
+	{ v: "1", l: "studio · Bengaluru, India" },
 	{ v: "140K+", l: "creators in first 90 days" },
 ];
 
@@ -149,7 +149,7 @@ export default function PressPage() {
 								code.
 							</p>
 							<p>
-								Founded in March 2025 in Lisbon by Aarohi Mehta and Kashyap
+								Founded in March 2025 in Bengaluru by Aarohi Mehta and Kashyap
 								Gohil, Aloha was built to be the quiet alternative in a loud
 								category. The product entered public beta in January 2026 and
 								reached 140,000 users in its first 90 days, without a referral
@@ -158,8 +158,8 @@ export default function PressPage() {
 							<p>
 								The company is backed by a small seed round from investors who
 								signed an explicit &ldquo;calm tool, not a growth machine&rdquo;
-								side letter. The team is six people across Lisbon, Oakland and
-								Jakarta.
+								side letter. The team is six people, all based out of the
+								Bengaluru studio.
 							</p>
 						</div>
 					</div>

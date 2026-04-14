@@ -7,7 +7,7 @@ import { StockPhotoPlaceholder } from "../_components/stock-photo-placeholder";
 export const metadata = makeMetadata({
 	title: "About — the team behind the quiet tool",
 	description:
-		"Aloha is a small team in Lisbon, Oakland and Jakarta building a calm social media OS. Here's who we are and how we got here.",
+		"Aloha is a small team in Bengaluru building a calm social media OS. Here's who we are and how we got here.",
 	path: routes.company.about,
 });
 
@@ -27,7 +27,7 @@ const TIMELINE = [
 	{
 		year: "2025",
 		label: "Company",
-		body: "Aloha incorporated in Portugal in March. We raised a small seed round from investors who signed an explicit 'calm tool, not a growth machine' side letter. Hired a team of six.",
+		body: "Aloha incorporated in India in March. We raised a small seed round from investors who signed an explicit 'calm tool, not a growth machine' side letter. Hired a team of six.",
 		tone: "bg-primary-soft",
 	},
 	{
@@ -85,22 +85,10 @@ const TEAM = [
 
 const OFFICES = [
 	{
-		city: "Lisbon",
-		region: "Portugal",
-		tz: "UTC+1",
-		note: "HQ · legal · team anchor",
-	},
-	{
-		city: "Oakland",
-		region: "California",
-		tz: "UTC−8",
-		note: "Product + engineering",
-	},
-	{
-		city: "Jakarta",
-		region: "Indonesia",
-		tz: "UTC+7",
-		note: "Design + community",
+		city: "Bengaluru",
+		region: "Karnataka, India",
+		tz: "UTC+5:30",
+		note: "HQ · the whole team",
 	},
 ];
 
@@ -144,16 +132,16 @@ export default function AboutPage() {
 								</span>
 							</h1>
 							<p className="mt-8 max-w-2xl text-[17px] lg:text-[18px] leading-[1.6] text-ink/75">
-								Aloha is six people in three cities. We left jobs at loud
-								companies to build something quieter. Here's what it adds up to
-								so far.
+								Aloha is six people in one studio in Bengaluru. We left jobs
+								at loud companies to build something quieter. Here's what it
+								adds up to so far.
 							</p>
 						</div>
 						<div className="col-span-12 lg:col-span-5">
 							<StockPhotoPlaceholder
 								id="about-hero"
-								label="The team during the launch week — Lisbon studio."
-								notes="Needed: group portrait of the founding team at a warm-toned workspace. Six people, informal arrangement, no forced corporate smile. 4:5 vertical. Taken with natural light near a window. A hint of the Lisbon studio visible in the background."
+								label="The team during launch week — Bengaluru studio."
+								notes="Needed: group portrait of the founding team at a warm-toned workspace. Six people, informal arrangement, no forced corporate smile. 4:5 vertical. Taken with natural light near a window. A hint of the Bengaluru studio visible in the background."
 								aspect="aspect-[4/5]"
 								tone="bg-peach-200"
 							/>
@@ -292,12 +280,12 @@ export default function AboutPage() {
 								Where we work from
 							</p>
 							<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-								Three cities,
+								One studio,
 								<span className="text-primary"> one calendar.</span>
 							</h2>
 						</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
 							{OFFICES.map((o, i) => (
 								<article
 									key={o.city}

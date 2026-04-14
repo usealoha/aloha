@@ -74,7 +74,7 @@ const DIRECTORY = [
 	{
 		n: "Harbor Supply",
 		kind: "Agency · 8 brands",
-		bio: "Lisbon collective specialising in nonprofits and mission-led brands.",
+		bio: "Bengaluru collective specialising in nonprofits and mission-led brands.",
 		tone: "bg-peach-200",
 	},
 	{

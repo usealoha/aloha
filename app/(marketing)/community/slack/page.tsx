@@ -37,7 +37,7 @@ const CHANNELS = [
 	},
 	{
 		name: "#off-topic",
-		desc: "Books, chairs, coffee, the weather in Jakarta.",
+		desc: "Books, chairs, coffee, the monsoon in Bengaluru.",
 		tone: "bg-peach-100",
 	},
 ];
@@ -62,12 +62,12 @@ const RULES = [
 ];
 
 const CITY_PULSE = [
-	{ city: "Lisbon", active: 180, tz: "UTC+1" },
+	{ city: "Bengaluru", active: 220, tz: "UTC+5:30" },
 	{ city: "New York", active: 240, tz: "UTC−5" },
 	{ city: "San Francisco", active: 210, tz: "UTC−8" },
 	{ city: "London", active: 165, tz: "UTC+0" },
 	{ city: "Berlin", active: 140, tz: "UTC+1" },
-	{ city: "Jakarta", active: 95, tz: "UTC+7" },
+	{ city: "Singapore", active: 95, tz: "UTC+8" },
 ];
 
 export default function SlackCommunityPage() {

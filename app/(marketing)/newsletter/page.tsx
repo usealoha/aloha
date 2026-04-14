@@ -147,7 +147,7 @@ export default function NewsletterPage() {
 					<div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-ink/60">
 						<span className="inline-flex items-center gap-2">
 							<Clock className="w-3.5 h-3.5 text-primary" />
-							Every Friday, 9am Lisbon
+							Every Friday, 9am IST
 						</span>
 						<span className="text-ink/25">·</span>
 						<span>28,402 readers, most of them quiet</span>
