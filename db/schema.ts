@@ -139,6 +139,22 @@ export const links = pgTable("links", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+export const automations = pgTable("automations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  name: text("name").notNull(),
+  status: text("status", { enum: ["active", "paused", "draft"] })
+    .default("draft")
+    .notNull(),
+  runCount: integer("runCount").default(0).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
 export const subscribers = pgTable("subscribers", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("userId")
