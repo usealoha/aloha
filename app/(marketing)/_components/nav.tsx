@@ -34,7 +34,7 @@ export function MarketingNav() {
             Sign in
           </Link>
           <Link
-            href={routes.signin}
+            href={routes.signup}
             className="inline-flex h-10 items-center gap-1.5 bg-ink text-background px-5 rounded-full text-[13.5px] font-medium hover:bg-primary transition-colors"
           >
             Start free
