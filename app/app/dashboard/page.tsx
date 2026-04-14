@@ -1,147 +1,467 @@
-import { Smile, Users, Heart, Sparkles, ArrowUpRight, MessageCircle, Calendar as CalendarIcon, MoreHorizontal, StickyNote, Wind } from "lucide-react";
+import Link from "next/link";
+import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Inbox,
+  PenSquare,
+  Plug,
+  Sparkles,
+} from "lucide-react";
+import { db } from "@/db";
+import { posts, accounts } from "@/db/schema";
+import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 
-const stats = [
-  { label: "Garden Reach", value: "1.2M", change: "+12.5%", icon: Smile, color: "text-primary bg-primary/5 border-primary/10" },
-  { label: "New Seedlings", value: "48.2K", change: "+3.1%", icon: Heart, color: "text-red-500 bg-red-500/5 border-red-500/10" },
-  { label: "Stories Told", value: "152", change: "+24", icon: Sparkles, color: "text-secondary bg-secondary/5 border-secondary/10" },
-  { label: "Meaningful Talks", value: "4.8%", change: "+0.4%", icon: MessageCircle, color: "text-accent bg-accent/5 border-accent/10" },
-];
+export const dynamic = "force-dynamic";
 
-const journalEntries = [
-  { id: 1, title: "A Morning Reflection on Digital Silence", platform: "Instagram", date: "MAR 12", status: "Published" },
-  { id: 2, title: "The Anatomy of a Genuine Connection", platform: "LinkedIn", date: "MAR 14", status: "Draft" },
-  { id: 3, title: "Why We Build in Public", platform: "Threads", date: "MAR 15", status: "Scheduled" },
-];
+const PROVIDER_LABELS: Record<string, string> = {
+  google: "Google",
+  github: "GitHub",
+  twitter: "X",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+};
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = (await getCurrentUser())!;
+  const tz = user.timezone ?? "UTC";
+
+  const startOfWeek = (() => {
+    // Monday-start week. Anchored to UTC for the SQL filter; tz-display is
+    // separate from period bucketing here.
+    const d = new Date();
+    const day = (d.getUTCDay() + 6) % 7; // 0 = Monday
+    d.setUTCDate(d.getUTCDate() - day);
+    d.setUTCHours(0, 0, 0, 0);
+    return d;
+  })();
+
+  // ── Real metrics ────────────────────────────────────────────────────
+  const [counts] = await db
+    .select({
+      drafts: sql<number>`count(*) filter (where ${posts.status} = 'draft')`,
+      scheduled: sql<number>`count(*) filter (where ${posts.status} = 'scheduled')`,
+      publishedThisWeek: sql<number>`count(*) filter (where ${posts.status} = 'published' and ${posts.publishedAt} >= ${startOfWeek.toISOString()})`,
+    })
+    .from(posts)
+    .where(eq(posts.userId, user.id));
+
+  const [{ value: connectedChannels }] = await db
+    .select({
+      value: sql<number>`count(distinct ${accounts.provider})`,
+    })
+    .from(accounts)
+    .where(eq(accounts.userId, user.id));
+
+  const upcoming = await db
+    .select({
+      id: posts.id,
+      content: posts.content,
+      platforms: posts.platforms,
+      scheduledAt: posts.scheduledAt,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.userId, user.id),
+        eq(posts.status, "scheduled"),
+        gte(posts.scheduledAt, new Date()),
+      ),
+    )
+    .orderBy(posts.scheduledAt)
+    .limit(6);
+
+  const recentPublished = await db
+    .select({
+      id: posts.id,
+      content: posts.content,
+      platforms: posts.platforms,
+      publishedAt: posts.publishedAt,
+    })
+    .from(posts)
+    .where(and(eq(posts.userId, user.id), eq(posts.status, "published")))
+    .orderBy(desc(posts.publishedAt))
+    .limit(3);
+
+  const [{ value: totalAccounts }] = await db
+    .select({ value: count() })
+    .from(accounts)
+    .where(eq(accounts.userId, user.id));
+
+  const channelProviders = await db
+    .selectDistinct({ provider: accounts.provider })
+    .from(accounts)
+    .where(eq(accounts.userId, user.id));
+
+  // ── View ────────────────────────────────────────────────────────────
+  const firstName = (user.name ?? user.email).split(/\s|@/)[0];
+  const greeting = greet(new Date(), tz);
+  const stats = [
+    { label: "Drafts", value: counts.drafts ?? 0, hint: "in the writing room" },
+    { label: "Scheduled", value: counts.scheduled ?? 0, hint: "across all channels" },
+    {
+      label: "Published this week",
+      value: counts.publishedThisWeek ?? 0,
+      hint: "since Monday",
+    },
+    {
+      label: "Connected channels",
+      value: connectedChannels ?? 0,
+      hint: totalAccounts > 0 ? `${totalAccounts} account${totalAccounts > 1 ? "s" : ""}` : "none yet",
+    },
+  ];
+
   return (
-    <div className="space-y-16 pb-20">
-      {/* Editorial Header */}
-      <div className="flex flex-col gap-6 relative">
-        <div className="absolute -top-10 -left-10 opacity-[0.03] pointer-events-none">
-           <Wind className="w-40 h-40" />
-        </div>
-        <div className="space-y-4 relative z-10">
-          <div className="flex items-center gap-3">
-             <div className="h-px w-12 bg-primary/30" />
-             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-primary">Volume IV // Issue 12</span>
-          </div>
-          <h1 className="text-6xl md:text-8xl font-display font-black tracking-tight ink-bleed">
-            Studio <span className="text-primary italic">Overview.</span>
+    <div className="space-y-14">
+      {/* Greeting */}
+      <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+            {user.workspaceName ?? "Your workspace"} · {formatToday(new Date(), tz)}
+          </p>
+          <h1 className="mt-3 font-display text-[44px] lg:text-[56px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
+            {greeting}, {firstName}
+            <span className="text-ink/25">.</span>
           </h1>
-          <p className="text-xl font-medium text-muted-foreground max-w-xl italic">
-            &ldquo;Every story you tell is a seed planted in the minds of your community. Tend to them with grace.&rdquo;
+          <p className="mt-3 text-[15px] text-ink/65 max-w-xl leading-[1.55]">
+            Here&apos;s what&apos;s on your calendar and what&apos;s landed
+            since Monday.
           </p>
         </div>
-      </div>
-
-      {/* Tactile Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className={cn(
-              "p-8 border border-border shadow-tactile bg-background rounded-sm relative group hover:-translate-y-1 transition-all duration-500 overflow-hidden",
-              i % 2 === 0 ? "rotate-[-1deg]" : "rotate-[1deg]"
-            )}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/app/calendar"
+            className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
           >
-            {/* Background Texture Decal */}
-            <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-110 transition-transform">
-               <stat.icon className="w-20 h-20" />
-            </div>
-            
-            <div className="space-y-6 relative z-10">
-               <div className="flex items-center justify-between">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{stat.label}</div>
-                  <ArrowUpRight className="w-4 h-4 text-primary opacity-40" />
-               </div>
-               <div className="space-y-1">
-                  <div className="text-5xl font-display font-black tracking-tight">{stat.value}</div>
-                  <div className="text-[10px] font-mono font-bold text-secondary uppercase tracking-widest">{stat.change} vs previous cycle</div>
-               </div>
-            </div>
-          </div>
+            <CalendarDays className="w-4 h-4" />
+            Open calendar
+          </Link>
+          <Link
+            href="/app/composer"
+            className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+          >
+            <PenSquare className="w-4 h-4" />
+            Compose
+          </Link>
+        </div>
+      </header>
+
+      {/* Stats */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map((s) => (
+          <article
+            key={s.label}
+            className="rounded-2xl border border-border bg-background-elev p-5"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55">
+              {s.label}
+            </p>
+            <p className="mt-3 font-display text-[40px] leading-none tracking-[-0.025em] text-ink">
+              {s.value}
+            </p>
+            <p className="mt-2 text-[12px] text-ink/55">{s.hint}</p>
+          </article>
         ))}
-      </div>
+      </section>
 
-      {/* Main Studio Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* The "Field Journal" Section */}
-        <div className="lg:col-span-8 space-y-10">
-          <div className="flex items-center justify-between border-b-2 border-foreground/5 pb-6">
-            <h2 className="text-4xl font-display font-black tracking-tight italic flex items-center gap-4">
-              <StickyNote className="w-8 h-8 text-primary" />
-              Field Journal
-            </h2>
-            <button className="text-[10px] font-black uppercase tracking-[0.3em] hover:text-primary transition-colors pb-1 border-b border-transparent hover:border-primary">
-              Archive Directory
-            </button>
-          </div>
-          
-          <div className="space-y-6">
-            {journalEntries.map((entry, i) => (
-              <div key={entry.id} className="group relative">
-                 {/* Paper Overlap Effect */}
-                 <div className="absolute inset-0 bg-muted transform translate-x-1 translate-y-1 -z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-sm" />
-                 <div className="p-8 bg-background border border-border rounded-sm transition-all flex items-center justify-between group-hover:-translate-x-1 group-hover:-translate-y-1 shadow-sm">
-                    <div className="flex items-center gap-8">
-                       <div className="text-[10px] font-mono text-muted-foreground font-black tracking-tighter w-12 border-r border-border pr-4">
-                          {entry.date}
-                       </div>
-                       <div className="space-y-1">
-                          <h3 className="font-bold text-xl tracking-tight group-hover:text-primary transition-colors">{entry.title}</h3>
-                          <div className="flex items-center gap-3">
-                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{entry.platform}</span>
-                             <div className="w-1 h-1 rounded-full bg-border" />
-                             <span className={cn(
-                                "text-[10px] font-black uppercase tracking-widest",
-                                entry.status === "Published" ? "text-secondary" : 
-                                entry.status === "Scheduled" ? "text-primary" : "text-muted-foreground"
-                             )}>{entry.status}</span>
-                          </div>
-                       </div>
+      {/* Main grid */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Up next */}
+        <div className="lg:col-span-8">
+          <SectionHeader
+            eyebrow="Up next"
+            title="Scheduled to go out"
+            actionLabel="See all"
+            actionHref="/app/calendar"
+          />
+
+          {upcoming.length === 0 ? (
+            <EmptyCard
+              icon={Sparkles}
+              title="Your queue is empty."
+              body="Compose your first post — pick a channel, write a draft, and schedule when it goes out."
+              ctaLabel="Open Composer"
+              ctaHref="/app/composer"
+            />
+          ) : (
+            <ul className="rounded-2xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
+              {upcoming.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/app/composer?post=${p.id}`}
+                    className="group flex items-start gap-5 px-5 py-4 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="w-[88px] shrink-0 text-[12px] text-ink/55 leading-[1.4]">
+                      <p className="text-ink font-medium">
+                        {formatDay(p.scheduledAt!, tz)}
+                      </p>
+                      <p>{formatTime(p.scheduledAt!, tz)}</p>
                     </div>
-                    <button className="p-3 hover:bg-muted rounded-full transition-colors opacity-0 group-hover:opacity-100">
-                       <ArrowUpRight className="w-5 h-5" />
-                    </button>
-                 </div>
-              </div>
-            ))}
-          </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14.5px] text-ink leading-[1.5] line-clamp-2">
+                        {p.content}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {p.platforms.map((pl) => (
+                          <span
+                            key={pl}
+                            className="inline-flex items-center h-6 px-2 rounded-full bg-peach-100 border border-border text-[11px] text-ink/75"
+                          >
+                            {PROVIDER_LABELS[pl] ?? pl}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-ink/30 group-hover:text-ink transition-colors mt-1" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {recentPublished.length > 0 ? (
+            <div className="mt-12">
+              <SectionHeader
+                eyebrow="Recently out the door"
+                title="Published"
+                actionLabel="Open analytics"
+                actionHref="/analytics"
+              />
+              <ul className="rounded-2xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
+                {recentPublished.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-start gap-5 px-5 py-4"
+                  >
+                    <div className="w-[88px] shrink-0 text-[12px] text-ink/55 leading-[1.4]">
+                      <p className="text-ink font-medium">
+                        {p.publishedAt ? formatDay(p.publishedAt, tz) : "—"}
+                      </p>
+                      <p>{p.publishedAt ? formatTime(p.publishedAt, tz) : ""}</p>
+                    </div>
+                    <p className="flex-1 text-[14px] text-ink/80 leading-[1.5] line-clamp-2">
+                      {p.content}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
-        {/* The "Sidebar Notes" */}
-        <div className="lg:col-span-4 space-y-12">
-           {/* Community Note - Stitched look */}
-           <div className="bg-secondary text-secondary-foreground p-10 rounded-sm shadow-tactile relative overflow-hidden group transform rotate-1">
-              {/* Stitching Decal */}
-              <div className="absolute top-0 left-0 w-full h-2 border-t-4 border-dashed border-background/20" />
-              <div className="absolute bottom-0 left-0 w-full h-2 border-b-4 border-dashed border-background/20" />
-              
-              <div className="space-y-8 relative z-10">
-                 <h3 className="text-3xl font-display font-black leading-tight italic">Nurture the <br /> Garden.</h3>
-                 <p className="text-sm font-medium leading-relaxed opacity-90">
-                    There are 12 conversations waiting for your unique perspective. Engagement is the water of the digital soil.
-                 </p>
-                 <button className="w-full py-5 bg-background text-foreground font-black uppercase tracking-[0.3em] text-[10px] shadow-lg hover:scale-[1.02] transition-all">
-                    Initialize Reply Sync
-                 </button>
-              </div>
-           </div>
+        {/* Sidebar */}
+        <aside className="lg:col-span-4 space-y-6">
+          <ChannelsCard providers={channelProviders.map((c) => c.provider)} />
 
-           {/* Quick Idea - Post-it vibe */}
-           <div className="bg-accent p-10 rounded-sm shadow-tactile transform rotate-[-2deg] space-y-6">
-              <div className="flex items-center gap-3">
-                 <Sparkles className="w-5 h-5 text-accent-foreground" />
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-accent-foreground">Studio Tip</h4>
+          <article className="rounded-2xl border border-border bg-peach-100/60 p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+              From the field
+            </p>
+            <p className="mt-4 font-display text-[22px] leading-[1.2] tracking-[-0.01em] text-ink italic">
+              &ldquo;Show up consistently. Skip the rest.&rdquo;
+            </p>
+            <p className="mt-4 text-[13px] text-ink/65 leading-[1.55]">
+              Most of the lift comes from cadence. Keep your queue full one
+              week at a time and the rest takes care of itself.
+            </p>
+            <Link
+              href="/resources/field-notes"
+              className="mt-5 pencil-link inline-flex items-center gap-1 text-[13px] text-ink"
+            >
+              Read more field notes
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-background-elev p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+              Engagement
+            </p>
+            <div className="mt-4 flex items-start gap-4">
+              <span className="w-10 h-10 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
+                <Inbox className="w-4 h-4 text-ink" />
+              </span>
+              <div className="flex-1">
+                <p className="text-[14px] text-ink font-medium">
+                  Inbox is up to date
+                </p>
+                <p className="mt-1 text-[12.5px] text-ink/60 leading-[1.5]">
+                  No new replies, mentions, or DMs need triage right now.
+                </p>
               </div>
-              <p className="text-sm font-bold text-accent-foreground leading-relaxed italic">
-                 &ldquo;The best time to post is when you have something meaningful to say, not when the algorithm demands it.&rdquo;
-              </p>
-           </div>
-        </div>
-      </div>
+            </div>
+            <Link
+              href="/inbox"
+              className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+            >
+              Open Inbox
+            </Link>
+          </article>
+        </aside>
+      </section>
     </div>
   );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+function SectionHeader({
+  eyebrow,
+  title,
+  actionLabel,
+  actionHref,
+}: {
+  eyebrow: string;
+  title: string;
+  actionLabel?: string;
+  actionHref?: string;
+}) {
+  return (
+    <div className="flex items-end justify-between mb-4">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+          {eyebrow}
+        </p>
+        <h2 className="mt-1.5 font-display text-[26px] leading-[1.1] tracking-[-0.02em] text-ink">
+          {title}
+        </h2>
+      </div>
+      {actionLabel && actionHref ? (
+        <Link
+          href={actionHref}
+          className="pencil-link text-[13px] text-ink/70 hover:text-ink"
+        >
+          {actionLabel}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function EmptyCard({
+  icon: Icon,
+  title,
+  body,
+  ctaLabel,
+  ctaHref,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border-strong bg-background-elev px-8 py-12 text-center">
+      <span className="inline-grid place-items-center w-12 h-12 rounded-full bg-peach-100 border border-border">
+        <Icon className="w-5 h-5 text-ink" />
+      </span>
+      <p className="mt-5 font-display text-[24px] leading-[1.15] tracking-[-0.01em] text-ink">
+        {title}
+      </p>
+      <p className="mt-2 text-[13.5px] text-ink/60 max-w-md mx-auto leading-[1.55]">
+        {body}
+      </p>
+      <Link
+        href={ctaHref}
+        className="mt-6 inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+      >
+        <PenSquare className="w-4 h-4" />
+        {ctaLabel}
+      </Link>
+    </div>
+  );
+}
+
+function ChannelsCard({ providers }: { providers: string[] }) {
+  const hasAny = providers.length > 0;
+  return (
+    <article className="rounded-2xl border border-border bg-background-elev p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+            Channels
+          </p>
+          <p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+            {hasAny ? `${providers.length} connected` : "No channels yet"}
+          </p>
+        </div>
+        <Link
+          href="/app/settings"
+          className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
+        >
+          Manage
+        </Link>
+      </div>
+      {hasAny ? (
+        <ul className="mt-4 flex flex-wrap gap-1.5">
+          {providers.map((p) => (
+            <li
+              key={p}
+              className={cn(
+                "inline-flex items-center h-7 px-2.5 rounded-full bg-peach-100 border border-border",
+                "text-[12px] text-ink/80",
+              )}
+            >
+              {PROVIDER_LABELS[p] ?? p}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-[13px] text-ink/60 leading-[1.5]">
+          Connect your first channel from Settings to start scheduling posts.
+        </p>
+      )}
+      <Link
+        href="/app/settings"
+        className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+      >
+        <Plug className="w-3.5 h-3.5 mr-1.5" />
+        {hasAny ? "Add another" : "Connect a channel"}
+      </Link>
+    </article>
+  );
+}
+
+function greet(now: Date, tz: string) {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: tz,
+    }).format(now),
+  );
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 22) return "Good evening";
+  return "Good night";
+}
+
+function formatToday(date: Date, tz: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: tz,
+  }).format(date);
+}
+
+function formatDay(date: Date, tz: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: tz,
+  }).format(date);
+}
+
+function formatTime(date: Date, tz: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: tz,
+  }).format(date);
 }
