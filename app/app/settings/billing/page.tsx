@@ -3,14 +3,17 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { accounts } from "@/db/schema";
 import { effectivePrice, FREE_TIER_CHANNELS } from "@/lib/billing/pricing";
-import { getLogicalSubscription } from "@/lib/billing/service";
+import { getLogicalSubscription, listInvoices } from "@/lib/billing/service";
 import { routes } from "@/lib/routes";
 import { eq } from "drizzle-orm";
 import { AlertTriangle, CheckCircle2, Sparkle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { cancelMyPlan } from "./actions";
 import { ChannelAdjuster } from "./_components/channel-adjuster";
+import { IntervalSwitch } from "./_components/interval-switch";
+import { InvoicesList } from "./_components/invoices";
 import { MuseToggleSection } from "./_components/muse-toggle-section";
+import { PastDueBanner } from "./_components/past-due-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -73,8 +76,11 @@ export default async function BillingPage({
 		? sub.currentPeriodEnd.toISOString()
 		: null;
 
+	const invoices = await listInvoices(userId);
+
 	return (
 		<div className="space-y-8">
+			{sub.pastDue ? <PastDueBanner /> : null}
 			{flash ? <FlashBanner kind={flash} /> : null}
 
 			<PlanSummary
@@ -101,6 +107,15 @@ export default async function BillingPage({
 				interval={interval}
 				currentPeriodEndISO={currentPeriodEndISO}
 			/>
+
+			<IntervalSwitch
+				interval={interval}
+				channels={sub.channels}
+				museEnabled={sub.museEnabled}
+				currentPeriodEndISO={currentPeriodEndISO}
+			/>
+
+			<InvoicesList invoices={invoices} />
 
 			<DangerZone cancelAtPeriodEnd={sub.cancelAtPeriodEnd} />
 		</div>
@@ -240,6 +255,14 @@ function PlanSummary({
 						<p className="font-display text-[22px] tracking-[-0.005em]">
 							{nextBilling ? formatDate(nextBilling) : "—"}
 						</p>
+						<form action="/api/billing/portal" method="post" className="mt-2">
+							<button
+								type="submit"
+								className="pencil-link text-[11.5px] text-ink/55 hover:text-ink font-medium"
+							>
+								Update payment method
+							</button>
+						</form>
 					</div>
 				</div>
 			</div>

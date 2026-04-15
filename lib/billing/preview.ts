@@ -23,6 +23,9 @@ export type PreviewInput = {
 	next: {
 		plan: PlanKey;
 		channels: number;
+		// Allow the interval itself to change. Proration is computed against
+		// the *current* period length (how much time remains there), but the
+		// post-change recurring amount uses the new interval.
 		interval: Interval;
 	};
 };

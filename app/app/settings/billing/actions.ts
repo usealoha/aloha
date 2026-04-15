@@ -9,6 +9,7 @@ import { accounts } from "@/db/schema";
 import {
 	cancelSubscription,
 	createCheckout,
+	setBillingInterval,
 	setMuseEnabled,
 	syncChannelQuantity,
 } from "@/lib/billing/service";
@@ -61,15 +62,22 @@ export async function cancelMyPlan() {
 	revalidatePath("/app/settings/billing");
 }
 
-// Applies a combined change (Muse toggle + channel count) after the user
-// has reviewed the proration preview on /app/settings/billing/confirm.
-// Runs Muse toggle first (migrates product), then seats (quantity) so
-// the seat charge uses the freshly-migrated product's pricing.
+// Applies a reviewed change after the user confirms the inline preview.
+// Accepts optional interval, Muse, and channel count fields — only
+// whichever section initiated the review fills in its dimension. Order:
+// interval → Muse → seats, so product migrations land before the quantity
+// charge uses the freshly-migrated pricing.
 export async function applyChange(formData: FormData) {
 	const userId = await requireUserId();
 	const channels = Math.max(1, Number(formData.get("channels") ?? 1));
 	const wantMuse = formData.get("muse") === "1";
+	const intervalRaw = formData.get("interval");
+	const interval =
+		intervalRaw === "month" || intervalRaw === "year" ? intervalRaw : null;
 
+	if (interval) {
+		await setBillingInterval(userId, interval);
+	}
 	await setMuseEnabled(userId, wantMuse);
 	await syncChannelQuantity(userId, channels);
 
