@@ -1,0 +1,85 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Do not sell or share my personal information",
+  description:
+    "Aloha does not sell your personal information. This notice explains your California privacy rights and how to contact us.",
+  path: routes.legal.doNotSell,
+});
+
+<LegalHeader
+  title="Do not sell or share my personal information"
+  lastUpdated="April 15, 2026"
+  description="California residents can read how we treat “sale” and “sharing” under the CPRA — and how to exercise your rights with us."
+/>
+
+<Summary>
+  **We do not sell your personal information** and we do not disclose it for
+  cross-context behavioural advertising in exchange for money or other
+  valuable consideration.
+
+  If you are a California resident, you still have the right to submit a
+  request related to the sale or sharing of personal information. We will
+  honour that request and confirm our practices, even when the answer is
+  that we do not sell or share data in those ways.
+</Summary>
+
+## Who this applies to
+
+This page is written for residents of **California, USA**, under the
+California Consumer Privacy Act (CCPA) as amended by the California Privacy
+Rights Act (CPRA). If you live elsewhere, our [privacy policy](/legal/privacy)
+still describes what we collect and your broader privacy rights.
+
+## Words the law uses
+
+- **“Sell”** means exchanging personal information for money or other
+  valuable consideration.
+- **“Share”** includes disclosing personal information for cross-context
+  behavioural advertising when that disclosure is not strictly a “sale”.
+
+Aloha does not run an ads business and does not monetise personal data. We
+use data to operate the product you signed up for — scheduling, analytics,
+and your private voice model — as described in the privacy policy.
+
+## Your choices
+
+Even though we do not sell or share personal information in the CPRA sense,
+you can still:
+
+- **Ask us to confirm** what categories of personal information we process.
+- **Request access or deletion** of your personal information.
+- **Opt out of sale/sharing** — for Aloha this is effectively a confirmation
+  that we have recorded your preference; it does not change our underlying
+  practice because we do not sell or share.
+
+Use the same channels as in our privacy policy: email
+<a href="mailto:privacy@usealoha.app">privacy@usealoha.app</a> from the
+address associated with your account (or describe the account as precisely as
+you can). We may need to verify your identity before fulfilling a request.
+
+We will not discriminate against you for exercising these rights.
+
+## Authorised agents
+
+If an authorised agent submits a request on your behalf, we may ask for proof
+of the agency relationship and still require you to verify your identity
+where the law allows.
+
+## Updates
+
+When this notice changes materially, we will update the “Last updated” date
+above and, where appropriate, email account holders in line with our privacy
+policy.
+
+## Contact
+
+Questions about this notice:
+<a href="mailto:privacy@usealoha.app">privacy@usealoha.app</a>.
+Postal mail and company details are on the [contact page](/contact).
+
+<LegalFooter current={routes.legal.doNotSell} />

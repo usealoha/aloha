@@ -109,6 +109,7 @@ export const routes = {
 		dpa: "/legal/dpa",
 		security: "/legal/security",
 		responsibleAi: "/legal/responsible-ai",
+		doNotSell: "/legal/do-not-sell",
 	},
 
 	// Phase 10 — Connect
@@ -130,7 +131,6 @@ export const routes = {
 	misc: {
 		sitemap: "/sitemap",
 		accessibility: "/accessibility",
-		doNotSell: "/legal/do-not-sell",
 		appStore: "#", // external, filled later
 		googlePlay: "#", // external, filled later
 	},
@@ -242,6 +242,7 @@ export const footerLinks = {
 				{ label: "DPA", href: routes.legal.dpa },
 				{ label: "Security", href: routes.legal.security },
 				{ label: "Responsible AI", href: routes.legal.responsibleAi },
+				{ label: "Do not sell", href: routes.legal.doNotSell },
 			],
 		},
 		{
@@ -258,7 +259,7 @@ export const footerLinks = {
 	bottom: [
 		{ label: "Sitemap", href: routes.misc.sitemap },
 		{ label: "Accessibility", href: routes.misc.accessibility },
-		{ label: "Do not sell", href: routes.misc.doNotSell },
+		{ label: "Do not sell", href: routes.legal.doNotSell },
 	],
 } as const;
 
