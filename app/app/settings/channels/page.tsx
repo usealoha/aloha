@@ -101,6 +101,37 @@ const PROVIDERS: ProviderConfig[] = [
   },
 ];
 
+function ReauthBanner({ providers }: { providers: string[] }) {
+  const providerLabel = (id: string) => {
+    const p = PROVIDERS.find((x) => x.id === id);
+    return p?.name ?? id;
+  };
+  return (
+    <div
+      role="alert"
+      className="rounded-2xl border border-primary/40 bg-primary-soft/60 px-5 py-4 flex flex-wrap items-start gap-4"
+    >
+      <span className="mt-[2px] w-9 h-9 rounded-full bg-background border border-primary/40 grid place-items-center shrink-0">
+        <ShieldCheck className="w-4 h-4 text-primary-deep" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13.5px] text-ink font-medium">
+          {providers.length === 1
+            ? `${providerLabel(providers[0])} needs to be reconnected.`
+            : "Some channels need to be reconnected."}
+        </p>
+        <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55] max-w-2xl">
+          {providers.length === 1
+            ? "Your stored token couldn't be refreshed — this usually means you changed your password, revoked access, or the provider rotated its keys. Reconnect below and scheduling will resume."
+            : `Reconnect ${providers
+                .map(providerLabel)
+                .join(", ")} below to resume scheduling on those channels.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function FreeTierBanner({
   connected,
   limit,
@@ -190,10 +221,16 @@ export default async function ChannelsSettingsPage({
   const user = (await getCurrentUser())!;
 
   const rows = await db
-    .select({ provider: accounts.provider })
+    .select({
+      provider: accounts.provider,
+      reauthRequired: accounts.reauthRequired,
+    })
     .from(accounts)
     .where(eq(accounts.userId, user.id));
   const connected = new Set(rows.map((r) => r.provider));
+  const needsReauth = new Set(
+    rows.filter((r) => r.reauthRequired).map((r) => r.provider),
+  );
 
   const entitlements = await getEntitlements(user.id, connected.size);
   const atLimit = entitlements.channelsRemaining <= 0;
@@ -214,6 +251,10 @@ export default async function ChannelsSettingsPage({
         </p>
       </div>
 
+      {needsReauth.size > 0 ? (
+        <ReauthBanner providers={Array.from(needsReauth)} />
+      ) : null}
+
       {entitlements.plan === "free" ? (
         <FreeTierBanner
           connected={connected.size}
@@ -227,6 +268,7 @@ export default async function ChannelsSettingsPage({
           const isConnected = connected.has(p.id);
           const isSoon = p.status === "soon";
           const isLocked = !isConnected && !isSoon && atLimit;
+          const isReauth = isConnected && needsReauth.has(p.id);
           return (
             <li
               key={p.id}
@@ -235,9 +277,11 @@ export default async function ChannelsSettingsPage({
               <span
                 className={cn(
                   "w-11 h-11 rounded-full border grid place-items-center shrink-0",
-                  isConnected
-                    ? "bg-peach-100 border-peach-300"
-                    : "bg-background border-border",
+                  isReauth
+                    ? "bg-primary-soft border-primary/40"
+                    : isConnected
+                      ? "bg-peach-100 border-peach-300"
+                      : "bg-background border-border",
                   p.mono && "text-ink",
                 )}
               >
@@ -246,10 +290,15 @@ export default async function ChannelsSettingsPage({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
-                  {isConnected ? (
+                  {isConnected && !isReauth ? (
                     <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
                       <ShieldCheck className="w-3 h-3" />
                       Connected
+                    </span>
+                  ) : null}
+                  {isReauth ? (
+                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-primary-soft text-primary-deep text-[10.5px] font-medium tracking-wide">
+                      Reconnect needed
                     </span>
                   ) : null}
                   {isSoon ? (
@@ -258,7 +307,11 @@ export default async function ChannelsSettingsPage({
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[12.5px] text-ink/60">{p.purpose}</p>
+                <p className="mt-1 text-[12.5px] text-ink/60">
+                  {isReauth
+                    ? "Your token expired or was revoked. Reconnect to resume publishing."
+                    : p.purpose}
+                </p>
               </div>
 
               <div className="shrink-0">
@@ -271,16 +324,29 @@ export default async function ChannelsSettingsPage({
                     Not available yet
                   </button>
                 ) : isConnected ? (
-                  <form action={disconnectChannel}>
-                    <input type="hidden" name="provider" value={p.id} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13px] text-ink/65 hover:text-primary-deep hover:bg-peach-100/60 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Disconnect
-                    </button>
-                  </form>
+                  <div className="flex items-center gap-1.5">
+                    {isReauth ? (
+                      <form action={connectChannel}>
+                        <input type="hidden" name="provider" value={p.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary-deep transition-colors"
+                        >
+                          Reconnect
+                        </button>
+                      </form>
+                    ) : null}
+                    <form action={disconnectChannel}>
+                      <input type="hidden" name="provider" value={p.id} />
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13px] text-ink/65 hover:text-primary-deep hover:bg-peach-100/60 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Disconnect
+                      </button>
+                    </form>
+                  </div>
                 ) : isLocked ? (
                   <Link
                     href="/app/settings/billing"
