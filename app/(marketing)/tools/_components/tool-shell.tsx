@@ -1,9 +1,9 @@
+import { JsonLd } from "@/lib/json-ld";
 import { routes } from "@/lib/routes";
+import { breadcrumbJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
 import { ArrowRight, ArrowUpRight, Sparkle } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { JsonLd } from "@/lib/json-ld";
-import { breadcrumbJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
 
 type Props = {
 	eyebrow: string;
@@ -136,14 +136,10 @@ export function ToolShell({
 			<section className="py-16 lg:py-20 bg-ink relative wavy text-background-elev">
 				<div
 					aria-hidden
-					className="absolute inset-0 opacity-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
+					className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
 				/>
 				<div className="max-w-[1180px] mx-auto px-6 lg:px-10 pb-8 lg:pb-12">
-					<div className="p-8 lg:p-10 rounded-3xl bg-ink text-background-elev flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 overflow-hidden relative">
-						<div
-							aria-hidden
-							className="absolute inset-0 opacity-[0.08] bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
-						/>
+					<div className="p-8 lg:p-10 rounded-3xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 overflow-hidden relative">
 						<div className="relative max-w-2xl">
 							<Sparkle className="w-5 h-5 text-peach-300 mb-4" />
 							<p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-peach-200 mb-3">

@@ -88,7 +88,14 @@ export default function ToolsIndexPage() {
                 </p>
                 <p className="mt-4 text-[12.5px] text-ink/65 leading-[1.55]">
                   Internal scripts that we cleaned up enough to give
-                  away. The product runs grown-up versions of all five.
+                  away. The grown-up versions live inside{" "}
+                  <Link
+                    href={routes.pricing}
+                    className="pencil-link font-medium text-ink"
+                  >
+                    Muse
+                  </Link>
+                  , trained on your own writing.
                 </p>
               </div>
             </div>
@@ -175,8 +182,13 @@ export default function ToolsIndexPage() {
               </h2>
               <p className="mt-6 text-[15.5px] text-ink/70 max-w-lg leading-[1.55]">
                 The free tools are good. The product is what happens when
-                you do these tasks every week. Free plan covers most of
-                what a solo creator needs.
+                you do these tasks every week —{" "}
+                <Link href={routes.pricing} className="pencil-link font-medium text-ink">
+                  Muse
+                </Link>{" "}
+                writes bios, captions, and critiques in your own voice,
+                per channel. Free plan covers most of what a solo creator
+                needs.
               </p>
             </div>
             <div className="col-span-12 lg:col-span-4 flex flex-col gap-4 lg:items-end">
