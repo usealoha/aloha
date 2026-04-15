@@ -17,7 +17,26 @@ import { cn } from "@/lib/utils";
 import { refineContent } from "@/app/actions/ai";
 import { saveDraft, schedulePost } from "@/app/actions/posts";
 import type { PostMedia } from "@/db/schema";
+import {
+  BlueskyIcon,
+  FacebookIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  TikTokIcon,
+  ThreadsIcon,
+  XIcon as XBrandIcon,
+} from "@/app/auth/_components/provider-icons";
 import { PreviewCard } from "./preview-card";
+
+const PLATFORM_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  twitter: XBrandIcon,
+  linkedin: LinkedInIcon,
+  instagram: InstagramIcon,
+  facebook: FacebookIcon,
+  tiktok: TikTokIcon,
+  threads: ThreadsIcon,
+  bluesky: BlueskyIcon,
+};
 
 const MAX_MEDIA = 4;
 
@@ -44,6 +63,7 @@ const PLATFORMS: Platform[] = [
   { id: "facebook", name: "Facebook", handle: "/handle", limit: 5000, accent: "bg-[#1877f2] text-white" },
   { id: "tiktok", name: "TikTok", handle: "@handle", limit: 2200, accent: "bg-ink text-background" },
   { id: "threads", name: "Threads", handle: "@handle", limit: 500, accent: "bg-ink text-background" },
+  { id: "bluesky", name: "Bluesky", handle: "@handle", limit: 300, accent: "bg-[#0085ff] text-white" },
 ];
 
 export function Composer({
@@ -245,6 +265,7 @@ export function Composer({
           {PLATFORMS.map((p) => {
             const isSelected = selected.includes(p.id);
             const isConnected = connectedProviders.includes(p.id);
+            const Icon = PLATFORM_ICONS[p.id];
             return (
               <button
                 key={p.id}
@@ -252,34 +273,14 @@ export function Composer({
                 onClick={() => toggle(p.id)}
                 aria-pressed={isSelected}
                 className={cn(
-                  "inline-flex items-center gap-2 h-9 px-3.5 rounded-full border text-[13px] font-medium transition-colors",
+                  "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full border text-[12px] font-medium transition-colors",
                   isSelected
-                    ? "bg-ink text-background border-ink"
+                    ? "bg-peach-100 text-ink border-border"
                     : "bg-background-elev text-ink/70 border-border-strong hover:border-ink hover:text-ink",
                 )}
               >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    isSelected
-                      ? "bg-background"
-                      : isConnected
-                        ? "bg-primary"
-                        : "bg-ink/20",
-                  )}
-                />
+                {Icon && <Icon className="w-3.5 h-3.5" />}
                 {p.name}
-                {!isConnected ? (
-                  <span
-                    className={cn(
-                      "text-[10px] font-medium",
-                      isSelected ? "text-background/60" : "text-ink/40",
-                    )}
-                  >
-                    · preview
-                  </span>
-                ) : null}
               </button>
             );
           })}
