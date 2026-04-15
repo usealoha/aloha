@@ -147,42 +147,43 @@ export async function connectBluesky(
     redirect("/app/settings/channels?limit=1");
   }
 
+  let agent;
   try {
-    const agent = new AtpAgent({ service: "https://bsky.social" });
+    agent = new AtpAgent({ service: "https://bsky.social" });
     await agent.login({
       identifier: handle,
       password: appPassword,
     });
-
-    const did = agent.session?.did ?? null;
-
-    await db
-      .insert(blueskyCredentials)
-      .values({
-        userId,
-        handle,
-        appPassword,
-        did,
-      })
-      .onConflictDoUpdate({
-        target: blueskyCredentials.userId,
-        set: {
-          handle,
-          appPassword,
-          did,
-          updatedAt: new Date(),
-        },
-      });
-
-    revalidatePath("/app/settings/channels");
-    revalidatePath("/app/dashboard");
-    redirect("/app/settings/channels?connected=bluesky");
   } catch (err) {
-    console.error("[bluesky] connect failed", err);
+    console.error("[bluesky] login failed", err);
     return {
       error: "Invalid handle or app password. Please check your credentials and try again.",
     };
   }
+
+  const did = agent.session?.did ?? null;
+
+  await db
+    .insert(blueskyCredentials)
+    .values({
+      userId,
+      handle,
+      appPassword,
+      did,
+    })
+    .onConflictDoUpdate({
+      target: blueskyCredentials.userId,
+      set: {
+        handle,
+        appPassword,
+        did,
+        updatedAt: new Date(),
+      },
+    });
+
+  revalidatePath("/app/settings/channels");
+  revalidatePath("/app/dashboard");
+  redirect("/app/settings/channels?connected=bluesky");
 }
 
 export async function disconnectBluesky() {
