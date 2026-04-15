@@ -69,10 +69,11 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 
 		try {
 			const publisher = PUBLISHERS[platform];
+			const override = post.channelContent?.[platform];
 			const { remotePostId, remoteUrl } = await publisher({
 				userId: post.userId,
-				text: post.content,
-				media: post.media,
+				text: override?.content ?? post.content,
+				media: override?.media ?? post.media,
 			});
 			const publishedAt = new Date();
 			await db
