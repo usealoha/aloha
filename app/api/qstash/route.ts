@@ -4,6 +4,7 @@ import { posts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { publishPost } from "@/lib/publishers";
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("upstash-signature");
@@ -46,24 +47,24 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Post is not in scheduled state", { status: 400 });
     }
 
-    console.log(`[QStash] Executing deployment for post: ${postId}`);
-
-    // Simulate publishing
-    await db.update(posts)
-      .set({ 
-        status: "published", 
-        publishedAt: new Date() 
-      })
-      .where(eq(posts.id, postId));
-
-    return NextResponse.json({ success: true });
+    console.log(`[QStash] Publishing post: ${postId}`);
+    const summary = await publishPost(postId);
+    // Surface a 5xx only when nothing published and every failure is
+    // retryable (rate-limited / transient). QStash will retry with backoff.
+    // Any success, or any terminal failure (needs_reauth / forbidden /
+    // invalid_content), returns 200 so we don't double-post or loop forever.
+    if (summary.retryable) {
+      return new NextResponse("Retryable publish failure", { status: 503 });
+    }
+    return NextResponse.json({ success: true, summary });
   } catch (error) {
-    console.error("[QStash] Error executing post:", error);
-    
+    console.error("[QStash] Error publishing post:", error);
+    // publishPost handles per-platform failure; only whole-dispatcher
+    // crashes land here — treat as unrecoverable for this run.
     await db.update(posts)
       .set({ status: "failed" })
       .where(eq(posts.id, postId));
-      
+
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
