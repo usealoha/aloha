@@ -13,6 +13,12 @@ import {
   GitHubIcon,
   XIcon,
   BlueskyIcon,
+  FacebookIcon,
+  InstagramIcon,
+  TikTokIcon,
+  ThreadsIcon,
+  PinterestIcon,
+  YouTubeIcon,
 } from "@/app/auth/_components/provider-icons";
 
 export const dynamic = "force-dynamic";
@@ -62,21 +68,24 @@ const PROVIDERS: ProviderConfig[] = [
     id: "facebook",
     name: "Facebook",
     purpose: "Publish to your page.",
-    Icon: GenericMark,
+    Icon: FacebookIcon,
+    mono: true,
     status: "available",
   },
   {
     id: "instagram",
     name: "Instagram",
     purpose: "Schedule feed posts and reels.",
-    Icon: GenericMark,
+    Icon: InstagramIcon,
+    mono: true,
     status: "available",
   },
   {
     id: "tiktok",
     name: "TikTok",
     purpose: "Queue short-form video.",
-    Icon: GenericMark,
+    Icon: TikTokIcon,
+    mono: true,
     status: "available",
   },
   {
@@ -91,21 +100,24 @@ const PROVIDERS: ProviderConfig[] = [
     id: "threads",
     name: "Threads",
     purpose: "Text updates to the Threads network.",
-    Icon: GenericMark,
+    Icon: ThreadsIcon,
+    mono: true,
     status: "soon",
   },
   {
     id: "pinterest",
     name: "Pinterest",
     purpose: "Pins and idea pins.",
-    Icon: GenericMark,
+    Icon: PinterestIcon,
+    mono: true,
     status: "soon",
   },
   {
     id: "youtube",
     name: "YouTube",
     purpose: "Shorts and community posts.",
-    Icon: GenericMark,
+    Icon: YouTubeIcon,
+    mono: true,
     status: "soon",
   },
 ];
@@ -199,22 +211,6 @@ function FreeTierBanner({
         <ArrowUpRight className="w-3.5 h-3.5" />
       </Link>
     </div>
-  );
-}
-
-function GenericMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <circle
-        cx="12"
-        cy="12"
-        r="9.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <circle cx="12" cy="12" r="3.2" fill="currentColor" />
-    </svg>
   );
 }
 
