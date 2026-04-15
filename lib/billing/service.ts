@@ -17,6 +17,9 @@ export type LogicalSubscription = {
 	currentPeriodEnd: Date | null;
 	cancelAtPeriodEnd: boolean;
 	polarSubscriptionId: string | null;
+	// Raw status for UI treatments that care about past_due vs active.
+	status: "active" | "past_due" | null;
+	pastDue: boolean;
 };
 
 export async function getLogicalSubscription(userId: string): Promise<LogicalSubscription> {
@@ -38,9 +41,12 @@ export async function getLogicalSubscription(userId: string): Promise<LogicalSub
 			currentPeriodEnd: null,
 			cancelAtPeriodEnd: false,
 			polarSubscriptionId: null,
+			status: null,
+			pastDue: false,
 		};
 	}
 
+	const status = active.status === "past_due" ? "past_due" : "active";
 	return {
 		plan: active.productKey === "bundle" ? "basic_muse" : "basic",
 		museEnabled: active.productKey === "bundle",
@@ -49,7 +55,26 @@ export async function getLogicalSubscription(userId: string): Promise<LogicalSub
 		currentPeriodEnd: active.currentPeriodEnd,
 		cancelAtPeriodEnd: active.cancelAtPeriodEnd,
 		polarSubscriptionId: active.polarSubscriptionId,
+		status,
+		pastDue: status === "past_due",
 	};
+}
+
+// Creates a signed Polar customer portal URL the user can visit briefly
+// to update their payment method. This is the only hand-off to Polar's
+// hosted UI — required because card entry must be PCI-compliant.
+export async function createCustomerPortalUrl(userId: string): Promise<string | null> {
+	const [user] = await db
+		.select({ polarCustomerId: users.polarCustomerId })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+	if (!user?.polarCustomerId) return null;
+
+	const session = await polar.customerSessions.create({
+		customerId: user.polarCustomerId,
+	});
+	return session.customerPortalUrl;
 }
 
 export async function createCheckout(args: {
@@ -124,10 +149,81 @@ export async function setMuseEnabled(userId: string, enabled: boolean) {
 	// Webhook subscription.updated will reconcile the DB row.
 }
 
+// Flip the billing interval (monthly ↔ yearly). Same mechanism as Muse
+// toggle — migrates to a different product ID while keeping seats.
+export async function setBillingInterval(userId: string, nextInterval: Interval) {
+	const sub = await getLogicalSubscription(userId);
+	if (!sub.polarSubscriptionId || !sub.interval) {
+		throw new Error("No active subscription to modify");
+	}
+	if (sub.interval === nextInterval) return;
+
+	const currentKey: ProductKey = sub.museEnabled ? "bundle" : "basic";
+	const targetSlot = productSlot(currentKey, nextInterval);
+
+	await polar.subscriptions.update({
+		id: sub.polarSubscriptionId,
+		subscriptionUpdate: { productId: productId(targetSlot) },
+	});
+}
+
 export async function cancelSubscription(userId: string) {
 	const sub = await getLogicalSubscription(userId);
 	if (!sub.polarSubscriptionId) return;
 	await polar.subscriptions.revoke({ id: sub.polarSubscriptionId });
+}
+
+export type InvoiceRow = {
+	id: string;
+	createdAt: Date;
+	invoiceNumber: string;
+	totalAmount: number; // cents
+	currency: string;
+	status: string; // paid | refunded | partially_refunded | pending
+};
+
+// Fetches the user's billing history. Returns newest-first. Invoice PDF
+// download goes through /api/billing/invoice/[id] since Polar only
+// exposes the URL via a separate API call.
+export async function listInvoices(userId: string, limit = 12): Promise<InvoiceRow[]> {
+	const [user] = await db
+		.select({ polarCustomerId: users.polarCustomerId })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+	if (!user?.polarCustomerId) return [];
+
+	const page = await polar.orders.list({
+		customerId: user.polarCustomerId,
+		limit,
+	});
+	const rows: InvoiceRow[] = [];
+	for await (const p of page) {
+		for (const o of p.result.items ?? []) {
+			rows.push({
+				id: o.id,
+				createdAt: o.createdAt,
+				invoiceNumber: o.invoiceNumber,
+				totalAmount: o.totalAmount,
+				currency: o.currency,
+				status: o.status,
+			});
+		}
+		break; // first page only — `limit` already caps it
+	}
+	return rows;
+}
+
+export async function getInvoiceUrl(userId: string, orderId: string): Promise<string | null> {
+	const [user] = await db
+		.select({ polarCustomerId: users.polarCustomerId })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+	if (!user?.polarCustomerId) return null;
+
+	const invoice = await polar.orders.invoice({ id: orderId });
+	return invoice?.url ?? null;
 }
 
 // Idempotent upsert from a Polar subscription payload. Called by the
