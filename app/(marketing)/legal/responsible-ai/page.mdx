@@ -7,25 +7,25 @@ import { LegalFooter } from "../_components/legal-footer";
 export const metadata = makeMetadata({
   title: "Responsible AI",
   description:
-    "How Aloha uses AI — what the voice model does with your posts, what we never train on, and your controls.",
+    "How Aloha uses AI — what Muse (the voice model) and the AI companion do with your posts, what we never train on, and your controls.",
   path: routes.legal.responsibleAi,
 });
 
 <LegalHeader
   title="Responsible AI"
   lastUpdated="April 10, 2026"
-  description="How Aloha uses AI, what the voice model does with your content, and the controls you have over all of it."
+  description="How Aloha uses AI — Muse (the voice model), the AI companion, and the inbox classifier — and the controls you have over all of it."
 />
 
 <Summary>
-  The voice model that powers the Composer learns from the posts
-  you explicitly mark as sounding like you — nothing else. It runs
+  Muse — the voice model inside Composer — learns from the posts
+  you explicitly mark as sounding like you, nothing else. It runs
   privately in your workspace; we don't pool training data across
   customers, and we don't sell access to any public model trained
   on your work.
 
-  You can delete your voice model in one click. Everything the AI
-  drafts is a draft — it never auto-publishes or auto-replies
+  You can delete your Muse profile in one click. Everything the
+  AI drafts is a draft — it never auto-publishes or auto-replies
   without your approval.
 </Summary>
 
@@ -33,7 +33,8 @@ export const metadata = makeMetadata({
 
 Aloha uses machine learning in a few specific, disclosed places:
 
-- **Voice model** — drafts posts in your cadence for the Composer.
+- **Muse (voice model)** — drafts posts in your cadence for the Composer, on the channels you've switched it on for.
+- **AI companion** — single-shot write / refine / suggest actions available in Basic; not trained on your writing.
 - **Channel rewrites** — converts one draft to native variants per
   channel (length, format, tone).
 - **Inbox triage** — classifies incoming messages into question /
