@@ -28,6 +28,9 @@ type Props = {
 	preview: PreviewOutput;
 	proposedChannels: number;
 	proposedMuse: boolean;
+	// Only passed by the interval-switch section. Omitted → the server
+	// action keeps the current interval.
+	proposedInterval?: "month" | "year";
 	onCancel: () => void;
 };
 
@@ -35,6 +38,7 @@ export function InlineReview({
 	preview,
 	proposedChannels,
 	proposedMuse,
+	proposedInterval,
 	onCancel,
 }: Props) {
 	const isCredit = preview.immediateCharge < 0;
@@ -90,6 +94,9 @@ export function InlineReview({
 				>
 					<input type="hidden" name="channels" value={proposedChannels} />
 					<input type="hidden" name="muse" value={proposedMuse ? "1" : "0"} />
+					{proposedInterval ? (
+						<input type="hidden" name="interval" value={proposedInterval} />
+					) : null}
 					<p className="text-[11.5px] text-ink/50 inline-flex items-center gap-2 max-w-md">
 						<AlertTriangle className="w-3.5 h-3.5" />
 						Polar bills your card on file immediately. Receipt arrives by email.
