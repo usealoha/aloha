@@ -50,7 +50,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     name: "Buffer",
     positioning: "the calm, creator-first schedule-and-analyse tool",
     lead:
-      "We're fans. Buffer has shaped the way this whole category reads for a decade. Aloha borrows the clarity and adds the pieces Buffer has chosen not to build — a voice model, an automation canvas, and a unified inbox. Here's where we overlap, where we diverge, and who should stay with Buffer.",
+      "We're fans. Buffer has shaped the way this whole category reads for a decade. Aloha borrows the clarity and adds the pieces Buffer has chosen not to build — Muse (our style-trained voice model), an automation canvas, and a unified inbox. Here's where we overlap, where we diverge, and who should stay with Buffer.",
     accent: "bg-peach-100",
     verifiedOn: "2026-04-10",
     verifiedLabel: "Apr 10, 2026",
@@ -70,8 +70,8 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     weWin: [
       {
-        h: "Voice model, not templates",
-        p: "Aloha's composer writes in your cadence after learning from your best posts. Buffer's AI assistant uses generic templates.",
+        h: "Muse, not templates",
+        p: "Muse — Aloha's voice model inside Composer — writes in your cadence after learning from your best posts. Buffer's AI Assistant uses generic prompts with one shared tone.",
       },
       {
         h: "Automation canvas",
@@ -84,7 +84,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "yes" },
-      { label: "Composer with voice model", aloha: "yes", alohaNote: "learns from your best posts", them: "partial", themNote: "generic AI Assistant" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", alohaNote: "learns from your best posts", them: "partial", themNote: "generic AI Assistant" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", alohaNote: "custom domain, no watermark", them: "addon", themNote: "Start Page, separate product" },
       { label: "Full analytics history on every plan", aloha: "yes", alohaNote: "24 months, incl. Free", them: "partial", themNote: "30 days on Free" },
@@ -97,7 +97,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "SSO / SCIM", aloha: "yes", alohaNote: "on Agency plan", them: "yes" },
     ],
     verdict:
-      "Stay with Buffer if you want the minimal, schedule-plus-analytics shape. Move to Aloha if you want a voice model, an automation canvas, and a unified inbox without the add-on pricing.",
+      "Stay with Buffer if you want the minimal, schedule-plus-analytics shape. Move to Aloha if you want Muse, an automation canvas, and a unified inbox without the add-on pricing.",
     testimonial: {
       q: "I migrated from Buffer in an afternoon. The importer didn't drop a single scheduled post — even the recurring ones landed right.",
       n: "Deniz K.",
@@ -148,13 +148,13 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Hootsuite is dense by design. Aloha prioritises the two-thirds of the job you actually do daily.",
       },
       {
-        h: "Voice model + Logic Matrix",
-        p: "Hootsuite has AI features, but they're template-driven. Our voice model is trained on your posts; the Matrix automates cross-channel flows without Zapier.",
+        h: "Muse + Logic Matrix",
+        p: "Hootsuite has AI features, but they're template-driven. Muse is trained on your posts; the Matrix automates cross-channel flows without Zapier.",
       },
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "yes" },
-      { label: "Composer with voice model", aloha: "yes", them: "partial", themNote: "OwlyWriter templates" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", them: "partial", themNote: "OwlyWriter templates" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "tiered by plan" },
@@ -214,8 +214,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Later is Instagram-first. LinkedIn long-form, X threads, and YouTube shorts are full-citizens in Aloha.",
       },
       {
-        h: "Voice model",
-        p: "Later's AI writes generic captions. Aloha's composer learns your cadence.",
+        h: "Muse",
+        p: "Later's AI writes generic captions. Muse — Aloha's voice model inside Composer — learns your cadence.",
       },
       {
         h: "Automation",
@@ -224,7 +224,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "partial", themNote: "6 networks, LinkedIn limited" },
-      { label: "Composer with voice model", aloha: "yes", them: "partial", themNote: "generic AI captions" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", them: "partial", themNote: "generic AI captions" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "yes", themNote: "Linkin.bio, commerce-focused" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "3 months on Starter" },
@@ -284,8 +284,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Sprout's Standard plan is $249/seat/month. Our Working Team plan is $16/month total.",
       },
       {
-        h: "Voice model + Composer",
-        p: "Sprout's content tooling is functional, not expressive. Our voice model drafts native-per-channel posts that sound like you.",
+        h: "Composer + Muse",
+        p: "Sprout's content tooling is functional, not expressive. Muse drafts native-per-channel posts that sound like you.",
       },
       {
         h: "Automation canvas",
@@ -294,7 +294,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "yes" },
-      { label: "Composer with voice model", aloha: "yes", them: "no" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", them: "no" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "limits by plan" },
@@ -354,7 +354,7 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Aloha schedules across 8 networks natively. Kit doesn't; they integrate with Buffer for posting.",
       },
       {
-        h: "Voice model + per-channel rewrite",
+        h: "Muse + per-channel rewrite",
         p: "One Aloha draft → native versions across every social channel, in your voice. Kit has neither.",
       },
       {
@@ -364,7 +364,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "no" },
-      { label: "Composer with voice model", aloha: "yes", them: "partial", themNote: "for email only" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", them: "partial", themNote: "for email only" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "no" },
       { label: "Link-in-bio page included", aloha: "yes", them: "yes", themNote: "Creator profile page" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "email only" },
@@ -424,8 +424,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Typefully covers X + some LinkedIn. Aloha publishes across Instagram, TikTok, YouTube, Threads, Pinterest, Facebook too.",
       },
       {
-        h: "Voice model learns from everything",
-        p: "Our composer trains on your best posts across any channel. Typefully's AI is X-specific.",
+        h: "Muse learns from everything",
+        p: "Muse trains on your best posts across any channel. Typefully's AI is X-specific.",
       },
       {
         h: "Inbox + Matrix + Calendar",
@@ -434,7 +434,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "partial", themNote: "X + LinkedIn + Threads" },
-      { label: "Composer with voice model", aloha: "yes", them: "partial", themNote: "X-specific AI" },
+      { label: "Composer + Muse (style-trained voice)", aloha: "yes", them: "partial", themNote: "X-specific AI" },
       { label: "Native reel + story scheduling", aloha: "yes", them: "no" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "yes", themNote: "X-only" },
