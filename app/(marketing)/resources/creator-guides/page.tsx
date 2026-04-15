@@ -263,13 +263,6 @@ export default function CreatorGuidesIndexPage() {
 								Start free — no card
 								<ArrowRight className="w-4 h-4" />
 							</Link>
-							<Link
-								href={routes.resources.playbooks}
-								className="pencil-link inline-flex items-center gap-2 text-[14.5px] font-medium"
-							>
-								Prefer playbooks?
-								<ArrowUpRight className="w-4 h-4" />
-							</Link>
 						</div>
 					</div>
 				</div>

@@ -32,12 +32,11 @@ export const metadata = makeMetadata({
 
 ## Who we are
 
-Aloha, Inc. ("Aloha", "we", "us") operates the software at
-[usealoha.app](https://usealoha.app). Our legal address is Aloha, Inc.,
-Bengaluru, India — full details on the [contact page](/contact). We are
-the **data controller** for the personal data you share with us directly,
-and the **data processor** for the social media content you schedule
-through us on behalf of your own audience.
+Aloha is an indie project operated from Bengaluru, India — full contact
+details on the [contact page](/contact). We are the **data controller**
+for the personal data you share with us directly, and the **data
+processor** for the social media content you schedule through us on
+behalf of your own audience.
 
 ## What we collect
 
@@ -96,32 +95,32 @@ pricing purposes.
 
 ## Subprocessors
 
-We use a small set of carefully chosen third parties to operate the
-service. Current list:
+We use a small set of third parties to operate the service. Current
+list:
 
-- **Amazon Web Services (us-east-1, eu-west-1)** — primary hosting.
+- **Amazon Web Services (us-east-1)** — primary hosting.
+- **Vercel** — application hosting, edge runtime.
 - **Cloudflare** — CDN, DDoS protection, image processing.
-- **Stripe** — payment processing for paid plans.
+- **Stripe / Polar** — payment processing for paid plans.
 - **Postmark** — transactional email (invites, receipts, password
   resets).
 - **Upstash (QStash)** — scheduled job delivery.
-- **OpenAI (API-only, no data retention)** — voice model fallback
-  inference. Covered by a zero-retention agreement; prompts are not
-  used for training and are not persisted beyond the request.
+- **OpenAI** — voice model fallback inference. Prompts are sent via
+  OpenAI's standard API and are governed by their API terms.
 
 The up-to-date subprocessor list lives at
 [/legal/security#subprocessors](/legal/security#subprocessors). We'll
-email you 30 days before adding a new one if you're on a paid plan.
+update this page when the list changes.
 
 ## Data transfers
 
-Aloha stores data in the region closest to your workspace — US customers
-on AWS us-east-1, EU customers on AWS eu-west-1. Some subprocessors
-(Stripe, Postmark, Cloudflare) operate globally; where data crosses the
-EU/US border we rely on Standard Contractual Clauses.
+Aloha stores data in AWS us-east-1. For customers in the EU, UK, and
+elsewhere, cross-border transfers are covered by Standard Contractual
+Clauses and the UK IDTA. Some subprocessors (Cloudflare, Vercel, Stripe)
+operate globally and the same safeguards apply.
 
-EU customers on paid plans can sign our [Data Processing Addendum](/legal/dpa)
-at any time from Settings → Legal.
+EU/UK customers can sign our [Data Processing Addendum](/legal/dpa) at
+any time from Settings → Legal.
 
 ## Your rights
 
@@ -168,9 +167,7 @@ diff to the [changelog](/whats-new).
 ## Contact
 
 Privacy questions go to
-<a href="mailto:privacy@usealoha.app">privacy@usealoha.app</a>. Our
-Data Protection Officer can be reached at
-<a href="mailto:dpo@usealoha.app">dpo@usealoha.app</a>. Postal mail: see
-the [contact page](/contact).
+<a href="mailto:privacy@usealoha.app">privacy@usealoha.app</a>. Postal
+mail: see the [contact page](/contact).
 
 <LegalFooter current={routes.legal.privacy} />

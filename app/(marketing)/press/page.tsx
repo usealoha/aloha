@@ -21,9 +21,9 @@ export const metadata = makeMetadata({
 
 const FAST_FACTS = [
 	{ v: "2025", l: "founded" },
-	{ v: "6", l: "team members" },
-	{ v: "1", l: "studio · Bengaluru, India" },
-	{ v: "140K+", l: "creators in first 90 days" },
+	{ v: "1", l: "person · founder-operator" },
+	{ v: "Bengaluru", l: "India · home base" },
+	{ v: "Apr '26", l: "public launch" },
 ];
 
 const DOWNLOADS = [
@@ -49,14 +49,14 @@ const DOWNLOADS = [
 
 const QUOTES = [
 	{
-		by: "Aarohi Mehta, co-founder",
-		role: "Product",
-		body: "The category is loud. The tools should help you post less, not more. That's the shape of what we're building.",
+		by: "Kashyap Gohil, founder",
+		role: "Everything",
+		body: "The category is loud. The tools should help you post less, not more. That's the shape of what I'm building.",
 	},
 	{
-		by: "Kashyap Gohil, co-founder",
-		role: "Engineering",
-		body: "We treat the export button as the feature. If a customer can leave on any Tuesday afternoon, we earn the stay every month.",
+		by: "Kashyap Gohil, founder",
+		role: "Everything",
+		body: "I treat the export button as the feature. If a customer can leave on any Tuesday afternoon, I earn the stay every month.",
 	},
 ];
 
@@ -149,17 +149,15 @@ export default function PressPage() {
 								code.
 							</p>
 							<p>
-								Founded in March 2025 in Bengaluru by Aarohi Mehta and Kashyap
-								Gohil, Aloha was built to be the quiet alternative in a loud
-								category. The product entered public beta in January 2026 and
-								reached 140,000 users in its first 90 days, without a referral
-								programme or push-notification growth loops.
+								Founded in 2025 in Bengaluru by Kashyap Gohil, Aloha was built
+								to be the quiet alternative in a loud category. The product
+								entered public beta in Q1 2026 and opened to the public in
+								April 2026.
 							</p>
 							<p>
-								The company is backed by a small seed round from investors who
-								signed an explicit &ldquo;calm tool, not a growth machine&rdquo;
-								side letter. The team is six people, all based out of the
-								Bengaluru studio.
+								Aloha is an indie, bootstrapped project — one person, one
+								desk, one roadmap. No outside investors, no growth-loop
+								mechanics, no referral programme.
 							</p>
 						</div>
 					</div>
@@ -373,8 +371,8 @@ export default function PressPage() {
 									</span>
 								</h2>
 								<p className="mt-5 text-[15px] text-background-elev/75 leading-[1.6] max-w-xl">
-									No form. No triage. Press requests go to Leilani, our
-									community + comms lead. She reads every one.
+									No form. No triage. Press requests land in the founder's
+									inbox and get a reply the same day during business hours.
 								</p>
 							</div>
 							<div className="col-span-12 lg:col-span-4 flex flex-col gap-3 lg:items-end">

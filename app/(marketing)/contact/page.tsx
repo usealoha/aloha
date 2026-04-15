@@ -53,10 +53,10 @@ const ROUTES = [
 	},
 	{
 		icon: ShieldCheck,
-		title: "Security & compliance",
+		title: "Security",
 		email: "security@usealoha.app",
-		sla: "Within 24 hours",
-		body: "Vulnerability reports, SOC 2 questionnaires, penetration-testing requests. PGP key for sensitive reports is at /.well-known/security.pgp.",
+		sla: "Within 72 hours",
+		body: "Vulnerability reports and security questions. We don't hold SOC 2 or ISO 27001 today — the trust center explains what we do instead.",
 		tone: "bg-background-elev border-2 border-border",
 		link: { href: routes.trust, label: "Trust center" },
 	},

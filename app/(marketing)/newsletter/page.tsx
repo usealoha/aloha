@@ -1,72 +1,14 @@
 import { routes } from "@/lib/routes";
 import { makeMetadata } from "@/lib/seo";
-import {
-	ArrowRight,
-	ArrowUpRight,
-	Clock,
-	FileText,
-	Mail,
-	Rss,
-} from "lucide-react";
+import { ArrowRight, Clock, FileText, Mail } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = makeMetadata({
 	title: "Newsletter — one email on Fridays, no upsell",
 	description:
-		"A weekly note from the Aloha team. What we shipped, what we didn't, what we're reading. No push, no drip sequence, one unsubscribe link.",
+		"A weekly note from Aloha. What shipped, what I'm reading, and one short essay. Launching shortly after the product — drop your email to get the first issue.",
 	path: routes.connect.newsletter,
 });
-
-const ISSUES = [
-	{
-		n: "42",
-		date: "Apr 10, 2026",
-		title: "On closing the tab",
-		lead: "Why the default in a good tool is 'you're done' — and the five places we broke that rule by accident.",
-		read: "7 min",
-		tone: "bg-peach-100",
-	},
-	{
-		n: "41",
-		date: "Apr 3, 2026",
-		title: "The seventh telling",
-		lead: "Launches are 20% building, 80% caring enough to tell people the seventh time.",
-		read: "6 min",
-		tone: "bg-peach-200",
-	},
-	{
-		n: "40",
-		date: "Mar 27, 2026",
-		title: "Voice models and the ghostwriter problem",
-		lead: "Training on your 12 best posts vs your last 1,200 — what changes, and why the small set wins.",
-		read: "9 min",
-		tone: "bg-primary-soft",
-	},
-	{
-		n: "39",
-		date: "Mar 20, 2026",
-		title: "Defaults are political",
-		lead: "The choice of what happens if a user does nothing is where a tool tells the truth about what it cares about.",
-		read: "5 min",
-		tone: "bg-peach-100",
-	},
-	{
-		n: "38",
-		date: "Mar 13, 2026",
-		title: "The export button is the feature",
-		lead: "Offramp and onramp should be the same size. Why we build for the day you leave.",
-		read: "8 min",
-		tone: "bg-peach-300",
-	},
-	{
-		n: "37",
-		date: "Mar 6, 2026",
-		title: "Calendar ghost-slots",
-		lead: "On the quiet choreography of letting a tool name the gaps for you, instead of filling them.",
-		read: "6 min",
-		tone: "bg-primary-soft",
-	},
-];
 
 export default function NewsletterPage() {
 	return (
@@ -99,14 +41,15 @@ export default function NewsletterPage() {
 						Newsletter
 					</div>
 					<h1 className="font-display font-normal text-ink leading-[0.95] tracking-[-0.03em] text-[56px] sm:text-[72px] lg:text-[96px]">
-						One email
+						One email,
 						<br />
-						<span className="text-primary font-light">on Fridays.</span>
+						<span className="text-primary font-light">coming soon.</span>
 					</h1>
 					<p className="mt-8 max-w-2xl text-[17px] lg:text-[18px] leading-[1.6] text-ink/75">
-						What we shipped, what we didn't, what we're reading. Written by the
-						team, not a marketer. Zero push notifications come bundled. One
-						unsubscribe link in every issue.
+						The Aloha newsletter launches shortly after the product does.
+						What shipped, what I didn't get to, and one short essay on the
+						quiet shape of good tools. Drop your email and the first issue
+						lands in your inbox.
 					</p>
 
 					{/* subscribe form */}
@@ -147,18 +90,8 @@ export default function NewsletterPage() {
 					<div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-ink/60">
 						<span className="inline-flex items-center gap-2">
 							<Clock className="w-3.5 h-3.5 text-primary" />
-							Every Friday, 9am IST
+							Planned cadence: every Friday, 9am IST
 						</span>
-						<span className="text-ink/25">·</span>
-						<span>28,402 readers, most of them quiet</span>
-						<span className="text-ink/25">·</span>
-						<a
-							href="/rss.xml"
-							className="pencil-link inline-flex items-center gap-1.5"
-						>
-							<Rss className="w-3 h-3" />
-							RSS
-						</a>
 					</div>
 				</div>
 			</section>
@@ -220,66 +153,7 @@ export default function NewsletterPage() {
 				</section>
 			</section>
 
-			{/* ─── ARCHIVE ────────────────────────────────────────────────── */}
-			<section className="py-24 lg:py-32 bg-background-elev wavy">
-				<div className="max-w-[1100px] mx-auto px-6 lg:px-10 pb-8 lg:pb-12">
-					<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
-						<div className="col-span-12 lg:col-span-7">
-							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-								Recent issues
-							</p>
-							<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-								The archive,
-								<span className="text-primary"> open.</span>
-							</h2>
-						</div>
-						<p className="col-span-12 lg:col-span-5 text-[15.5px] text-ink/70 leading-[1.55]">
-							Everything we've ever sent lives here. Read a few before you
-							subscribe.
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
-						{ISSUES.map((i) => (
-							<Link
-								key={i.n}
-								href={`${routes.connect.newsletter}/issue-${i.n}`}
-								className={`group block p-7 lg:p-8 rounded-3xl ${i.tone} hover:-translate-y-1 transition-transform`}
-							>
-								<div className="flex items-center justify-between text-[11px] font-mono text-ink/60 uppercase tracking-[0.2em]">
-									<span>Issue {i.n}</span>
-									<span>{i.date}</span>
-								</div>
-								<h3 className="mt-6 font-display text-[24px] lg:text-[28px] leading-[1.15] tracking-[-0.01em] text-ink">
-									{i.title}
-								</h3>
-								<p className="mt-3 text-[14px] text-ink/75 leading-[1.6]">
-									{i.lead}
-								</p>
-								<div className="mt-6 flex items-center justify-between text-[12.5px]">
-									<span className="inline-flex items-center gap-1.5 text-ink/60 font-mono">
-										<Clock className="w-3 h-3" />
-										{i.read} read
-									</span>
-									<ArrowUpRight className="w-4 h-4 text-ink/40 group-hover:text-primary transition-colors" />
-								</div>
-							</Link>
-						))}
-					</div>
-
-					<div className="mt-10 text-[13.5px] text-ink/60">
-						<Link
-							href="#"
-							className="pencil-link inline-flex items-center gap-2"
-						>
-							Load older issues
-							<ArrowRight className="w-3.5 h-3.5" />
-						</Link>
-					</div>
-				</div>
-			</section>
-
-			{/* ─── FROM THE TEAM ───────────────────────────────────────────── */}
+			{/* ─── WHO WRITES IT ─────────────────────────────────────────── */}
 			<section className="bg-ink relative">
 				<div
 					aria-hidden
@@ -288,90 +162,28 @@ export default function NewsletterPage() {
 				<section className="py-24 lg:py-32 pb-32 lg:pb-40 wavy bg-background">
 					<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
 						<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-							<div className="col-span-12 lg:col-span-5">
+							<div className="col-span-12 lg:col-span-7">
 								<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
 									Who writes it
 								</p>
 								<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-									The team,
+									One person,
 									<br />
-									<span className="text-primary">in turn.</span>
+									<span className="text-primary">every Friday.</span>
 								</h2>
-								<p className="mt-6 text-[15.5px] text-ink/75 leading-[1.6] max-w-md">
-									Six of us, rotating weekly. Aarohi on product craft. Kashyap
-									on engineering. Jonas on design. Leilani on community. Vikram
-									on platform. Sofia on operations.
+								<p className="mt-6 text-[15.5px] text-ink/75 leading-[1.6] max-w-xl">
+									Aloha is an indie, one-person project out of Bengaluru.
+									The same person writing the code writes the newsletter —
+									so the posts and the product stay honest about each other.
 								</p>
 
 								<Link
 									href={routes.company.about}
 									className="mt-8 pencil-link inline-flex items-center gap-2 text-[14.5px] font-medium text-ink"
 								>
-									About the team
-									<ArrowUpRight className="w-4 h-4" />
+									More about Aloha
+									<ArrowRight className="w-4 h-4" />
 								</Link>
-							</div>
-
-							<div className="col-span-12 lg:col-span-7">
-								<ul className="grid grid-cols-2 gap-4">
-									{[
-										{
-											ini: "A",
-											n: "Aarohi",
-											role: "Product",
-											tone: "bg-peach-200",
-										},
-										{
-											ini: "K",
-											n: "Kashyap",
-											role: "Engineering",
-											tone: "bg-primary-soft",
-										},
-										{
-											ini: "J",
-											n: "Jonas",
-											role: "Design",
-											tone: "bg-peach-100",
-										},
-										{
-											ini: "L",
-											n: "Leilani",
-											role: "Community",
-											tone: "bg-peach-300",
-										},
-										{
-											ini: "V",
-											n: "Vikram",
-											role: "Platform",
-											tone: "bg-peach-100",
-										},
-										{
-											ini: "S",
-											n: "Sofia",
-											role: "Ops",
-											tone: "bg-primary-soft",
-										},
-									].map((a) => (
-										<li
-											key={a.n}
-											className="p-4 rounded-2xl bg-background border border-border flex items-center gap-3"
-										>
-											<span
-												className={`w-10 h-10 rounded-full ${a.tone} flex items-center justify-center font-display text-[16px] text-ink shrink-0`}
-											>
-												{a.ini}
-											</span>
-											<div>
-												<p className="font-medium text-[14px] text-ink">
-													{a.n}
-												</p>
-												<p className="text-[12px] text-ink/55 font-mono uppercase tracking-[0.14em]">
-													{a.role}
-												</p>
-											</div>
-										</li>
-									))}
-								</ul>
 							</div>
 						</div>
 					</div>

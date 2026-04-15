@@ -62,11 +62,11 @@ foundation-model provider.
 
 ## What never trains on your data
 
-- **Public AI models.** Your posts are never sent to OpenAI,
-  Anthropic, Google, or any other foundation-model provider for
-  training. The OpenAI endpoints we use are covered by zero-
-  retention agreements; they see a prompt, return a response,
-  and don't log the payload.
+- **Public AI models.** Your posts are never submitted to OpenAI,
+  Anthropic, Google, or any other foundation-model provider to be
+  used as training data. The OpenAI endpoints we use are governed
+  by OpenAI's standard API terms — prompts are not used to train
+  OpenAI's public models.
 - **Other customers' voice models.** Your data stays in your
   workspace. Even a shared voice model on a Team plan only trains
   on the posts that workspace marks as voice-matching.
@@ -77,13 +77,12 @@ foundation-model provider.
 ## Where the models run
 
 - **Primary voice model** — a small, workspace-scoped model we
-  train and host ourselves in the region matching your account
-  (US or EU).
+  train and host ourselves in AWS us-east-1.
 - **Inference fallback for long-form drafts** — a third-party
-  foundation model (currently OpenAI) under a zero-retention
-  agreement. Prompts are scrubbed of identifying metadata before
-  transmission. Fallback is used only when your voice model isn't
-  confident (>90% of requests are served by your model alone).
+  foundation model (currently OpenAI) governed by OpenAI's
+  standard API terms. Prompts are scrubbed of identifying
+  metadata before transmission. Fallback is used only when your
+  voice model isn't confident.
 
 You can opt out of the fallback in Settings → Voice. The model
 will still draft for you, it just won't use long-form assistance
@@ -170,7 +169,7 @@ ourselves accountable.
 ## Contact
 
 Questions or disagreements:
-<a href="mailto:ai@usealoha.app">ai@usealoha.app</a>. Our
-Responsible AI Lead reads every message.
+<a href="mailto:hello@usealoha.app">hello@usealoha.app</a>. It's a
+one-person project — the founder reads every message.
 
 <LegalFooter current={routes.legal.responsibleAi} />

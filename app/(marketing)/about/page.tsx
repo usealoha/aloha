@@ -1,13 +1,13 @@
 import { routes } from "@/lib/routes";
 import { makeMetadata } from "@/lib/seo";
-import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { StockPhotoPlaceholder } from "../_components/stock-photo-placeholder";
 
 export const metadata = makeMetadata({
-	title: "About — the team behind the quiet tool",
+	title: "About — the person behind the quiet tool",
 	description:
-		"Aloha is a small team in Bengaluru building a calm social media OS. Here's who we are and how we got here.",
+		"Aloha is a one-person indie project in Bengaluru building a calm social media OS. Here's the story so far.",
 	path: routes.company.about,
 });
 
@@ -15,70 +15,35 @@ const TIMELINE = [
 	{
 		year: "2023",
 		label: "The idea",
-		body: "Two of us kept complaining that every social tool was either a loud growth machine or a bloated enterprise suite. We wrote a brief for what we wanted instead. Nobody else was building it.",
+		body: "I kept complaining that every social tool was either a loud growth machine or a bloated enterprise suite. I wrote a brief for what I wanted instead. Nobody else was building it.",
 		tone: "bg-peach-100",
 	},
 	{
 		year: "2024",
 		label: "First prototype",
-		body: "We built the Composer on weekends. Forty friends tried it. Muse — the voice model, trained on your best posts, not your whole archive — was the piece that people kept asking us to turn into a product.",
+		body: "Built the Composer on weekends. A handful of friends tried it. Muse — the voice model, trained on your best posts, not your whole archive — was the piece that people kept asking me to turn into a product.",
 		tone: "bg-peach-200",
 	},
 	{
 		year: "2025",
-		label: "Company",
-		body: "Aloha incorporated in India in March. We raised a small seed round from investors who signed an explicit 'calm tool, not a growth machine' side letter. Hired a team of six.",
+		label: "Building in the open",
+		body: "Kept iterating through the year, sharing progress and scrapping what wasn't working. The shape of the product got clearer every month.",
 		tone: "bg-primary-soft",
 	},
 	{
 		year: "2026",
 		label: "Public launch",
-		body: "Private beta through Q1; public launch in April. 140k creators in the first 90 days. We mean to stay small enough to answer every email.",
+		body: "Opening the doors in April. Small on purpose. I mean to stay close enough to answer every email.",
 		tone: "bg-peach-300",
 	},
 ];
 
 const TEAM = [
 	{
-		initial: "A",
-		name: "Aarohi Mehta",
-		role: "Co-founder · Product",
-		note: "Ex-Figma PM, writes the roadmap, drafts the Monday note",
-		tone: "bg-peach-200",
-	},
-	{
 		initial: "K",
 		name: "Kashyap Gohil",
-		role: "Co-founder · Engineering",
-		note: "Types too fast, cares about calm defaults",
-		tone: "bg-primary-soft",
-	},
-	{
-		initial: "J",
-		name: "Jonas Ribeiro",
-		role: "Design",
-		note: "Fraunces evangelist, 4:5 crop evangelist",
-		tone: "bg-peach-100",
-	},
-	{
-		initial: "L",
-		name: "Leilani Okafor",
-		role: "Growth & community",
-		note: "Reads every support email. Yes, every one.",
-		tone: "bg-peach-300",
-	},
-	{
-		initial: "V",
-		name: "Vikram Sethi",
-		role: "Platform engineering",
-		note: "Makes the Matrix faster than you expect",
-		tone: "bg-peach-100",
-	},
-	{
-		initial: "S",
-		name: "Sofia Valente",
-		role: "Operations",
-		note: "Runs finance, runs hiring, runs marathons",
+		role: "Founder · Everything",
+		note: "Writes the code, reads every support email, cares about calm defaults.",
 		tone: "bg-primary-soft",
 	},
 ];
@@ -88,7 +53,7 @@ const OFFICES = [
 		city: "Bengaluru",
 		region: "Karnataka, India",
 		tz: "UTC+5:30",
-		note: "HQ · the whole team",
+		note: "Home base · one desk, one calendar",
 	},
 ];
 
@@ -125,23 +90,23 @@ export default function AboutPage() {
 								About
 							</div>
 							<h1 className="font-display font-normal text-ink leading-[0.95] tracking-[-0.03em] text-[56px] sm:text-[72px] lg:text-[92px]">
-								A small team
+								One person
 								<br />
 								<span className="text-primary font-light">
 									building one calm thing.
 								</span>
 							</h1>
 							<p className="mt-8 max-w-2xl text-[17px] lg:text-[18px] leading-[1.6] text-ink/75">
-								Aloha is six people in one studio in Bengaluru. We left jobs
-								at loud companies to build something quieter. Here's what it
-								adds up to so far.
+								Aloha is an indie project — one desk in Bengaluru. I left a
+								job at a loud company to build something quieter. Here's
+								what it adds up to so far.
 							</p>
 						</div>
 						<div className="col-span-12 lg:col-span-5">
 							<StockPhotoPlaceholder
 								id="about-hero"
-								label="The team during launch week — Bengaluru studio."
-								notes="Needed: group portrait of the founding team at a warm-toned workspace. Six people, informal arrangement, no forced corporate smile. 4:5 vertical. Taken with natural light near a window. A hint of the Bengaluru studio visible in the background."
+								label="Home-base workspace — Bengaluru."
+								notes="Needed: a single warm-toned desk photograph, 4:5 vertical. Natural light from a window, a notebook, a laptop. No people necessary; the room does the work."
 								aspect="aspect-[4/5]"
 								tone="bg-peach-200"
 							/>
@@ -214,15 +179,14 @@ export default function AboutPage() {
 								The team
 							</p>
 							<h2 className="font-display text-[36px] lg:text-[52px] leading-[1.02] tracking-[-0.02em]">
-								Six people.
+								One person.
 								<br />
 								<span className="text-primary">One roadmap.</span>
 							</h2>
 						</div>
 						<p className="col-span-12 lg:col-span-5 text-[15.5px] text-ink/70 leading-[1.55]">
-							We mean to stay small enough that you'll recognise every name on
-							the commit history. Every person on this list also answers support
-							tickets.
+							Small on purpose. The same person writes the code and answers
+							the support emails. You won't bounce between tiers or inboxes.
 						</p>
 					</div>
 
@@ -251,15 +215,8 @@ export default function AboutPage() {
 					</div>
 
 					<p className="mt-10 text-[13.5px] text-ink/60 max-w-xl">
-						Hiring for one or two roles when the fit is right. The open list is
+						Not hiring yet — but if you'd like to say hello, I read every note
 						at{" "}
-						<Link
-							href={routes.company.careers}
-							className="pencil-link text-ink"
-						>
-							/careers
-						</Link>
-						; if none fit, we still read{" "}
 						<a
 							href="mailto:hello@usealoha.app"
 							className="pencil-link text-ink"
@@ -308,58 +265,6 @@ export default function AboutPage() {
 				</section>
 			</section>
 
-			{/* ─── SUPPORTERS ─────────────────────────────────────────────── */}
-			<section className="bg-ink relative">
-				<div
-					aria-hidden
-					className="absolute inset-0 top-2.5! opacity-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
-				/>
-				<section className="py-20 lg:py-24 pb-28 lg:pb-32 wavy bg-background-elev">
-					<div className="max-w-[1180px] mx-auto px-6 lg:px-10">
-						<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10">
-							<div className="col-span-12 lg:col-span-5">
-								<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-									Supported by
-								</p>
-								<h2 className="font-display text-[32px] lg:text-[40px] leading-[1.05] tracking-[-0.015em]">
-									People who signed
-									<br />
-									<span className="text-primary">
-										the calm-tool side letter.
-									</span>
-								</h2>
-							</div>
-							<div className="col-span-12 lg:col-span-7">
-								<p className="text-[15.5px] text-ink/75 leading-[1.6] max-w-lg">
-									Our seed investors agreed, in writing, that we're building a
-									calm tool, not a growth engine. Revenue per creator over
-									creators per quarter. We share the side letter with anyone who
-									asks.
-								</p>
-
-								<ul className="mt-8 grid grid-cols-2 gap-4">
-									{[
-										"Calm & Co.",
-										"Field Partners",
-										"Tidelines",
-										"The Editorial Fund",
-										"4 angels",
-										"Creators in our beta",
-									].map((s) => (
-										<li
-											key={s}
-											className="px-5 py-4 rounded-2xl bg-background border border-border font-display text-[17px] text-ink"
-										>
-											{s}
-										</li>
-									))}
-								</ul>
-							</div>
-						</div>
-					</div>
-				</section>
-			</section>
-
 			{/* ─── FINAL CTA ──────────────────────────────────────────────── */}
 			<section className="relative overflow-hidden bg-ink wavy text-background-elev">
 				<div
@@ -370,19 +275,19 @@ export default function AboutPage() {
 					<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-end">
 						<div className="col-span-12 lg:col-span-8">
 							<h2 className="font-display text-[40px] sm:text-[52px] lg:text-[72px] leading-[0.98] tracking-[-0.025em]">
-								Small team.
+								One inbox.
 								<br />
-								<span className="text-peach-300">Answerable team.</span>
+								<span className="text-peach-300">One person answering.</span>
 							</h2>
 							<p className="mt-6 text-[15.5px] text-ink/70 max-w-lg leading-[1.55]">
-								Write us at{" "}
+								Write me at{" "}
 								<a
 									href="mailto:hello@usealoha.app"
 									className="pencil-link text-ink"
 								>
 									hello@usealoha.app
 								</a>{" "}
-								— a real person replies, usually within a day.
+								— I reply, usually within a day.
 							</p>
 						</div>
 						<div className="col-span-12 lg:col-span-4 flex flex-col gap-4 lg:items-end">
@@ -392,13 +297,6 @@ export default function AboutPage() {
 							>
 								Read the manifesto
 								<ArrowRight className="w-4 h-4" />
-							</Link>
-							<Link
-								href={routes.company.careers}
-								className="pencil-link inline-flex items-center gap-2 text-[14.5px] font-medium"
-							>
-								See open roles
-								<ArrowUpRight className="w-4 h-4" />
 							</Link>
 						</div>
 					</div>

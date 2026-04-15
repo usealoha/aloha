@@ -228,19 +228,19 @@ export default function ManifestoPage() {
 						</h2>
 
 						<p>
-							Our seed investors signed a side letter that says, in writing:
-							Aloha is a calm tool, not a growth engine. Revenue per creator,
-							not creators per quarter. Profitability before velocity. We read
-							it out loud at the last board meeting and got uncomfortable
-							laughter, but we meant it.
+							Aloha is bootstrapped and indie — no outside investors, no
+							board to answer to. The commitment is a private one, but I'm
+							writing it down here so it stays public: revenue per creator,
+							not creators per quarter. Profitability before velocity.
 						</p>
 
 						<p>
-							This doesn't mean we won't grow. It means we won't do the things
-							that most "growth" playbooks want us to do — push notifications on
-							day two, daily email drips, referral programmes that pay creators
-							to tag their audience. We'd rather have forty thousand customers
-							who love the tool than four million who are passively using it.
+							This doesn't mean I won't grow. It means I won't do the things
+							most "growth" playbooks prescribe — push notifications on day
+							two, daily email drips, referral programmes that pay creators
+							to tag their audience. I'd rather have a few thousand
+							customers who love the tool than a million who are passively
+							using it.
 						</p>
 
 						<figure className="my-14 p-10 rounded-3xl bg-primary-soft border border-primary/15">
@@ -289,9 +289,9 @@ export default function ManifestoPage() {
 								growth but cost more than they paid.
 							</li>
 							<li>
-								Every hire signs a short values document before day one. It
-								includes &ldquo;we will tell customers to use a competitor when
-								it's right&rdquo; as a bullet.
+								The first line of my private values document is &ldquo;tell
+								customers to use a competitor when it's right.&rdquo; If a
+								second person ever joins, they sign the same thing.
 							</li>
 							<li>
 								This manifesto has a{" "}

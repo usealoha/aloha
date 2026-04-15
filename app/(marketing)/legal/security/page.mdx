@@ -5,108 +5,105 @@ import { LegalHeader } from "../_components/legal-header";
 import { LegalFooter } from "../_components/legal-footer";
 
 export const metadata = makeMetadata({
-  title: "Security & compliance",
+  title: "Security",
   description:
-    "How Aloha secures your data — encryption, access controls, subprocessors, and our incident response commitments.",
+    "How Aloha secures your data — encryption, access controls, subprocessors, and what we don't have yet.",
   path: routes.legal.security,
 });
 
 <LegalHeader
-  title="Security & compliance"
-  lastUpdated="April 10, 2026"
-  description="How Aloha secures your data. The short version lives in the summary; the long version is this page."
+  title="Security"
+  lastUpdated="April 16, 2026"
+  description="How Aloha secures your data. We're an indie project — no SOC 2, no compliance team. Here's what actually happens."
 />
 
 <Summary>
-  Customer data is encrypted in transit (TLS 1.3) and at rest
-  (AES-256). Production access inside Aloha is role-based, logged,
-  and audited. We run SOC 2 Type II and have a public vulnerability
-  disclosure programme at
-  <a href="mailto:security@usealoha.app">security@usealoha.app</a>.
+  Customer data is encrypted in transit (TLS 1.3) and at rest (AES-256 via
+  AWS KMS). Access to production is limited to the founder, logged, and
+  protected with MFA.
 
-  If something breaks we tell you within 48 hours. If you find a
-  vulnerability we'll thank you in writing and, where applicable,
-  in money.
+  We don't hold SOC 2, ISO 27001, HIPAA, or PCI certifications today. If
+  that's a requirement, Aloha isn't the right fit yet.
+
+  Report vulnerabilities to
+  <a href="mailto:security@usealoha.app">security@usealoha.app</a>. If an
+  incident affects your data, we'll tell you within 72 hours of becoming
+  aware.
 </Summary>
+
+## Who runs this
+
+Aloha is operated by a single person in Bengaluru, India. There is no
+security team to forward your questionnaire to — the founder handles
+every request personally. That keeps the chain short, and keeps the
+commitments below truthful.
 
 ## Infrastructure
 
-Aloha runs on Amazon Web Services in two primary regions:
+Aloha runs on Amazon Web Services in **us-east-1** (N. Virginia).
+Services deploy across multiple availability zones. Automated encrypted
+database snapshots run hourly; point-in-time recovery is available for
+the last 30 days.
 
-- **us-east-1** (N. Virginia) — US customer data.
-- **eu-west-1** (Ireland) — EU customer data.
+Edge routing and DDoS protection are provided by Cloudflare, which
+terminates TLS 1.3 at the edge.
 
-Every service is deployed across multiple availability zones. The
-primary database uses automated encrypted snapshots every hour;
-point-in-time recovery is available for the last 35 days.
-
-Static assets and edge routing run on Cloudflare, which terminates
-TLS 1.3 at the edge and provides DDoS protection.
+We don't offer EU-resident hosting today. For EU/UK customers, data
+transfers are covered by Standard Contractual Clauses and the UK IDTA —
+see the [DPA](/legal/dpa).
 
 ## Encryption
 
-**In transit.** All external traffic is served over TLS 1.3. We
-disable TLS 1.1 and below. HSTS is enabled with preload.
+**In transit.** All external traffic is served over TLS 1.3. TLS 1.1 and
+below are disabled. HSTS is enabled with preload.
 
-**At rest.** Production databases and object storage use AES-256
-encryption via AWS KMS. Customer-managed keys are available on the
-Enterprise plan.
+**At rest.** Managed databases and object storage use AES-256 encryption
+via AWS KMS.
 
-**Secrets.** Platform secrets (OAuth tokens, webhook keys) are
-encrypted with an envelope key rotated annually. Tokens for the
-social networks you connect are encrypted per-workspace with a
-unique key, so a single compromised record can't unlock another
-customer's connections.
+**Secrets.** Platform secrets (OAuth tokens, webhook keys) are encrypted
+with a key rotated on a periodic schedule. Tokens for the social networks
+you connect are encrypted per-workspace, so a single compromised record
+can't unlock another customer's connections.
 
 ## Access controls
 
-Production access inside Aloha follows the principle of least
-privilege:
+Production access is restricted to the founder. Every access path
+requires MFA, and administrative sessions are logged.
 
-- **Role-based access.** Engineers get only the permissions their
-  role requires; elevation requires a peer-reviewed request with a
-  time limit.
-- **MFA everywhere.** Hardware security keys for administrative
-  access; TOTP minimum for everyone.
-- **Single sign-on.** All internal systems behind SSO with
-  mandatory device posture checks.
-- **Audit logging.** Every production access event is logged and
-  reviewed weekly.
-
-No Aloha employee accesses Customer Data unless required to support
-a specific ticket you've filed or to investigate a security
-incident. Every such access is logged.
+No Aloha operator accesses Customer Data unless required to support a
+specific ticket you've filed or to investigate a security incident. That
+access is logged and available on request.
 
 ## Application security
 
-- **Dependency scanning.** Dependabot + Snyk on every PR; critical
-  CVEs patched within 24 hours, high within a week.
-- **Static analysis.** CodeQL runs on every commit; secrets
-  scanning blocks pushes.
-- **Pen testing.** External third-party penetration test annually
-  plus before any major architectural change.
-- **Code review.** Two-person review required on every PR touching
-  auth, billing, or customer data paths.
+- **Dependency scanning.** Dependabot runs on every PR; critical CVEs
+  are patched as soon as a fix is available.
+- **Secret scanning.** Pushes containing secrets are blocked at the
+  source host.
+- **Code review.** All changes to authentication, billing, and
+  customer-data paths go through a self-review checklist before deploy.
+
+We do not run an external third-party penetration test today. If that
+becomes a blocker for your vendor review, we'd rather say so than
+pretend otherwise.
 
 ## Business continuity
 
-- **Backups.** Hourly database snapshots, daily full backups
-  shipped to a separate AWS account with restricted access.
-- **Disaster recovery.** Quarterly DR tabletop exercises; RPO 1
-  hour, RTO 4 hours.
-- **Uptime.** Published at [/status](/status). 99.9% target on
-  non-Enterprise plans; 99.95% on Enterprise with SLA credits.
+- **Backups.** Hourly database snapshots, daily full backups retained in
+  a separate AWS account.
+- **Availability.** Best-effort. A live status page is
+  [coming soon](/status). If something breaks, we'll post about it
+  publicly and email affected workspaces.
 
 ## Compliance
 
-- **SOC 2 Type II.** Current. Report available under NDA —
-  request from
-  <a href="mailto:security@usealoha.app">security@usealoha.app</a>.
-- **GDPR / UK GDPR.** [DPA](/legal/dpa) available and signable in
-  one click.
-- **CCPA.** Covered by the [privacy policy](/legal/privacy); opt-
-  out at Settings → Privacy.
-- **ISO 27001.** In progress; certification expected Q4 2026.
+- **No formal certifications.** No SOC 2, no ISO 27001, no HIPAA, no
+  PCI DSS. We follow the practices those frameworks describe; there is
+  no attestation letter to send you.
+- **GDPR / UK GDPR.** A standard [DPA](/legal/dpa) is available for
+  signing. Transfers out of the EU/UK rely on Standard Contractual
+  Clauses and the UK IDTA.
+- **CCPA.** Covered by the [privacy policy](/legal/privacy).
 
 ## Subprocessors
 
@@ -116,52 +113,47 @@ incident. Every such access is logged.
 
 | Subprocessor | Purpose | Region |
 | --- | --- | --- |
-| Amazon Web Services | Hosting, storage, compute | US, EU |
+| Amazon Web Services | Hosting, storage, compute | US |
 | Cloudflare | CDN, DDoS protection, image processing | Global edge |
-| Stripe | Payment processing | US, EU |
+| Vercel | Application hosting, edge runtime | Global edge |
+| Stripe / Polar | Payment processing | US, EU |
 | Postmark | Transactional email | US |
-| Upstash (QStash) | Scheduled job delivery | US, EU |
-| OpenAI | Voice model inference fallback (zero-retention) | US |
+| Upstash (QStash) | Scheduled job delivery | US |
+| OpenAI | Voice model inference fallback | US |
 
-New subprocessors are announced at least **30 days** before they
-handle Customer Data. EU customers on paid plans can subscribe to
-the subprocessor mailing list from Settings → Legal.
+Material changes to this list are noted on the
+[changelog](/whats-new) and reflected in the privacy policy's "last
+updated" date.
 
 ## Vulnerability disclosure
 
 If you find a vulnerability, please report it privately to
 <a href="mailto:security@usealoha.app">security@usealoha.app</a>.
-Encrypt with our
-[PGP key](https://usealoha.app/.well-known/security.pgp) for anything
-sensitive.
 
 **What we promise:**
 
-- We'll acknowledge receipt within 24 hours.
-- We won't pursue legal action against good-faith research that
-  stays within our scope and respects user data.
-- We'll credit you publicly (with your permission) and pay bounties
-  for qualifying reports — $250 to $10,000 depending on severity.
+- We'll acknowledge receipt within 72 hours.
+- We won't pursue legal action against good-faith research that stays
+  within our scope and respects user data.
+- We'll credit you publicly with your permission.
+
+We don't run a paid bounty programme today.
 
 **Out of scope:** social engineering, denial-of-service attacks,
-physical access attempts, and vulnerabilities in third-party
-services we don't control.
+physical access attempts, and vulnerabilities in third-party services
+we don't control.
 
 ## Incident response
 
-Our incident response plan covers detection, containment,
-eradication, recovery, and post-mortem. If a security incident
-affects Customer Data, we notify affected customers within **48
-hours** of awareness, per the [DPA](/legal/dpa).
-
-Public post-mortems for significant incidents are published at
-[/whats-new](/whats-new). We include root cause, timeline, impact,
-and what changed as a result. We don't redact to look better.
+If a security incident affects Customer Data, we'll notify affected
+customers within **72 hours** of awareness, per the [DPA](/legal/dpa).
+Notifications include what we know, what we don't yet know, and what
+we're doing about it.
 
 ## Contact
 
-- **General security questions.** <a href="mailto:security@usealoha.app">security@usealoha.app</a>
-- **Vulnerability reports.** Same address; PGP key above.
-- **Compliance and audit requests.** <a href="mailto:compliance@usealoha.app">compliance@usealoha.app</a>
+- **Security questions and vulnerability reports.** <a href="mailto:security@usealoha.app">security@usealoha.app</a>
+- **Privacy and data requests.** <a href="mailto:privacy@usealoha.app">privacy@usealoha.app</a>
+- **Anything else.** <a href="mailto:hello@usealoha.app">hello@usealoha.app</a>
 
 <LegalFooter current={routes.legal.security} />

@@ -295,13 +295,6 @@ export default function TemplatesPage() {
 									Open in Composer
 									<ArrowRight className="w-4 h-4" />
 								</Link>
-								<Link
-									href={`${routes.resources.playbooks}/${featured.slug}`}
-									className="pencil-link text-[13px] font-medium text-ink inline-flex items-center gap-2"
-								>
-									Read the playbook first
-									<ArrowUpRight className="w-3.5 h-3.5" />
-								</Link>
 							</div>
 						</article>
 					</div>
@@ -429,13 +422,6 @@ export default function TemplatesPage() {
 									Submit a template
 									<ArrowRight className="w-4 h-4" />
 								</a>
-								<Link
-									href={routes.resources.playbooks}
-									className="pencil-link inline-flex items-center gap-2 text-[13.5px]"
-								>
-									Or read the playbooks
-									<ArrowUpRight className="w-3.5 h-3.5" />
-								</Link>
 							</div>
 						</div>
 					</div>

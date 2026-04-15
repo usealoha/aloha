@@ -267,13 +267,6 @@ export default async function DashboardPage() {
               Most of the lift comes from cadence. Keep your queue full one
               week at a time and the rest takes care of itself.
             </p>
-            <Link
-              href="/resources/field-notes"
-              className="mt-5 pencil-link inline-flex items-center gap-1 text-[13px] text-ink"
-            >
-              Read more field notes
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
           </article>
 
           <article className="rounded-2xl border border-border bg-background-elev p-6">

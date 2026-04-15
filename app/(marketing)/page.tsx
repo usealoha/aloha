@@ -322,31 +322,6 @@ export default function LandingPage() {
 					</div>
 				</div>
 
-				{/* hairline with inline stats */}
-				<div className="relative border-y border-border bg-background-elev">
-					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-5 flex flex-wrap items-center gap-x-5 sm:gap-x-10 gap-y-3 text-[13px]">
-						<span className="font-semibold text-ink">In good company →</span>
-						{[
-							"Temporal",
-							"Upstash",
-							"Raycast",
-							"Linear",
-							"Plausible",
-							"Beehiiv",
-							"Resend",
-						].map((b, i, arr) => (
-							<span
-								key={b}
-								className="font-display text-ink/80 text-[16px] sm:text-[18px] tracking-tight"
-							>
-								{b}
-								{i < arr.length - 1 && (
-									<span className="ml-5 sm:ml-10 text-ink/20 font-sans">·</span>
-								)}
-							</span>
-						))}
-					</div>
-				</div>
 			</header>
 
 			{/* ─── MANIFESTO PULLQUOTE ───────────────────────────────────────── */}
@@ -357,17 +332,17 @@ export default function LandingPage() {
 							Why we built this
 						</p>
 						<blockquote className="font-display text-[26px] sm:text-[42px] lg:text-[54px] leading-[1.15] sm:leading-[1.08] tracking-[-0.02em] text-ink">
-							We started Aloha the week a founder we loved quietly
+							I started Aloha the week a founder I loved quietly
 							<span className="text-primary"> quit posting. </span>
-							Not because she stopped having things to say - because the tools
+							Not because she stopped having things to say — because the tools
 							had made the saying{" "}
-							<span className="text-peach-400">joyless</span>. We're trying to
+							<span className="text-peach-400">joyless</span>. I'm trying to
 							undo that.
 						</blockquote>
 						<div className="mt-10 flex items-center justify-center gap-3 text-[13px] text-ink/60">
 							<span className="w-8 h-px bg-ink/30" />
 							<span className="font-display text-[15px] text-ink">
-								kash &amp; jonah, founders
+								kash, founder
 							</span>
 							<span className="w-8 h-px bg-ink/30" />
 						</div>
@@ -965,10 +940,10 @@ export default function LandingPage() {
 			<section className="bg-primary text-primary-foreground">
 				<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-16 sm:py-20 lg:py-24 grid grid-cols-2 lg:grid-cols-4 lg:divide-x divide-white/20 gap-y-10 gap-x-6">
 					{[
-						{ v: "140K", l: "Creators posting", s: "across 94 countries" },
-						{ v: "6.2M", l: "Scheduled this year", s: "and counting" },
-						{ v: "38 min", l: "Saved per day", s: "on average, per user" },
-						{ v: "99.98%", l: "Uptime", s: "last twelve months" },
+						{ v: "Apr '26", l: "Public launch", s: "fresh out of beta" },
+						{ v: "Solo", l: "One builder", s: "from Bengaluru, India" },
+						{ v: "Free", l: "Forever tier", s: "three channels, no card" },
+						{ v: "Soon", l: "Status page", s: "live health at /status" },
 					].map((s, i) => (
 						<div
 							key={i}
@@ -984,7 +959,7 @@ export default function LandingPage() {
 				</div>
 			</section>
 
-			{/* ─── TESTIMONIALS ───────────────────────────────────────────────── */}
+			{/* ─── EARLY DAYS (replaces testimonials) ─────────────────────── */}
 			<section className="bg-peach-200">
 				<section
 					id="stories"
@@ -993,231 +968,56 @@ export default function LandingPage() {
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10">
 						<div className="max-w-3xl mb-16">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-								In their words
+								Early days
 							</p>
 							<h2 className="font-display text-[30px] sm:text-[36px] lg:text-[52px] leading-[1.05] sm:leading-none tracking-[-0.02em]">
-								Not a single one of these was
-								<span className="text-primary"> paid for.</span>
+								No user stories to share
+								<span className="text-primary"> yet.</span>
 							</h2>
+							<p className="mt-6 text-[16px] sm:text-[17px] text-ink/75 leading-[1.6] max-w-2xl">
+								Aloha just launched. When real creators send something worth
+								quoting, I'll put it here — nothing paid, nothing invented.
+								Until then, here's what you'd actually see if you signed up
+								today.
+							</p>
 						</div>
 
-						<div className="grid grid-cols-12 auto-rows-[minmax(170px,auto)] gap-x-0 sm:gap-x-4 lg:gap-x-6 gap-y-4 lg:gap-y-6 grid-flow-dense">
-							{/* 1 — hero quote (7 col × 2 row) */}
-							<figure className="col-span-12 md:col-span-7 md:row-span-2 bg-peach-200 rounded-3xl p-7 sm:p-10 lg:p-12 flex flex-col justify-between gap-8">
-								<blockquote className="font-display text-[24px] sm:text-[28px] lg:text-[38px] leading-[1.12] tracking-[-0.015em]">
-									"I stopped dreading Mondays. That sounds small, but Mondays
-									were when the week's posting panic began. Aloha made my
-									Mondays quiet."
-								</blockquote>
-								<figcaption className="mt-10 flex items-center gap-4">
-									<span className="w-12 h-12 rounded-full bg-ink text-peach-300 font-display text-xl flex items-center justify-center">
-										N
-									</span>
-									<div>
-										<p className="font-medium">Naledi O.</p>
-										<p className="text-[13px] text-ink/60">
-											Founder, Braid Studio · 84K followers
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 2 — Theo, mid */}
-							<figure className="col-span-12 md:col-span-5 bg-peach-400 rounded-3xl p-8 lg:p-9 flex flex-col justify-between">
-								<blockquote className="font-display text-[21px] lg:text-[24px] leading-tight tracking-[-0.01em]">
-									"Replaced three tools, two spreadsheets, and a group chat
-									called 'ugh'."
-								</blockquote>
-								<figcaption className="mt-6 flex items-center gap-3">
-									<span className="w-9 h-9 rounded-full bg-ink text-background-elev font-display flex items-center justify-center">
-										T
-									</span>
-									<div>
-										<p className="font-medium text-[14px]">Theo A.</p>
-										<p className="text-[12.5px] text-ink/60">
-											Newsletter writer · 24K subs
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 3 — Leah, mid */}
-							<figure className="col-span-12 md:col-span-5 bg-primary-soft rounded-3xl p-8 lg:p-9 flex flex-col justify-between">
-								<blockquote className="font-display text-[21px] lg:text-[24px] leading-tight tracking-[-0.01em]">
-									"The automation matrix saved me 11 hours last month. I
-									checked."
-								</blockquote>
-								<figcaption className="mt-6 flex items-center gap-3">
-									<span className="w-9 h-9 rounded-full bg-ink text-background-elev font-display flex items-center justify-center">
-										L
-									</span>
-									<div>
-										<p className="font-medium text-[14px]">Leah S.</p>
-										<p className="text-[12.5px] text-ink/60">
-											Agency owner · 6 clients
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 4 — Maya, tall long-form (5 col × 2 row) */}
-							<figure className="col-span-12 md:col-span-5 md:row-span-2 bg-peach-100 rounded-3xl p-8 lg:p-9 flex flex-col justify-between">
-								<div>
-									<span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink/55 mb-5">
-										<span className="w-3 h-px bg-ink/40" />
-										Content lead
-									</span>
-									<blockquote className="font-display text-[19px] lg:text-[21px] leading-[1.35] tracking-[-0.005em] text-ink/90">
-										"Our Monday stand-up used to be 'what are we posting this
-										week.' Now it's 'what did we learn last week.' That shift is
-										worth the subscription."
-									</blockquote>
-								</div>
-								<figcaption className="mt-6 flex items-center gap-3">
-									<span className="w-9 h-9 rounded-full bg-ink text-background-elev font-display flex items-center justify-center">
-										M
-									</span>
-									<div>
-										<p className="font-medium text-[14px]">Maya R.</p>
-										<p className="text-[12.5px] text-ink/60">
-											Head of content · Fermi
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 5 — Deniz, wide */}
-							<figure className="col-span-12 md:col-span-7 bg-peach-300 rounded-3xl p-8 lg:p-9 flex flex-col justify-between">
-								<div>
-									<span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink/55 mb-4">
-										<span className="w-3 h-px bg-ink/40" />
-										Switched from Buffer
-									</span>
-									<blockquote className="font-display text-[19px] lg:text-[22px] leading-[1.3] tracking-[-0.005em] text-ink/90">
-										"I migrated from Buffer in an afternoon. The importer didn't
-										drop a single scheduled post — even the recurring ones
-										landed right."
-									</blockquote>
-								</div>
-								<figcaption className="mt-6 flex items-center gap-3">
-									<span className="w-9 h-9 rounded-full bg-ink text-background-elev font-display flex items-center justify-center">
-										D
-									</span>
-									<div>
-										<p className="font-medium text-[14px]">Deniz K.</p>
-										<p className="text-[12.5px] text-ink/60">
-											Indie maker · 11K followers
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 6 — Priya, wide, dark standout */}
-							<figure className="col-span-12 md:col-span-7 bg-ink text-background-elev rounded-3xl p-8 lg:p-9 flex flex-col justify-between">
-								<div>
-									<span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-peach-200 mb-4">
-										<span className="w-3 h-px bg-peach-200/60" />
-										LinkedIn
-									</span>
-									<blockquote className="font-display text-[19px] lg:text-[22px] leading-[1.3] tracking-[-0.005em]">
-										"Muse writes in my cadence now. My editor can't always tell
-										which drafts I wrote and which Aloha did — and she's been
-										editing me for four years."
-									</blockquote>
-								</div>
-								<figcaption className="mt-6 flex items-center gap-3">
-									<span className="w-9 h-9 rounded-full bg-peach-200 text-ink font-display flex items-center justify-center">
-										P
-									</span>
-									<div>
-										<p className="font-medium text-[14px]">Priya N.</p>
-										<p className="text-[12.5px] text-background-elev/60">
-											Ghostwriter · 38K on LinkedIn
-										</p>
-									</div>
-								</figcaption>
-							</figure>
-
-							{/* 7–10 — social mentions, bento-packed */}
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
 							{[
 								{
-									q: "if you post on more than two platforms and you're not using this you're just doing chores",
-									n: "@leahmakes",
-									r: "on Threads · 840 likes",
-									platform: "Threads",
-									initial: "L",
-									bg: "bg-primary-soft",
-									span: "col-span-12 md:col-span-4",
-									quote:
-										"font-display text-[17px] lg:text-[19px] leading-[1.3] tracking-[-0.005em] text-ink/90",
-									padding: "p-6 lg:p-7",
-								},
-								{
-									q: "the analytics export alone paid for a year. my CFO agrees (I am the CFO).",
-									n: "@thenoahco",
-									r: "on LinkedIn · 312 reactions",
-									platform: "LinkedIn",
-									initial: "N",
-									bg: "bg-peach-200",
-									span: "col-span-12 md:col-span-3",
-									quote:
-										"font-display text-[15px] lg:text-[16px] leading-[1.35] tracking-[-0.003em] text-ink/90",
-									padding: "p-6",
-								},
-								{
-									q: "finally a tool that doesn't make me feel like i'm running a call center",
-									n: "@ainslee.design",
-									r: "on Instagram · 2.3K likes",
-									platform: "Instagram",
-									initial: "A",
-									bg: "bg-peach-300",
-									span: "col-span-12 md:col-span-7",
-									quote:
-										"font-display text-[19px] lg:text-[22px] leading-[1.3] tracking-[-0.005em] text-ink/90",
-									padding: "p-8 lg:p-9",
-								},
-								{
-									q: "okay aloha's calendar view is the first scheduler that respects my eyes",
-									n: "@samwritesstuff",
-									r: "on X · 1.2K likes",
-									platform: "X",
-									initial: "S",
+									h: "Every feature on this page ships today",
+									p: "Composer, voice model, calendar, link-in-bio, analytics, automations — all live on the free tier or Basic.",
 									bg: "bg-peach-100",
-									span: "col-span-12 md:col-span-5 md:row-span-2",
-									quote:
-										"font-display text-[22px] lg:text-[28px] leading-[1.2] tracking-[-0.01em]",
-									padding: "p-8 lg:p-9",
 								},
-							].map((m, i) => (
-								<figure
-									key={i}
-									className={`${m.span} ${m.bg} ${m.padding} rounded-3xl flex flex-col justify-between`}
+								{
+									h: "One inbox, answered by the person who wrote the code",
+									p: "hello@usealoha.app reaches me directly. I read every note and reply, usually the same day.",
+									bg: "bg-primary-soft",
+								},
+								{
+									h: "The product changes in public",
+									p: "What shipped, what broke, what's next — on the changelog. No 'coming soon' that quietly never comes.",
+									bg: "bg-peach-300",
+								},
+							].map((c) => (
+								<article
+									key={c.h}
+									className={`p-7 lg:p-8 rounded-3xl ${c.bg} flex flex-col`}
 								>
-									<div>
-										<span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink/55 mb-4">
-											<span className="w-3 h-px bg-ink/40" />
-											{m.platform}
-										</span>
-										<blockquote className={m.quote}>"{m.q}"</blockquote>
-									</div>
-									<figcaption className="mt-6 flex items-center gap-3">
-										<span className="w-9 h-9 rounded-full bg-ink text-background-elev font-display flex items-center justify-center">
-											{m.initial}
-										</span>
-										<div>
-											<p className="font-mono text-[13px] text-ink">{m.n}</p>
-											<p className="text-[12px] text-ink/60">{m.r}</p>
-										</div>
-									</figcaption>
-								</figure>
+									<p className="font-display text-[20px] lg:text-[22px] leading-[1.2] tracking-[-0.005em]">
+										{c.h}
+									</p>
+									<p className="mt-4 text-[14.5px] text-ink/75 leading-[1.55]">
+										{c.p}
+									</p>
+								</article>
 							))}
 						</div>
 
-						{/* CTA under testimonials */}
 						<div className="mt-16 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pt-10 border-t border-border">
 							<p className="font-display text-[22px] lg:text-[26px] leading-[1.2] tracking-[-0.01em] max-w-xl">
-								Want to see your name here in a few months?
-								<span className="text-ink/55"> We read every reply.</span>
+								Want to be the first name here?
+								<span className="text-ink/55"> Free tier, no card.</span>
 							</p>
 							<div className="flex items-center gap-5">
 								<Link
@@ -1227,12 +1027,6 @@ export default function LandingPage() {
 									Start free
 									<ArrowRight className="w-4 h-4" />
 								</Link>
-								<a
-									href="#stories"
-									className="pencil-link text-[14px] font-medium text-ink"
-								>
-									Read 40+ more
-								</a>
 							</div>
 						</div>
 					</div>

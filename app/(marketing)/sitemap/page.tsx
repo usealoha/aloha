@@ -1,8 +1,5 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { CASE_STUDIES, CASE_STUDY_SLUGS } from "@/lib/case-studies";
-import { FIELD_NOTES } from "@/lib/field-notes";
-import { PLAYBOOKS } from "@/lib/playbooks";
 import { footerLinks, routes } from "@/lib/routes";
 import { absoluteUrl, makeMetadata } from "@/lib/seo";
 
@@ -46,22 +43,6 @@ function LinkColumn({
 }
 
 export default function SitemapPage() {
-	const caseStudyLinks = CASE_STUDY_SLUGS.map((slug) => {
-		const cs = CASE_STUDIES[slug];
-		return {
-			href: `/customers/${slug}`,
-			label: cs ? `${cs.customer.business}` : slug,
-		};
-	});
-	const fieldNoteLinks = FIELD_NOTES.map((n) => ({
-		href: `/resources/field-notes/${n.slug}`,
-		label: n.title,
-	}));
-	const playbookLinks = PLAYBOOKS.map((p) => ({
-		href: `/resources/playbooks/${p.slug}`,
-		label: p.title,
-	}));
-
 	return (
 		<div className="bg-background">
 			<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-16 lg:py-24">
@@ -73,8 +54,7 @@ export default function SitemapPage() {
 						Sitemap
 					</h1>
 					<p className="mt-5 text-[17px] text-ink/70 leading-[1.6]">
-						Everything we surface in the nav and footer, plus individual case
-						studies, field notes, and playbooks. Machines can use{" "}
+						Everything we surface in the nav and footer. Machines can use{" "}
 						<a
 							href={absoluteUrl("/sitemap.xml")}
 							className="pencil-link inline-flex items-center gap-1"
@@ -109,12 +89,6 @@ export default function SitemapPage() {
 					{footerLinks.secondary.map((col) => (
 						<LinkColumn key={col.heading} heading={col.heading} links={col.links} />
 					))}
-				</div>
-
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-14 py-16 border-b border-border">
-					<LinkColumn heading="Case studies" links={caseStudyLinks} />
-					<LinkColumn heading="Field notes" links={fieldNoteLinks} />
-					<LinkColumn heading="Playbooks" links={playbookLinks} />
 				</div>
 
 				<section className="pt-14">
