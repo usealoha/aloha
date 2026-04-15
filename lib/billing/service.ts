@@ -167,10 +167,27 @@ export async function setBillingInterval(userId: string, nextInterval: Interval)
 	});
 }
 
+// Cancel at period end — user keeps paid features until currentPeriodEnd,
+// then drops to the free tier. Use .update with SubscriptionCancel rather
+// than .revoke (which would terminate access immediately).
 export async function cancelSubscription(userId: string) {
 	const sub = await getLogicalSubscription(userId);
 	if (!sub.polarSubscriptionId) return;
-	await polar.subscriptions.revoke({ id: sub.polarSubscriptionId });
+	await polar.subscriptions.update({
+		id: sub.polarSubscriptionId,
+		subscriptionUpdate: { cancelAtPeriodEnd: true },
+	});
+}
+
+// Undo a pending cancellation — the subscription renews normally again.
+// Only meaningful while cancelAtPeriodEnd=true; no-op after the period ends.
+export async function resumeSubscription(userId: string) {
+	const sub = await getLogicalSubscription(userId);
+	if (!sub.polarSubscriptionId) return;
+	await polar.subscriptions.update({
+		id: sub.polarSubscriptionId,
+		subscriptionUpdate: { cancelAtPeriodEnd: false },
+	});
 }
 
 export type InvoiceRow = {
