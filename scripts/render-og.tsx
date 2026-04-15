@@ -10,7 +10,6 @@ import { ImageResponse } from "next/og";
 import { CHANNELS } from "../lib/channels";
 import { COMPETITORS } from "../lib/competitors";
 import { PERSONAS } from "../lib/personas";
-import { CASE_STUDIES } from "../lib/case-studies";
 import { DEFAULT_DESCRIPTION, SITE_TAGLINE } from "../lib/seo";
 import { OG_SIZE, loadOgFonts, ogCard } from "../lib/og";
 
@@ -75,18 +74,6 @@ await save(
     eyebrow: creators.eyebrow,
     title: `${creators.headline.line1} ${creators.headline.line2}`.trim(),
     subtitle: creators.tagline,
-  }),
-);
-
-const braid = CASE_STUDIES["braid-studio"];
-await save(
-  "06-customer-braid-studio.png",
-  ogCard({
-    eyebrow: `${braid.customer.business} · ${braid.readTime} read`,
-    title: braid.pull.replace(/["']/g, "\u201C"),
-    subtitle: braid.summary,
-    accent: "primary",
-    footer: braid.publishedLabel,
   }),
 );
 
