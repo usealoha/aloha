@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { posts, type PostMedia } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { Client } from "@upstash/qstash";
 import { env } from "@/lib/env";
@@ -11,9 +11,13 @@ const qstashClient = new Client({
   token: env.QSTASH_TOKEN,
 });
 
-export async function saveDraft(content: string, platforms: string[]) {
+export async function saveDraft(
+  content: string,
+  platforms: string[],
+  media: PostMedia[] = [],
+) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
@@ -23,12 +27,13 @@ export async function saveDraft(content: string, platforms: string[]) {
       userId: session.user.id,
       content,
       platforms,
+      media,
       status: "draft",
     });
 
     revalidatePath("/app/dashboard");
     revalidatePath("/app/calendar");
-    
+
     return { success: true };
   } catch (error) {
     console.error("Save Draft Error:", error);
@@ -36,9 +41,14 @@ export async function saveDraft(content: string, platforms: string[]) {
   }
 }
 
-export async function schedulePost(content: string, platforms: string[], scheduledAt: Date) {
+export async function schedulePost(
+  content: string,
+  platforms: string[],
+  scheduledAt: Date,
+  media: PostMedia[] = [],
+) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
@@ -48,13 +58,13 @@ export async function schedulePost(content: string, platforms: string[], schedul
       userId: session.user.id,
       content,
       platforms,
+      media,
       status: "scheduled",
       scheduledAt,
     }).returning();
-    
+
     const newPost = results[0];
 
-    // Calculate delay in seconds
     const delay = Math.max(0, Math.floor((scheduledAt.getTime() - Date.now()) / 1000));
 
     await qstashClient.publishJSON({
@@ -67,7 +77,7 @@ export async function schedulePost(content: string, platforms: string[], schedul
 
     revalidatePath("/app/dashboard");
     revalidatePath("/app/calendar");
-    
+
     return { success: true, postId: newPost.id };
   } catch (error) {
     console.error("Schedule Post Error:", error);

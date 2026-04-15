@@ -11,11 +11,15 @@ import {
   Plug,
   Send,
   Sparkles,
+  X as XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { refineContent } from "@/app/actions/ai";
 import { saveDraft, schedulePost } from "@/app/actions/posts";
+import type { PostMedia } from "@/db/schema";
 import { PreviewCard } from "./preview-card";
+
+const MAX_MEDIA = 4;
 
 type Author = {
   name: string;
@@ -56,10 +60,13 @@ export function Composer({
   );
   const [scheduledAt, setScheduledAt] = useState("");
   const [showSchedule, setShowSchedule] = useState(false);
+  const [media, setMedia] = useState<PostMedia[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isRefining, startRefining] = useTransition();
   const [isSaving, startSaving] = useTransition();
   const [isPublishing, startPublishing] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const shortestLimit = useMemo(
     () =>
@@ -70,8 +77,43 @@ export function Composer({
   );
 
   const overLimit = content.length > shortestLimit;
+  const hasBody = content.trim().length > 0 || media.length > 0;
   const canSubmit =
-    content.trim().length > 0 && selected.length > 0 && !overLimit;
+    hasBody && selected.length > 0 && !overLimit && !isUploading;
+
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_MEDIA - media.length;
+    const toUpload = Array.from(files).slice(0, remaining);
+    if (toUpload.length === 0) return;
+    setFormError(null);
+    setIsUploading(true);
+    try {
+      const uploaded: PostMedia[] = [];
+      for (const file of toUpload) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(body?.error ?? `Upload failed (${res.status})`);
+        }
+        const json = (await res.json()) as { url: string; mimeType: string };
+        uploaded.push({ url: json.url, mimeType: json.mimeType });
+      }
+      setMedia((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeMedia = (url: string) =>
+    setMedia((prev) => prev.filter((m) => m.url !== url));
 
   const toggle = (id: string) =>
     setSelected((prev) =>
@@ -96,7 +138,7 @@ export function Composer({
     setFormError(null);
     startSaving(async () => {
       try {
-        await saveDraft(content, selected);
+        await saveDraft(content, selected, media);
         router.push("/app/dashboard");
       } catch {
         setFormError("Couldn't save draft. Please try again.");
@@ -109,7 +151,7 @@ export function Composer({
     setFormError(null);
     startPublishing(async () => {
       try {
-        await schedulePost(content, selected, new Date(scheduledAt));
+        await schedulePost(content, selected, new Date(scheduledAt), media);
         router.push("/app/dashboard");
       } catch {
         setFormError("Couldn't schedule. Check the time and try again.");
@@ -122,7 +164,7 @@ export function Composer({
     setFormError(null);
     startPublishing(async () => {
       try {
-        await schedulePost(content, selected, new Date());
+        await schedulePost(content, selected, new Date(), media);
         router.push("/app/dashboard");
       } catch {
         setFormError("Couldn't publish. Please try again.");
@@ -264,14 +306,59 @@ export function Composer({
               aria-label="Post content"
             />
 
+            {media.length > 0 ? (
+              <div className="px-5 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {media.map((m) => (
+                  <div
+                    key={m.url}
+                    className="relative aspect-square rounded-xl overflow-hidden border border-border bg-background"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeMedia(m.url)}
+                      aria-label="Remove image"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 inline-flex items-center justify-center rounded-full bg-ink/80 text-background hover:bg-ink transition-colors"
+                    >
+                      <XIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <div className="flex items-center justify-between gap-4 px-5 py-3 border-t border-border">
               <div className="flex items-center gap-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  hidden
+                  onChange={(e) => handleFilesSelected(e.target.files)}
+                />
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-ink/60 hover:text-ink hover:bg-muted/60 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || media.length >= MAX_MEDIA}
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-ink/60 hover:text-ink hover:bg-muted/60 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                   aria-label="Attach image"
+                  title={
+                    media.length >= MAX_MEDIA
+                      ? `Up to ${MAX_MEDIA} images`
+                      : "Attach image"
+                  }
                 >
-                  <ImageIcon className="w-4 h-4" />
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ImageIcon className="w-4 h-4" />
+                  )}
                 </button>
                 <div className="w-px h-5 bg-border mx-2" />
                 <CharCounter
