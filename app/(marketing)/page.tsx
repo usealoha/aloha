@@ -376,8 +376,8 @@ export default function LandingPage() {
 			</section>
 
 			{/* ─── FEATURE · PUBLISH (peach block) ────────────────────────────── */}
-			<section id="product" className="relative wavy">
-				<div className="bg-peach-200 pb-8">
+			<section id="product" className="relative bg-background-elev">
+				<div className="bg-peach-200 pb-8 wavy">
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-20 lg:py-32 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-center">
 						<div className="col-span-12 lg:col-span-5">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-6">
@@ -391,8 +391,8 @@ export default function LandingPage() {
 							<p className="mt-8 max-w-[440px] text-[16.5px] leading-[1.55] text-ink/75">
 								The Composer, powered by{" "}
 								<span className="font-medium text-ink">Muse</span>, writes a
-								native version for each platform in the tone you've taught it
-								— long for LinkedIn, sharp for X, soft for Instagram — without
+								native version for each platform in the tone you've taught it —
+								long for LinkedIn, sharp for X, soft for Instagram — without
 								turning one post into six jobs.
 							</p>
 
@@ -565,8 +565,8 @@ export default function LandingPage() {
 			</section>
 
 			{/* ─── MUSE SPOTLIGHT ───────────────────────────────────────────── */}
-			<section className="bg-background-elev relative">
-				<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
+			<section className="bg-background-elev relative wavy">
+				<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-20 lg:py-28 pb-32 lg:pb-40">
 					<div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-10 items-end mb-10 lg:mb-14">
 						<div className="col-span-12 lg:col-span-7">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4 inline-flex items-center gap-2">
@@ -1120,9 +1120,9 @@ export default function LandingPage() {
 										LinkedIn
 									</span>
 									<blockquote className="font-display text-[19px] lg:text-[22px] leading-[1.3] tracking-[-0.005em]">
-										"Muse writes in my cadence now. My editor can't always
-										tell which drafts I wrote and which Aloha did — and she's
-										been editing me for four years."
+										"Muse writes in my cadence now. My editor can't always tell
+										which drafts I wrote and which Aloha did — and she's been
+										editing me for four years."
 									</blockquote>
 								</div>
 								<figcaption className="mt-6 flex items-center gap-3">
@@ -1259,8 +1259,8 @@ export default function LandingPage() {
 						<p className="col-span-12 lg:col-span-6 lg:col-start-7 text-[16px] text-ink/70 leading-[1.6]">
 							Free for three channels and the AI companion. Basic is $5 per
 							channel for scheduling, calendar, automations. Flip Muse on for
-							another $5 per channel and get style-trained AI where it earns
-							its keep. Prices decline past 10 channels.
+							another $5 per channel and get style-trained AI where it earns its
+							keep. Prices decline past 10 channels.
 						</p>
 					</div>
 
