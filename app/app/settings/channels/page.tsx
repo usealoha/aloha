@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowUpRight, Lock, Plus, ShieldCheck, Sparkle, Trash2 } from "lucide-react";
 import { db } from "@/db";
 import { accounts } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getEntitlements } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 import { connectChannel, disconnectChannel } from "../actions";
 import {
@@ -99,6 +101,67 @@ const PROVIDERS: ProviderConfig[] = [
   },
 ];
 
+function FreeTierBanner({
+  connected,
+  limit,
+  nudge,
+}: {
+  connected: number;
+  limit: number;
+  nudge: boolean;
+}) {
+  const atLimit = connected >= limit;
+  const tone = atLimit || nudge ? "primary" : "muted";
+  return (
+    <div
+      role={nudge ? "alert" : undefined}
+      className={cn(
+        "rounded-2xl border px-5 py-4 flex flex-wrap items-start gap-4",
+        tone === "primary"
+          ? "border-peach-300 bg-peach-100"
+          : "border-border-strong bg-background-elev",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-[2px] w-9 h-9 rounded-full border grid place-items-center shrink-0",
+          tone === "primary"
+            ? "bg-background border-peach-300"
+            : "bg-background border-border-strong",
+        )}
+      >
+        <Sparkle className="w-4 h-4 text-primary" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13.5px] text-ink font-medium">
+          {nudge
+            ? "Upgrade to add more channels."
+            : atLimit
+              ? "You're using all of your free channels."
+              : "Free tier — scheduling + AI companion."}
+        </p>
+        <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55] max-w-2xl">
+          {atLimit
+            ? `You've connected ${connected} of ${limit} channels included on free. Upgrade to Basic to connect as many as you need — pricing scales per channel with volume discounts.`
+            : `${connected} of ${limit} channels connected. Room for ${limit - connected} more on free, then Basic unlocks unlimited with per-channel pricing.`}
+        </p>
+      </div>
+      <Link
+        href="/app/settings/billing"
+        className={cn(
+          "inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-medium transition-colors",
+          tone === "primary"
+            ? "bg-ink text-background hover:bg-primary"
+            : "text-ink/65 hover:text-ink hover:bg-peach-100/60",
+        )}
+      >
+        See plans
+        <ArrowUpRight className="w-3.5 h-3.5" />
+      </Link>
+    </div>
+  );
+}
+
 function GenericMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -115,7 +178,15 @@ function GenericMark({ className }: { className?: string }) {
   );
 }
 
-export default async function ChannelsSettingsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const firstParam = (v: string | string[] | undefined) =>
+  Array.isArray(v) ? v[0] : v;
+
+export default async function ChannelsSettingsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const user = (await getCurrentUser())!;
 
   const rows = await db
@@ -123,6 +194,11 @@ export default async function ChannelsSettingsPage() {
     .from(accounts)
     .where(eq(accounts.userId, user.id));
   const connected = new Set(rows.map((r) => r.provider));
+
+  const entitlements = await getEntitlements(user.id, connected.size);
+  const atLimit = entitlements.channelsRemaining <= 0;
+  const params = await searchParams;
+  const hitLimit = firstParam(params.limit) === "1";
 
   return (
     <div className="space-y-8">
@@ -138,10 +214,19 @@ export default async function ChannelsSettingsPage() {
         </p>
       </div>
 
+      {entitlements.plan === "free" ? (
+        <FreeTierBanner
+          connected={connected.size}
+          limit={entitlements.channelLimit}
+          nudge={hitLimit}
+        />
+      ) : null}
+
       <ul className="rounded-3xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
         {PROVIDERS.map((p) => {
           const isConnected = connected.has(p.id);
           const isSoon = p.status === "soon";
+          const isLocked = !isConnected && !isSoon && atLimit;
           return (
             <li
               key={p.id}
@@ -196,6 +281,14 @@ export default async function ChannelsSettingsPage() {
                       Disconnect
                     </button>
                   </form>
+                ) : isLocked ? (
+                  <Link
+                    href="/app/settings/billing"
+                    className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13px] text-ink/65 hover:text-ink hover:border-ink transition-colors"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    Upgrade to connect
+                  </Link>
                 ) : (
                   <form action={connectChannel}>
                     <input type="hidden" name="provider" value={p.id} />

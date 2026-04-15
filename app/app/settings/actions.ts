@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { auth, signIn } from "@/auth";
 import { db } from "@/db";
 import { accounts, users } from "@/db/schema";
+import { canConnectAnotherChannel, getEntitlements } from "@/lib/billing/entitlements";
+import { syncChannelQuantity } from "@/lib/billing/service";
 
 const VALID_ROLES = [
   "solo",
@@ -65,7 +67,19 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function connectChannel(formData: FormData) {
+  const userId = await requireUserId();
   const provider = String(formData.get("provider") ?? "");
+  if (!provider) return;
+
+  // Enforce the free-tier channel limit server-side. The UI disables the
+  // button past the limit, but a malicious request would sail through
+  // without this gate.
+  const connected = await currentChannelCount(userId);
+  const entitlements = await getEntitlements(userId, connected);
+  if (!canConnectAnotherChannel(entitlements)) {
+    redirect("/app/settings/channels?limit=1");
+  }
+
   // signIn redirects to the OAuth consent screen; DrizzleAdapter links the
   // new OAuth account to the signed-in user on return.
   await signIn(provider, { redirectTo: "/app/settings/channels" });
@@ -82,6 +96,23 @@ export async function disconnectChannel(formData: FormData) {
       and(eq(accounts.userId, userId), eq(accounts.provider, provider)),
     );
 
+  // Keep the Polar seat count in lockstep with connected channels on paid
+  // plans. No-op on free tier.
+  const remaining = await currentChannelCount(userId);
+  try {
+    await syncChannelQuantity(userId, Math.max(1, remaining));
+  } catch (err) {
+    console.error("[channels] failed to sync seat count after disconnect", err);
+  }
+
   revalidatePath("/app/settings/channels");
   revalidatePath("/app/dashboard");
+}
+
+async function currentChannelCount(userId: string): Promise<number> {
+  const rows = await db
+    .select({ provider: accounts.provider })
+    .from(accounts)
+    .where(eq(accounts.userId, userId));
+  return rows.length;
 }
