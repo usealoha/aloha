@@ -11,6 +11,11 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type NavItem = {
   label: string;
@@ -44,51 +49,52 @@ export function NavLinks({
           const isActive =
             pathname === i.href || pathname.startsWith(`${i.href}/`);
           const Icon = i.icon;
+
+          const link = (
+            <Link
+              href={i.href}
+              aria-label={collapsed ? i.label : undefined}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "group relative flex items-center h-10 rounded-xl text-[14px] font-medium transition-colors",
+                collapsed
+                  ? "w-10 mx-auto justify-center"
+                  : "gap-3 px-3",
+                isActive
+                  ? "bg-peach-100/70 text-ink"
+                  : "text-ink/70 hover:text-ink hover:bg-muted/60",
+              )}
+            >
+              {isActive && !collapsed ? (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
+                />
+              ) : null}
+              <Icon
+                className={cn(
+                  "w-[18px] h-[18px] shrink-0 transition-colors",
+                  isActive
+                    ? "text-primary"
+                    : "text-ink/50 group-hover:text-ink",
+                )}
+              />
+              {collapsed ? null : <span>{i.label}</span>}
+            </Link>
+          );
+
           return (
             <li key={i.href}>
-              <Link
-                href={i.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "group relative flex items-center gap-3 h-10 px-3 rounded-xl text-[14px] font-medium transition-colors",
-                  isActive
-                    ? "bg-peach-100/70 text-ink"
-                    : "text-ink/70 hover:text-ink hover:bg-muted/60",
-                )}
-              >
-                {isActive ? (
-                  <span
-                    aria-hidden
-                    className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
-                  />
-                ) : null}
-                <Icon
-                  className={cn(
-                    "w-[18px] h-[18px] shrink-0 transition-colors",
-                    isActive
-                      ? "text-primary"
-                      : "text-ink/50 group-hover:text-ink",
-                  )}
-                />
-                <span
-                  className={cn(
-                    "whitespace-nowrap overflow-hidden transition-opacity",
-                    collapsed
-                      ? "w-0 opacity-0 pointer-events-none"
-                      : "opacity-100",
-                  )}
-                >
-                  {i.label}
-                </span>
-                {collapsed ? (
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-ink text-background text-[12px] font-medium whitespace-nowrap opacity-0 translate-x-[-4px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 shadow-[0_8px_24px_-8px_rgba(26,22,18,0.3)] z-50"
-                  >
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger render={link} />
+                  <TooltipContent side="right" sideOffset={12}>
                     {i.label}
-                  </span>
-                ) : null}
-              </Link>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                link
+              )}
             </li>
           );
         })}
