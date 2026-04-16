@@ -14,8 +14,12 @@ import { publishToLinkedIn } from "./linkedin";
 import { publishToX } from "./x";
 import { publishToBluesky } from "./bluesky";
 import { publishToMedium } from "./medium";
+import { publishToFacebook } from "./facebook";
+import { publishToInstagram } from "./instagram";
+import { publishToThreads } from "./threads";
+import { publishToMastodon } from "./mastodon";
 
-type PlatformKey = "linkedin" | "twitter" | "bluesky" | "medium";
+type PlatformKey = "linkedin" | "twitter" | "bluesky" | "medium" | "facebook" | "instagram" | "threads" | "mastodon";
 
 const PUBLISHERS: Record<
 	PlatformKey,
@@ -29,10 +33,14 @@ const PUBLISHERS: Record<
 	twitter: publishToX,
 	bluesky: publishToBluesky,
 	medium: publishToMedium,
+	facebook: publishToFacebook,
+	instagram: publishToInstagram,
+	threads: publishToThreads,
+	mastodon: publishToMastodon,
 };
 
 function isSupportedPlatform(p: string): p is PlatformKey {
-	return p === "linkedin" || p === "twitter" || p === "bluesky" || p === "medium";
+	return p === "linkedin" || p === "twitter" || p === "bluesky" || p === "medium" || p === "facebook" || p === "instagram" || p === "threads" || p === "mastodon";
 }
 
 export type PublishSummary = {

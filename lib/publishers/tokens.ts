@@ -176,12 +176,80 @@ async function refreshMedium(userId: string, refreshToken: string) {
 	return json.access_token;
 }
 
+async function refreshFacebook(userId: string, refreshToken: string) {
+	if (!env.AUTH_FACEBOOK_ID || !env.AUTH_FACEBOOK_SECRET) {
+		throw new PublishError(
+			"needs_reauth",
+			"Facebook client credentials missing",
+		);
+	}
+	const body = new URLSearchParams({
+		grant_type: "fb_exchange_token",
+		fb_exchange_token: refreshToken,
+		client_id: env.AUTH_FACEBOOK_ID,
+		client_secret: env.AUTH_FACEBOOK_SECRET,
+	});
+	const res = await fetch("https://graph.facebook.com/v22.0/oauth/access_token", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body,
+	});
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`Facebook token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		expires_in: number;
+	};
+	await writeRefreshedTokens(userId, "facebook", { ...json });
+	return json.access_token;
+}
+
+async function refreshInstagram(userId: string, accessToken: string) {
+	const res = await fetch(
+		`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(accessToken)}`,
+	);
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`Instagram token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		expires_in: number;
+	};
+	await writeRefreshedTokens(userId, "instagram", { ...json });
+	return json.access_token;
+}
+
+async function refreshThreads(userId: string, accessToken: string) {
+	const res = await fetch(
+		`https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=${encodeURIComponent(accessToken)}`,
+	);
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`Threads token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		expires_in: number;
+	};
+	await writeRefreshedTokens(userId, "threads", { ...json });
+	return json.access_token;
+}
+
 // Returns a valid access token, refreshing if needed. Throws PublishError
 // with category "needs_reauth" if the account is missing, has no refresh
 // token, or the refresh call fails.
 export async function getFreshToken(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -198,6 +266,17 @@ export async function getFreshToken(
 	}
 	if (!isExpired(account.expiresAt)) return account;
 
+	// Instagram and Threads refresh using the current access token itself
+	// (long-lived tokens, no separate refresh_token).
+	if (provider === "instagram") {
+		const fresh = await refreshInstagram(userId, account.accessToken);
+		return { ...account, accessToken: fresh };
+	}
+	if (provider === "threads") {
+		const fresh = await refreshThreads(userId, account.accessToken);
+		return { ...account, accessToken: fresh };
+	}
+
 	if (!account.refreshToken) {
 		throw new PublishError(
 			"needs_reauth",
@@ -205,12 +284,16 @@ export async function getFreshToken(
 		);
 	}
 
-	const fresh =
-		provider === "linkedin"
-			? await refreshLinkedIn(userId, account.refreshToken)
-			: provider === "medium"
-				? await refreshMedium(userId, account.refreshToken)
-				: await refreshX(userId, account.refreshToken);
+	let fresh: string;
+	if (provider === "linkedin") {
+		fresh = await refreshLinkedIn(userId, account.refreshToken);
+	} else if (provider === "medium") {
+		fresh = await refreshMedium(userId, account.refreshToken);
+	} else if (provider === "twitter") {
+		fresh = await refreshX(userId, account.refreshToken);
+	} else {
+		fresh = await refreshFacebook(userId, account.refreshToken);
+	}
 
 	return { ...account, accessToken: fresh };
 }
@@ -219,7 +302,7 @@ export async function getFreshToken(
 // when the stored expires_at says "still valid" but the provider disagrees.
 export async function forceRefresh(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -228,17 +311,37 @@ export async function forceRefresh(
 		);
 	}
 	const account = await loadAccount(userId, provider);
-	if (!account?.refreshToken) {
+	if (!account) {
 		throw new PublishError(
 			"needs_reauth",
 			`${provider} account cannot be refreshed`,
 		);
 	}
-	const fresh =
-		provider === "linkedin"
-			? await refreshLinkedIn(userId, account.refreshToken)
-			: provider === "medium"
-				? await refreshMedium(userId, account.refreshToken)
-				: await refreshX(userId, account.refreshToken);
+
+	if (provider === "instagram") {
+		const fresh = await refreshInstagram(userId, account.accessToken);
+		return { ...account, accessToken: fresh };
+	}
+	if (provider === "threads") {
+		const fresh = await refreshThreads(userId, account.accessToken);
+		return { ...account, accessToken: fresh };
+	}
+
+	if (!account.refreshToken) {
+		throw new PublishError(
+			"needs_reauth",
+			`${provider} account cannot be refreshed`,
+		);
+	}
+	let fresh: string;
+	if (provider === "linkedin") {
+		fresh = await refreshLinkedIn(userId, account.refreshToken);
+	} else if (provider === "medium") {
+		fresh = await refreshMedium(userId, account.refreshToken);
+	} else if (provider === "twitter") {
+		fresh = await refreshX(userId, account.refreshToken);
+	} else {
+		fresh = await refreshFacebook(userId, account.refreshToken);
+	}
 	return { ...account, accessToken: fresh };
 }
