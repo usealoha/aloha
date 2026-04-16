@@ -38,6 +38,7 @@ export const routes = {
 		pinterest: "/channels/pinterest",
 		youtube: "/channels/youtube",
 		bluesky: "/channels/bluesky",
+		mastodon: "/channels/mastodon",
 		medium: "/channels/medium",
 	},
 
@@ -154,6 +155,7 @@ export const footerLinks = {
 				{ label: "Pinterest", href: routes.channels.pinterest },
 				{ label: "YouTube", href: routes.channels.youtube },
 				{ label: "Bluesky", href: routes.channels.bluesky },
+				{ label: "Mastodon", href: routes.channels.mastodon },
 				{ label: "Medium", href: routes.channels.medium },
 			],
 		},

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { and, eq, notInArray } from "drizzle-orm";
 import { ArrowUpRight, Lock, Plus, ShieldCheck, Sparkle, Trash2 } from "lucide-react";
 import { db } from "@/db";
-import { accounts, blueskyCredentials } from "@/db/schema";
+import { accounts, blueskyCredentials, mastodonCredentials } from "@/db/schema";
+import { MastodonChannelItem } from "./_components/mastodon-item";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { getCurrentUser } from "@/lib/current-user";
 import { getEntitlements } from "@/lib/billing/entitlements";
@@ -19,6 +20,7 @@ import {
   PinterestIcon,
   YouTubeIcon,
   MediumIcon,
+  MastodonIcon,
 } from "@/app/auth/_components/provider-icons";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +84,14 @@ const PROVIDERS: ProviderConfig[] = [
     status: "available",
   },
   {
+    id: "mastodon",
+    name: "Mastodon",
+    purpose: "Federated posts to any instance.",
+    Icon: MastodonIcon,
+    mono: true,
+    status: "available",
+  },
+  {
     id: "medium",
     name: "Medium",
     purpose: "Publish articles and stories.",
@@ -95,7 +105,7 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Text updates to the Threads network.",
     Icon: ThreadsIcon,
     mono: true,
-    status: "soon",
+    status: "available",
   },
   {
     id: "pinterest",
@@ -218,7 +228,7 @@ export default async function ChannelsSettingsPage({
 }) {
   const user = (await getCurrentUser())!;
 
-  const [rows, blueskyRows] = await Promise.all([
+  const [rows, blueskyRows, mastodonRows] = await Promise.all([
     db
       .select({
         provider: accounts.provider,
@@ -236,11 +246,24 @@ export default async function ChannelsSettingsPage({
       .from(blueskyCredentials)
       .where(eq(blueskyCredentials.userId, user.id))
       .limit(1),
+    db
+      .select({
+        id: mastodonCredentials.id,
+        instanceUrl: mastodonCredentials.instanceUrl,
+        username: mastodonCredentials.username,
+      })
+      .from(mastodonCredentials)
+      .where(eq(mastodonCredentials.userId, user.id))
+      .limit(1),
   ]);
 
   const connected = new Set(rows.map((r) => r.provider));
   if (blueskyRows.length > 0) {
     connected.add("bluesky");
+  }
+  const mastodonRow = mastodonRows[0];
+  if (mastodonRow) {
+    connected.add("mastodon");
   }
   const needsReauth = new Set(
     rows.filter((r) => r.reauthRequired).map((r) => r.provider),
@@ -283,6 +306,51 @@ export default async function ChannelsSettingsPage({
           const bc = connected.has(b.id) ? 0 : 1;
           return ac - bc;
         }).map((p) => {
+          if (p.id === "mastodon") {
+            const isConnectedMastodon = connected.has("mastodon");
+            return (
+              <li
+                key={p.id}
+                className="flex flex-col gap-4 px-5 py-4"
+              >
+                <div className="flex items-center gap-4">
+                  <span
+                    className={cn(
+                      "w-11 h-11 rounded-full border grid place-items-center shrink-0",
+                      isConnectedMastodon
+                        ? "bg-peach-100 border-peach-300"
+                        : "bg-background border-border",
+                      p.mono && "text-ink",
+                    )}
+                  >
+                    <p.Icon className="w-[18px] h-[18px]" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
+                      {isConnectedMastodon ? (
+                        <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
+                          <ShieldCheck className="w-3 h-3" />
+                          Connected
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-[12.5px] text-ink/60">
+                      {p.purpose}
+                    </p>
+                  </div>
+                </div>
+                <div className="pl-[3.25rem]">
+                  <MastodonChannelItem
+                    isConnected={isConnectedMastodon}
+                    instanceUrl={mastodonRow?.instanceUrl}
+                    username={mastodonRow?.username}
+                  />
+                </div>
+              </li>
+            );
+          }
+
           const isConnected = connected.has(p.id);
           const isSoon = p.status === "soon";
           const isLocked = !isConnected && !isSoon && atLimit;

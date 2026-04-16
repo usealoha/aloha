@@ -488,6 +488,57 @@ export const CHANNELS: Record<string, Channel> = {
     cta: { line1: "Post freely.", line2: "No games attached." },
   },
 
+  mastodon: {
+    slug: "mastodon",
+    name: "Mastodon",
+    tagline: "Federated. Open. Yours.",
+    eyebrow: "For Mastodon",
+    headline: {
+      line1: "The open social web,",
+      line2: "on your own terms.",
+    },
+    lead:
+      "Mastodon is the federated alternative to Big Tech social — each instance is independent, your data stays yours. Post to your community without algorithms deciding what gets seen.",
+    accent: "bg-primary-soft",
+    postTypes: [
+      { label: "Text post", desc: "Up to 500 chars recommended, no hard limit. CW and visibility options supported.", tone: "bg-primary-soft" },
+      { label: "Image post", desc: "Single image or up to 4 images with alt text, shown in a grid.", tone: "bg-peach-100" },
+      { label: "CW / sensitive", desc: "Content warning support for sensitive topics. Native to the platform.", tone: "bg-peach-200" },
+    ],
+    supports: [
+      "Post to any Mastodon instance",
+      "Image posts with alt text",
+      "Content warning support",
+      "Visibility controls (public, unlisted, followers-only)",
+      "Federation across the fediverse",
+    ],
+    missing: [
+      "Video uploads (Mastodon supports it but instance-dependent)",
+      "Polls (instance-dependent feature)",
+    ],
+    voiceNote:
+      "Mastodon rewards genuine voice over engagement-chasing. Composer keeps your posts natural — the audience here values authenticity over algorithmic optimization.",
+    bestTimes: [
+      8, 6, 4, 3, 4, 8, 14, 22, 32, 42, 48, 52,
+      54, 52, 50, 48, 50, 56, 64, 72, 78, 70, 52, 28,
+    ],
+    peakInsight:
+      "Mastodon usage varies by instance, but generally peaks during daytime hours in your instance's local time zone. The fediverse is more asynchronous than traditional social.",
+    templates: [
+      { name: "Daily check-in", desc: "One short observation, posted at your morning window.", count: "1 post" },
+      { name: "Link drop", desc: "An interesting link with 2-sentence commentary.", count: "1 post" },
+      { name: "CW-aware post", desc: "A post with content warning for sensitive topics.", count: "1 post" },
+    ],
+    testimonial: {
+      q: "Finally a place where the algorithm doesn't decide what I see. Just people I choose to follow.",
+      n: "Alex K.",
+      r: "Developer · 2K on Mastodon",
+      ini: "A",
+      tone: "bg-primary-soft",
+    },
+    cta: { line1: "Join the fediverse.", line2: "Own your voice." },
+  },
+
   medium: {
     slug: "medium",
     name: "Medium",

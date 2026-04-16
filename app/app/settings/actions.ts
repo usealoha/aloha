@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth, signIn } from "@/auth";
 import { db } from "@/db";
-import { accounts, users, blueskyCredentials } from "@/db/schema";
+import { accounts, users, blueskyCredentials, mastodonCredentials } from "@/db/schema";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { canConnectAnotherChannel, getEntitlements } from "@/lib/billing/entitlements";
 import { syncChannelQuantity } from "@/lib/billing/service";
@@ -97,6 +97,11 @@ export async function disconnectChannel(formData: FormData) {
     return;
   }
 
+  if (provider === "mastodon") {
+    await disconnectMastodon();
+    return;
+  }
+
   await db
     .delete(accounts)
     .where(
@@ -115,7 +120,7 @@ export async function disconnectChannel(formData: FormData) {
 }
 
 async function currentChannelCount(userId: string): Promise<number> {
-  const [oauthRows, blueskyRow] = await Promise.all([
+  const [oauthRows, blueskyRow, mastodonRow] = await Promise.all([
     db
       .select({ provider: accounts.provider })
       .from(accounts)
@@ -130,8 +135,13 @@ async function currentChannelCount(userId: string): Promise<number> {
       .from(blueskyCredentials)
       .where(eq(blueskyCredentials.userId, userId))
       .limit(1),
+    db
+      .select({ id: mastodonCredentials.id })
+      .from(mastodonCredentials)
+      .where(eq(mastodonCredentials.userId, userId))
+      .limit(1),
   ]);
-  return oauthRows.length + (blueskyRow ? 1 : 0);
+  return oauthRows.length + (blueskyRow ? 1 : 0) + (mastodonRow ? 1 : 0);
 }
 
 export async function connectBluesky(
@@ -198,6 +208,93 @@ export async function disconnectBluesky() {
   await db
     .delete(blueskyCredentials)
     .where(eq(blueskyCredentials.userId, userId));
+
+  revalidatePath("/app/settings/channels");
+  revalidatePath("/app/dashboard");
+}
+
+export async function connectMastodon(
+  _prevState: { error?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string } | null> {
+  const userId = await requireUserId();
+
+  const instanceUrl = String(formData.get("instanceUrl") ?? "").trim();
+  const accessToken = String(formData.get("accessToken") ?? "").trim();
+
+  if (!instanceUrl || !accessToken) {
+    return { error: "Instance URL and access token are required." };
+  }
+
+  let normalizedInstance = instanceUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (!normalizedInstance) {
+    return { error: "Invalid instance URL." };
+  }
+
+  const connected = await currentChannelCount(userId);
+  const entitlements = await getEntitlements(userId, connected);
+  if (!canConnectAnotherChannel(entitlements)) {
+    redirect("/app/settings/channels?limit=1");
+  }
+
+  const instanceBase = `https://${normalizedInstance}`;
+
+  let accountId = "";
+  let username = "";
+  try {
+    const res = await fetch(`${instanceBase}/api/v1/accounts/verify_credentials`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("[mastodon] verify_credentials failed", res.status, detail);
+      return {
+        error: "Invalid access token or instance URL. Please check your credentials.",
+      };
+    }
+    const data = (await res.json()) as { id: string; username: string };
+    accountId = data.id;
+    username = data.username;
+  } catch (err) {
+    console.error("[mastodon] API call failed", err);
+    return {
+      error: "Could not connect to the instance. Please check the URL and try again.",
+    };
+  }
+
+  await db
+    .insert(mastodonCredentials)
+    .values({
+      userId,
+      instanceUrl: instanceBase,
+      accessToken,
+      accountId,
+      username,
+    })
+    .onConflictDoUpdate({
+      target: mastodonCredentials.userId,
+      set: {
+        instanceUrl: instanceBase,
+        accessToken,
+        accountId,
+        username,
+        updatedAt: new Date(),
+      },
+    });
+
+  revalidatePath("/app/settings/channels");
+  revalidatePath("/app/dashboard");
+  redirect("/app/settings/channels?connected=mastodon");
+}
+
+export async function disconnectMastodon() {
+  const userId = await requireUserId();
+
+  await db
+    .delete(mastodonCredentials)
+    .where(eq(mastodonCredentials.userId, userId));
 
   revalidatePath("/app/settings/channels");
   revalidatePath("/app/dashboard");
