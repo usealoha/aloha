@@ -36,6 +36,20 @@
       "when": 1776272503976,
       "tag": "0004_lazy_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776318435106,
+      "tag": "0005_pink_raider",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776324957390,
+      "tag": "0006_talented_mentor",
+      "breakpoints": true
     }
   ]
 }

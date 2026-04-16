@@ -7,6 +7,7 @@ import {
   primaryKey,
   boolean,
   jsonb,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -197,6 +198,14 @@ export const postDeliveries = pgTable("post_deliveries", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+export const wishlist = pgTable("wishlist", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const pages = pgTable("pages", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("userId")
@@ -263,3 +272,56 @@ export const blueskyCredentials = pgTable("bluesky_credentials", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
+
+export const inboxMessages = pgTable(
+  "inbox_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    remoteId: text("remoteId").notNull(),
+    threadId: text("threadId"),
+    parentId: text("parentId"),
+    reason: text("reason", { enum: ["mention", "reply"] }).notNull(),
+    authorDid: text("authorDid").notNull(),
+    authorHandle: text("authorHandle").notNull(),
+    authorDisplayName: text("authorDisplayName"),
+    authorAvatarUrl: text("authorAvatarUrl"),
+    content: text("content").notNull(),
+    isRead: boolean("isRead").default(false).notNull(),
+    platformData: jsonb("platformData").$type<Record<string, unknown>>().default({}).notNull(),
+    platformCreatedAt: timestamp("platformCreatedAt", { mode: "date" }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("inbox_messages_user_platform_remote").on(
+      table.userId,
+      table.platform,
+      table.remoteId,
+    ),
+  ],
+);
+
+export const inboxSyncCursors = pgTable(
+  "inbox_sync_cursors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    cursor: text("cursor"),
+    lastSyncedAt: timestamp("lastSyncedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("inbox_sync_cursors_user_platform").on(
+      table.userId,
+      table.platform,
+    ),
+  ],
+);
