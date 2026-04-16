@@ -25,6 +25,8 @@ const envSchema = z.object({
   AUTH_FACEBOOK_SECRET: z.string().optional(),
   AUTH_INSTAGRAM_ID: z.string().optional(),
   AUTH_INSTAGRAM_SECRET: z.string().optional(),
+  AUTH_THREADS_ID: z.string().optional(),
+  AUTH_THREADS_SECRET: z.string().optional(),
   AUTH_TIKTOK_ID: z.string().optional(),
   AUTH_TIKTOK_SECRET: z.string().optional(),
   AUTH_MEDIUM_ID: z.string().optional(),
