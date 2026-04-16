@@ -273,6 +273,20 @@ export const blueskyCredentials = pgTable("bluesky_credentials", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+export const mastodonCredentials = pgTable("mastodon_credentials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  instanceUrl: text("instanceUrl").notNull(),
+  accessToken: text("accessToken").notNull(),
+  accountId: text("accountId").notNull(),
+  username: text("username").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
 export const inboxMessages = pgTable(
   "inbox_messages",
   {

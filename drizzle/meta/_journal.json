@@ -50,6 +50,13 @@
       "when": 1776324957390,
       "tag": "0006_talented_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776369161499,
+      "tag": "0007_normal_exodus",
+      "breakpoints": true
     }
   ]
 }
