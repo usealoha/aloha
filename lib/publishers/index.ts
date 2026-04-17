@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, postDeliveries, posts, type PostMedia } from "@/db/schema";
 import { decideForPublish } from "@/lib/channel-state";
+import { sendManualAssistReminderForDelivery } from "@/lib/manual-assist";
 import { PublishError } from "./errors";
 import { publishToLinkedIn } from "./linkedin";
 import { publishToX } from "./x";
@@ -75,6 +76,18 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 	for (const platform of post.platforms) {
 		const delivery = await upsertDelivery(postId, platform);
 
+		// Don't touch already-published deliveries. Re-runs (explicit retry,
+		// re-drive after a channel un-gates, etc.) should leave successful
+		// posts alone — re-posting would double-publish.
+		if (delivery.status === "published") {
+			results.push({
+				platform,
+				ok: true,
+				publishedAt: delivery.publishedAt ?? null,
+			});
+			continue;
+		}
+
 		const decision = await decideForPublish(post.userId, platform);
 		if (decision.kind === "skip") {
 			// Channel is in a gated state — record it on the delivery and move
@@ -92,6 +105,21 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 					updatedAt: new Date(),
 				})
 				.where(eq(postDeliveries.id, delivery.id));
+
+			// Fire the reminder email for manual_assist. Failures here are
+			// logged, not propagated — one failed email shouldn't abort the
+			// dispatcher for other platforms on the same post.
+			if (decision.reason === "manual_assist") {
+				try {
+					await sendManualAssistReminderForDelivery(postId, platform);
+				} catch (err) {
+					console.error(
+						`[manual-assist] reminder failed for post ${postId} / ${platform}:`,
+						err,
+					);
+				}
+			}
+
 			results.push({ platform, ok: false, publishedAt: null, gated: true });
 			continue;
 		}
