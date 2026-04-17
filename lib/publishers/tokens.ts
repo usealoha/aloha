@@ -244,12 +244,78 @@ async function refreshThreads(userId: string, accessToken: string) {
 	return json.access_token;
 }
 
+async function refreshReddit(userId: string, refreshToken: string) {
+	if (!env.AUTH_REDDIT_ID || !env.AUTH_REDDIT_SECRET) {
+		throw new PublishError(
+			"needs_reauth",
+			"Reddit client credentials missing",
+		);
+	}
+	const body = new URLSearchParams({
+		grant_type: "refresh_token",
+		refresh_token: refreshToken,
+		client_id: env.AUTH_REDDIT_ID,
+		client_secret: env.AUTH_REDDIT_SECRET,
+	});
+	const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body,
+	});
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`Reddit token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		refresh_token?: string;
+		expires_in: number;
+	};
+	await writeRefreshedTokens(userId, "reddit", json);
+	return json.access_token;
+}
+
+async function refreshPinterest(userId: string, refreshToken: string) {
+	if (!env.AUTH_PINTEREST_ID || !env.AUTH_PINTEREST_SECRET) {
+		throw new PublishError(
+			"needs_reauth",
+			"Pinterest client credentials missing",
+		);
+	}
+	const body = new URLSearchParams({
+		grant_type: "refresh_token",
+		refresh_token: refreshToken,
+		client_id: env.AUTH_PINTEREST_ID,
+		client_secret: env.AUTH_PINTEREST_SECRET,
+	});
+	const res = await fetch("https://api.pinterest.com/v5/oauth/token", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body,
+	});
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`Pinterest token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		refresh_token?: string;
+		expires_in: number;
+	};
+	await writeRefreshedTokens(userId, "pinterest", json);
+	return json.access_token;
+}
+
 // Returns a valid access token, refreshing if needed. Throws PublishError
 // with category "needs_reauth" if the account is missing, has no refresh
 // token, or the refresh call fails.
 export async function getFreshToken(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -291,6 +357,10 @@ export async function getFreshToken(
 		fresh = await refreshMedium(userId, account.refreshToken);
 	} else if (provider === "twitter") {
 		fresh = await refreshX(userId, account.refreshToken);
+	} else if (provider === "reddit") {
+		fresh = await refreshReddit(userId, account.refreshToken);
+	} else if (provider === "pinterest") {
+		fresh = await refreshPinterest(userId, account.refreshToken);
 	} else {
 		fresh = await refreshFacebook(userId, account.refreshToken);
 	}
@@ -302,7 +372,7 @@ export async function getFreshToken(
 // when the stored expires_at says "still valid" but the provider disagrees.
 export async function forceRefresh(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -340,6 +410,10 @@ export async function forceRefresh(
 		fresh = await refreshMedium(userId, account.refreshToken);
 	} else if (provider === "twitter") {
 		fresh = await refreshX(userId, account.refreshToken);
+	} else if (provider === "reddit") {
+		fresh = await refreshReddit(userId, account.refreshToken);
+	} else if (provider === "pinterest") {
+		fresh = await refreshPinterest(userId, account.refreshToken);
 	} else {
 		fresh = await refreshFacebook(userId, account.refreshToken);
 	}

@@ -7,9 +7,10 @@ import { fetchFacebookInbox } from "./facebook";
 import { fetchInstagramInbox } from "./instagram";
 import { fetchThreadsInbox } from "./threads";
 import { fetchMastodonNotifications } from "./mastodon";
+import { fetchPinterestInbox } from "./pinterest";
 import type { NormalizedMessage } from "./types";
 
-type Platform = "bluesky" | "twitter" | "facebook" | "instagram" | "threads" | "mastodon";
+type Platform = "bluesky" | "twitter" | "facebook" | "instagram" | "threads" | "mastodon" | "pinterest";
 
 const FETCHERS: Partial<
   Record<
@@ -23,6 +24,7 @@ const FETCHERS: Partial<
   instagram: fetchInstagramInbox,
   threads: fetchThreadsInbox,
   mastodon: fetchMastodonNotifications,
+  pinterest: fetchPinterestInbox,
 };
 
 export async function syncInbox(

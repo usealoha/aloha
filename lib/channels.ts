@@ -590,6 +590,57 @@ export const CHANNELS: Record<string, Channel> = {
     },
     cta: { line1: "Write once.", line2: "Publish everywhere." },
   },
+
+  reddit: {
+    slug: "reddit",
+    name: "Reddit",
+    tagline: "Posts. Subreddits. Communities.",
+    eyebrow: "For Reddit",
+    headline: {
+      line1: "Your voice",
+      line2: "in the conversation.",
+    },
+    lead:
+      "Reddit is where communities gather around ideas. Post to your profile and subscribe to subreddits — Aloha helps you craft posts that respect the community norms and get the conversations started.",
+    accent: "bg-peach-200",
+    postTypes: [
+      { label: "Text posts", desc: "Up to 40,000 characters. Post to your profile or a subreddit.", tone: "bg-peach-200" },
+      { label: "Link posts", desc: "Share a link with a compelling title and optional text body.", tone: "bg-peach-100" },
+      { label: "Image posts", desc: "Share images directly to subreddits that allow image posts.", tone: "bg-primary-soft" },
+    ],
+    supports: [
+      "Post to your Reddit profile",
+      "Post to subreddits you subscribe to",
+      "Link posts with custom titles",
+      "Image posts with hosted images",
+      "Cross-post existing Reddit content",
+    ],
+    missing: [
+      "Comment scheduling (Reddit API limitation)",
+      "Multi-subreddit posting (requires separate posts)",
+    ],
+    voiceNote:
+      "Reddit communities have distinct voices and rules. Composer helps you adapt your message to fit the subreddit's culture without losing your authentic voice.",
+    bestTimes: [
+      8, 6, 4, 3, 4, 8, 14, 22, 32, 42, 48, 52,
+      54, 52, 50, 48, 50, 56, 64, 72, 78, 70, 52, 28,
+    ],
+    peakInsight:
+      "Reddit engagement peaks during morning commutes (8–10am) and evening hours (7–10pm). Mid-week posts generally outperform weekend posts.",
+    templates: [
+      { name: "Community intro", desc: "Introduce yourself to a new subreddit with a thoughtful first post.", count: "1 post" },
+      { name: "Discussion starter", desc: "Pose a question or share an observation to spark conversation.", count: "1 post" },
+      { name: "Resource share", desc: "Share a useful link with context and why it matters to the community.", count: "1 post" },
+    ],
+    testimonial: {
+      q: "I finally found a scheduler that helps me post to Reddit without looking like a spammer.",
+      n: "Casey M.",
+      r: "Community manager · 12K on Reddit",
+      ini: "C",
+      tone: "bg-peach-200",
+    },
+    cta: { line1: "Join the conversation.", line2: "On your schedule." },
+  },
 };
 
 export const CHANNEL_SLUGS = Object.keys(CHANNELS);

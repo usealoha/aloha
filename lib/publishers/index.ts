@@ -9,6 +9,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, postDeliveries, posts, type PostMedia } from "@/db/schema";
+import { decideForPublish } from "@/lib/channel-state";
 import { PublishError } from "./errors";
 import { publishToLinkedIn } from "./linkedin";
 import { publishToX } from "./x";
@@ -18,8 +19,10 @@ import { publishToFacebook } from "./facebook";
 import { publishToInstagram } from "./instagram";
 import { publishToThreads } from "./threads";
 import { publishToMastodon } from "./mastodon";
+import { publishToReddit } from "./reddit";
+import { publishToPinterest } from "./pinterest";
 
-type PlatformKey = "linkedin" | "twitter" | "bluesky" | "medium" | "facebook" | "instagram" | "threads" | "mastodon";
+type PlatformKey = "linkedin" | "twitter" | "bluesky" | "medium" | "facebook" | "instagram" | "threads" | "mastodon" | "reddit" | "pinterest";
 
 const PUBLISHERS: Record<
 	PlatformKey,
@@ -37,10 +40,12 @@ const PUBLISHERS: Record<
 	instagram: publishToInstagram,
 	threads: publishToThreads,
 	mastodon: publishToMastodon,
+	reddit: publishToReddit,
+	pinterest: publishToPinterest,
 };
 
 function isSupportedPlatform(p: string): p is PlatformKey {
-	return p === "linkedin" || p === "twitter" || p === "bluesky" || p === "medium" || p === "facebook" || p === "instagram" || p === "threads" || p === "mastodon";
+	return p === "linkedin" || p === "twitter" || p === "bluesky" || p === "medium" || p === "facebook" || p === "instagram" || p === "threads" || p === "mastodon" || p === "reddit" || p === "pinterest";
 }
 
 export type PublishSummary = {
@@ -62,10 +67,34 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 		ok: boolean;
 		publishedAt: Date | null;
 		errorCategory?: string;
+		// Distinguishes "skipped because the channel is gated" from a genuine
+		// failure — we don't want gated channels to flip the post to "failed".
+		gated?: boolean;
 	}> = [];
 
 	for (const platform of post.platforms) {
 		const delivery = await upsertDelivery(postId, platform);
+
+		const decision = await decideForPublish(post.userId, platform);
+		if (decision.kind === "skip") {
+			// Channel is in a gated state — record it on the delivery and move
+			// on. A scheduled re-drive can pick it up once state flips.
+			const nextStatus =
+				decision.reason === "manual_assist"
+					? "manual_assist"
+					: "pending_review";
+			await db
+				.update(postDeliveries)
+				.set({
+					status: nextStatus,
+					errorCode: null,
+					errorMessage: null,
+					updatedAt: new Date(),
+				})
+				.where(eq(postDeliveries.id, delivery.id));
+			results.push({ platform, ok: false, publishedAt: null, gated: true });
+			continue;
+		}
 
 		if (!isSupportedPlatform(platform)) {
 			await markDeliveryFailed(
@@ -131,25 +160,35 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 
 	const anyOk = results.some((r) => r.ok);
 	const allOk = results.every((r) => r.ok);
+	const gatedOnly = !anyOk && results.every((r) => r.gated);
 	const earliestSuccess = results
 		.filter((r) => r.ok && r.publishedAt)
 		.map((r) => r.publishedAt as Date)
 		.sort((a, b) => a.getTime() - b.getTime())[0];
 
+	// If every platform was gated, the post isn't "failed" — it's parked
+	// waiting for state to resolve. Keep it "scheduled" so a re-drive picks
+	// it up cleanly when the state flips.
+	const nextPostStatus = anyOk
+		? ("published" as const)
+		: gatedOnly
+			? ("scheduled" as const)
+			: ("failed" as const);
+
 	await db
 		.update(posts)
 		.set({
-			status: anyOk ? "published" : "failed",
+			status: nextPostStatus,
 			publishedAt: earliestSuccess ?? null,
 			updatedAt: new Date(),
 		})
 		.where(eq(posts.id, postId));
 
-	const failures = results.filter((r) => !r.ok);
+	const genuineFailures = results.filter((r) => !r.ok && !r.gated);
 	const retryable =
 		!anyOk &&
-		failures.length > 0 &&
-		failures.every(
+		genuineFailures.length > 0 &&
+		genuineFailures.every(
 			(r) =>
 				r.errorCategory === "rate_limited" ||
 				r.errorCategory === "transient",
