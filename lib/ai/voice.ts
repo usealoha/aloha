@@ -15,8 +15,13 @@
 
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { brandCorpus, brandVoice, platformContentCache } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  brandCorpus,
+  brandVoice,
+  ideas,
+  platformContentCache,
+} from "@/db/schema";
+import { and, eq, or } from "drizzle-orm";
 import { PROMPTS, registerPrompts } from "./prompts";
 import { generate } from "./router";
 
@@ -69,11 +74,17 @@ export async function trainVoice(
 ): Promise<TrainVoiceResult> {
   await registerPrompts();
 
-  const [samples, corpusDocs] = await Promise.all([
+  const [samples, corpusDocs, userIdeas] = await Promise.all([
     loadCorpusSamples(input.userId, input.samplePostIds),
     loadBrandCorpusForTraining(input.userId),
+    loadIdeasForTraining(input.userId),
   ]);
-  const corpus = assembleCorpus(samples, corpusDocs, input.uploadedCorpus);
+  const corpus = assembleCorpus(
+    samples,
+    corpusDocs,
+    userIdeas,
+    input.uploadedCorpus,
+  );
 
   const result = await generate({
     userId: input.userId,
@@ -140,9 +151,32 @@ async function loadBrandCorpusForTraining(userId: string): Promise<CorpusDoc[]> 
     .where(eq(brandCorpus.userId, userId));
 }
 
+// Ideas the user wrote themselves — `manual` captures and `url_clip` bodies
+// (the note field the user types when clipping, not the URL's article
+// body). These are short but high-signal: they're the user's actual voice,
+// often the exact wording they'd use when posting. Feed-sourced ideas are
+// skipped — their body is the article summary, not the user's writing.
+type IdeaNote = { title: string | null; body: string };
+
+async function loadIdeasForTraining(userId: string): Promise<IdeaNote[]> {
+  return db
+    .select({
+      title: ideas.title,
+      body: ideas.body,
+    })
+    .from(ideas)
+    .where(
+      and(
+        eq(ideas.userId, userId),
+        or(eq(ideas.source, "manual"), eq(ideas.source, "url_clip")),
+      ),
+    );
+}
+
 function assembleCorpus(
   samples: Sample[],
   docs: CorpusDoc[],
+  ideaNotes: IdeaNote[],
   uploaded: string | undefined,
 ): string {
   const blocks: string[] = [];
@@ -163,6 +197,16 @@ function assembleCorpus(
     for (const d of docs) {
       const header = d.title ? `[${d.source}] ${d.title}` : `[${d.source}]`;
       blocks.push(`${header}\n${d.content}`);
+    }
+  }
+
+  if (ideaNotes.length > 0) {
+    blocks.push(
+      "--- Captured ideas (rough, high-signal for tone — your actual wording) ---",
+    );
+    for (const n of ideaNotes) {
+      const header = n.title ? n.title : "(untitled)";
+      blocks.push(`${header}\n${n.body}`);
     }
   }
 
