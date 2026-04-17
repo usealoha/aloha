@@ -71,6 +71,27 @@
       "when": 1776415134530,
       "tag": "0009_nosy_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776425731094,
+      "tag": "0010_gifted_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776431014017,
+      "tag": "0011_unique_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776431531985,
+      "tag": "0012_long_nitro",
+      "breakpoints": true
     }
   ]
 }

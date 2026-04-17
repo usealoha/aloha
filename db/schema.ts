@@ -286,6 +286,93 @@ export const blueskyCredentials = pgTable("bluesky_credentials", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+// Notion workspace connection. Notion OAuth returns a workspace-scoped bot
+// token that never expires (unless revoked). Owner-user details come back
+// in the token response so we cache the workspace label for UI.
+export const notionCredentials = pgTable("notion_credentials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  accessToken: text("accessToken").notNull(),
+  workspaceId: text("workspaceId").notNull(),
+  workspaceName: text("workspaceName"),
+  workspaceIcon: text("workspaceIcon"),
+  botId: text("botId").notNull(),
+  // Flipped to true when a sync call returns 401 (user revoked the
+  // integration inside Notion). Cleared on successful reconnect via the
+  // OAuth callback's upsert.
+  reauthRequired: boolean("reauthRequired").default(false).notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt", { mode: "date" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+// Long-form corpus the user has made available for voice training and
+// repurposing. Fed by Notion sync today; Google Docs + uploads later. Each
+// row is one document. Dedupe on (user, source, sourceId) so repeated syncs
+// update in place instead of fanning out.
+export const brandCorpus = pgTable(
+  "brand_corpus",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    source: text("source", {
+      enum: ["notion", "google_docs", "upload", "manual"],
+    }).notNull(),
+    // External ID — Notion page id, Doc id, or a synthetic id for uploads.
+    sourceId: text("sourceId").notNull(),
+    title: text("title"),
+    content: text("content").notNull(),
+    url: text("url"),
+    // Last time we pulled this document from its source.
+    fetchedAt: timestamp("fetchedAt", { mode: "date" }).defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("brand_corpus_user_source_sourceid").on(
+      table.userId,
+      table.source,
+      table.sourceId,
+    ),
+  ],
+);
+
+// Unified media library. Uploads, AI-generated images, and future imports
+// (Figma, Canva, Dropbox) all land here. `source` distinguishes origin;
+// `prompt` is populated only for AI-generated assets and lets us show
+// "generated from" provenance in the library UI.
+export const assets = pgTable("assets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  source: text("source", {
+    enum: ["upload", "generated", "imported"],
+  }).notNull(),
+  url: text("url").notNull(),
+  mimeType: text("mimeType").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  alt: text("alt"),
+  // AI-provenance. Null for uploads; non-null for assets the user generated
+  // inside Aloha. We keep this so the library UI can show the prompt and
+  // "regenerate" actions reuse it.
+  prompt: text("prompt"),
+  sourceGenerationId: uuid("sourceGenerationId").references(() => generations.id, {
+    onDelete: "set null",
+  }),
+  // Free-form metadata per asset — EXIF, platform-of-origin, Figma file id,
+  // etc. Kept loose so adapters don't need schema changes.
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
 export const mastodonCredentials = pgTable("mastodon_credentials", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("userId")
