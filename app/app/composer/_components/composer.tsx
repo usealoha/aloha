@@ -26,6 +26,7 @@ import {
 	CalendarClock,
 	Clock,
 	FileText,
+	Gauge,
 	GitBranch,
 	Hash,
 	Layers,
@@ -54,6 +55,7 @@ import {
 import { FanoutPanel } from "./fanout-panel";
 import { ImportPanel } from "./import-panel";
 import { PreviewCard } from "./preview-card";
+import { ScorePanel } from "./score-panel";
 import { VariantsPanel, type VariantPlatform } from "./variants-panel";
 
 const PLATFORM_ICONS: Record<
@@ -199,6 +201,7 @@ export function Composer({
 	const [showVariants, setShowVariants] = useState(false);
 	const [showFanout, setShowFanout] = useState(false);
 	const [showImport, setShowImport] = useState(false);
+	const [showScore, setShowScore] = useState(false);
 	const [isHashing, startHashing] = useTransition();
 	const [hashSuggestions, setHashSuggestions] = useState<string[]>([]);
 	const [altTextLoading, setAltTextLoading] = useState<string | null>(null);
@@ -394,6 +397,16 @@ export function Composer({
 		fanoutSourcePlatform !== null &&
 		fanoutTargets.length > 0 &&
 		effectiveContent(fanoutSourcePlatform.id).trim().length > 0;
+
+	// Score runs against either the active channel tab or, when "all
+	// channels" is active, the first selected platform — a single score only
+	// makes sense per target, not across a fanout.
+	const scorePlatform = activePlatform ?? selectedPlatforms[0] ?? null;
+	const scoreContent = scorePlatform
+		? effectiveContent(scorePlatform.id)
+		: "";
+	const canScore =
+		scorePlatform !== null && scoreContent.trim().length >= 20;
 
 	const handleGenerateImage = () => {
 		if (!imagePrompt.trim() || baseMedia.length >= MAX_MEDIA) return;
@@ -633,6 +646,25 @@ export function Composer({
 								targets={variantPlatforms}
 								onAccept={applyVariantToChannel}
 								onClose={() => setShowImport(false)}
+							/>
+						</div>
+					) : null}
+					{showScore && scorePlatform ? (
+						<div className="mb-6">
+							<ScorePanel
+								platformId={scorePlatform.id}
+								platformName={scorePlatform.name}
+								content={scoreContent}
+								onImprove={(text) => {
+									if (activeTab === scorePlatform.id) {
+										handleEditorChange(text);
+									} else if (activeTab === "all") {
+										setBaseContent(text);
+									} else {
+										applyVariantToChannel(scorePlatform.id, text);
+									}
+								}}
+								onClose={() => setShowScore(false)}
 							/>
 						</div>
 					) : null}
@@ -983,6 +1015,7 @@ export function Composer({
 										setShowVariants(false);
 										setShowFanout(false);
 										setShowImport(false);
+										setShowScore(false);
 									}
 								}}
 								active={showGenerate}
@@ -996,6 +1029,7 @@ export function Composer({
 										setShowGenerate(false);
 										setShowFanout(false);
 										setShowImport(false);
+										setShowScore(false);
 									}
 								}}
 								disabled={selectedPlatforms.length === 0}
@@ -1014,6 +1048,7 @@ export function Composer({
 										setShowGenerate(false);
 										setShowVariants(false);
 										setShowImport(false);
+										setShowScore(false);
 									}
 								}}
 								disabled={!canFanout}
@@ -1036,6 +1071,7 @@ export function Composer({
 										setShowGenerate(false);
 										setShowVariants(false);
 										setShowFanout(false);
+										setShowScore(false);
 									}
 								}}
 								disabled={selectedPlatforms.length === 0}
@@ -1051,6 +1087,27 @@ export function Composer({
 							<ToolDivider />
 
 							{/* Polish */}
+							<ToolButton
+								onClick={() => {
+									setShowScore((v) => !v);
+									if (!showScore) {
+										setShowGenerate(false);
+										setShowVariants(false);
+										setShowFanout(false);
+										setShowImport(false);
+									}
+								}}
+								disabled={!canScore}
+								active={showScore}
+								label={
+									!scorePlatform
+										? "Select a channel to score against"
+										: scoreContent.trim().length < 20
+											? "Write a bit more to score"
+											: `Score this ${scorePlatform.name} post`
+								}
+								icon={<Gauge className="w-4 h-4" />}
+							/>
 							<ToolButton
 								onClick={handleRefine}
 								disabled={isRefining || !editorValue.trim()}
