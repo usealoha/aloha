@@ -4,7 +4,7 @@
 // Non-streaming for v1 — the structured output is small (<40 ideas) and
 // streaming JSON parsing is brittle. We'll revisit if latency bites.
 
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { contentPlans, feedItems, feeds } from "@/db/schema";
 import { getBestWindowsForUser } from "@/lib/best-time";
@@ -306,4 +306,95 @@ export async function loadPlan(
     ideas: row.ideas as PlanIdea[],
     createdAt: row.createdAt,
   };
+}
+
+// Regenerates the pending ideas for a single date in an existing plan.
+// Accepted ideas on that date are preserved (the user already drafted from
+// them); pending ideas are replaced with a fresh set at the same slot
+// count. Returns the newly generated ideas.
+export async function regeneratePlanDay(
+  userId: string,
+  planId: string,
+  date: string,
+): Promise<PlanIdea[]> {
+  const plan = await loadPlan(userId, planId);
+  if (!plan) throw new Error("Plan not found.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Invalid date.");
+
+  const sameDay = plan.ideas.filter((i) => i.date === date);
+  const accepted = sameDay.filter((i) => i.accepted);
+  const pending = sameDay.filter((i) => !i.accepted);
+  const slots = Math.max(1, pending.length);
+
+  await registerPrompts();
+  const [voice, bestWindowsByChannel, inspiration] = await Promise.all([
+    loadCurrentVoice(userId),
+    getBestWindowsForUser(userId, "UTC"),
+    loadRecentInspiration(userId),
+  ]);
+
+  // Summarize the ideas we're KEEPING so the model doesn't produce dupes.
+  const keepSummary =
+    accepted.length > 0
+      ? accepted
+          .map((i) => `  - [${i.channel}] ${i.title}: ${i.angle}`)
+          .join("\n")
+      : "(none)";
+
+  const result = await generate({
+    userId,
+    feature: "plan.generate",
+    template: PROMPTS.planGenerate,
+    vars: {
+      goal: plan.goal,
+      themes:
+        plan.themes.length > 0 ? plan.themes.join(", ") : "(none specified)",
+      channels: plan.channels.join(", "),
+      frequency: String(slots),
+      rangeStart: date,
+      rangeEnd: date,
+      bestWindows: formatBestWindows(plan.channels, bestWindowsByChannel),
+      inspiration: formatInspiration(inspiration),
+      voiceBlock: buildVoiceBlock(voice),
+    },
+    userMessage: [
+      "Regenerate only this single day.",
+      `Target date: ${date}`,
+      `Produce exactly ${slots} idea${slots === 1 ? "" : "s"}.`,
+      `Do NOT repeat these already-drafted ideas:\n${keepSummary}`,
+      "Return strict JSON — no markdown, no prose outside the JSON.",
+    ].join("\n"),
+    temperature: 0.85,
+  });
+
+  const parsed = parsePlanJson(result.text, plan.channels);
+  const freshIdeas: PlanIdea[] = parsed.ideas
+    .slice(0, slots)
+    .map((i) => ({
+      ...i,
+      date, // pin to the target — the model occasionally drifts on single-day runs
+      id: crypto.randomUUID(),
+    }));
+
+  if (freshIdeas.length === 0) {
+    throw new Error("Regeneration came back empty. Try again.");
+  }
+
+  const merged: PlanIdea[] = [
+    ...plan.ideas.filter((i) => i.date !== date),
+    ...accepted,
+    ...freshIdeas,
+  ];
+
+  await db
+    .update(contentPlans)
+    .set({
+      ideas: merged as unknown as Array<Record<string, unknown>>,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(contentPlans.id, planId), eq(contentPlans.userId, userId)),
+    );
+
+  return freshIdeas;
 }
