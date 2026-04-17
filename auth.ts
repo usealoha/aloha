@@ -200,6 +200,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: env.AUTH_MEDIUM_ID!,
       clientSecret: env.AUTH_MEDIUM_SECRET!,
     }),
+    {
+      id: "reddit",
+      name: "Reddit",
+      type: "oauth",
+      checks: ["state"],
+      authorization: {
+        url: "https://www.reddit.com/api/v1/authorize",
+        params: {
+          scope: "submit read identity",
+        },
+      },
+      token: "https://www.reddit.com/api/v1/access_token",
+      userinfo: "https://oauth.reddit.com/api/v1/me",
+      async profile(profile: { id: string; name: string }) {
+        return {
+          id: profile.id,
+          name: profile.name,
+          email: null,
+          image: null,
+        };
+      },
+      clientId: env.AUTH_REDDIT_ID,
+      clientSecret: env.AUTH_REDDIT_SECRET,
+    },
+    {
+      id: "pinterest",
+      name: "Pinterest",
+      type: "oauth",
+      checks: ["state"],
+      authorization: {
+        url: "https://www.pinterest.com/oauth/",
+        params: {
+          scope: "pins:read,pins:write,boards:read,boards:write,user_accounts:read",
+        },
+      },
+      token: "https://api.pinterest.com/v5/oauth/token",
+      userinfo: "https://api.pinterest.com/v5/user_account",
+      async profile(profile: {
+        id: string;
+        username: string;
+        first_name?: string;
+        last_name?: string;
+        profile_image_url?: string;
+      }) {
+        return {
+          id: profile.id,
+          name: [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.username,
+          email: null,
+          image: profile.profile_image_url ?? null,
+        };
+      },
+      clientId: env.AUTH_PINTEREST_ID,
+      clientSecret: env.AUTH_PINTEREST_SECRET,
+    },
   ],
   pages: {
     signIn: "/auth/signin",
