@@ -147,7 +147,7 @@ export default async function CalendarPage({
 						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink hover:border-ink transition-colors"
 					>
 						<Wand2 className="w-4 h-4 text-primary" />
-						Plan with AI
+						Plan with Muse
 					</Link>
 
 					<Link
