@@ -5,6 +5,9 @@ import { generate } from "@/lib/ai/router";
 import { PROMPTS, registerPrompts } from "@/lib/ai/prompts";
 import { loadCurrentVoice } from "@/lib/ai/voice";
 import { buildVoiceBlock, constraintsFor } from "@/lib/ai/voice-context";
+import { CostCapExceededError } from "@/lib/ai/cost-cap";
+import { generateImage, type ImageAspect } from "@/lib/ai/image";
+import { ModerationBlockedError } from "@/lib/ai/moderation";
 
 export async function refineContent(
   content: string,
@@ -26,6 +29,7 @@ export async function refineContent(
     });
     return result.text.trim();
   } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
     console.error("AI Refinement Error:", error);
     throw new Error("Failed to refine content");
   }
@@ -55,6 +59,7 @@ export async function generateDraft(topic: string, platform: string = "general")
     });
     return result.text.trim();
   } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
     console.error("AI Generate Error:", error);
     throw new Error("Failed to generate draft");
   }
@@ -104,6 +109,7 @@ export async function suggestHashtags(
     });
     return parseHashtagJson(result.text);
   } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
     console.error("AI Hashtag Error:", error);
     throw new Error("Failed to suggest hashtags");
   }
@@ -149,8 +155,50 @@ export async function generateAltText(
     });
     return result.text.trim().replace(/^["']|["']$/g, "");
   } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
     console.error("AI Alt-Text Error:", error);
     throw new Error("Failed to generate alt text");
   }
 }
 
+
+const VALID_ASPECTS = ["1:1", "4:5", "16:9", "9:16"] as const;
+const isAspect = (v: unknown): v is ImageAspect =>
+  typeof v === "string" && (VALID_ASPECTS as readonly string[]).includes(v);
+
+export type GeneratedImagePayload = {
+  url: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  alt: string | null;
+};
+
+export async function generateImageAction(
+  prompt: string,
+  aspect: string = "1:1",
+): Promise<GeneratedImagePayload> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!prompt.trim()) throw new Error("Prompt is required");
+
+  try {
+    const img = await generateImage({
+      userId: user.id,
+      prompt,
+      aspect: isAspect(aspect) ? aspect : "1:1",
+    });
+    return {
+      url: img.url,
+      mimeType: img.mimeType,
+      width: img.width,
+      height: img.height,
+      alt: null,
+    };
+  } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
+    if (error instanceof ModerationBlockedError) throw error;
+    console.error("AI Image Error:", error);
+    throw new Error("Failed to generate image");
+  }
+}
