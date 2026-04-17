@@ -11,6 +11,11 @@ import { db } from "@/db";
 import {
 	accounts,
 	blueskyCredentials,
+	contentPlans,
+	feedItems,
+	feeds,
+	ideas,
+	inboxMessages,
 	platformInsights,
 	posts,
 } from "@/db/schema";
@@ -24,9 +29,11 @@ import {
 	BarChart3,
 	CalendarDays,
 	Inbox,
+	Lightbulb,
 	PenSquare,
 	Plug,
 	Sparkles,
+	Wand2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -196,6 +203,92 @@ export default async function DashboardPage() {
 	const readbackConnected = allProviders.filter(
 		(p) => p === "twitter" || p === "linkedin",
 	);
+
+	// ── Phase 3 surfaces ────────────────────────────────────────────────
+	const [activePlan, ideaCounts, freshIdeas, feedTotals, latestFeedItems, inboxTotals] =
+		await Promise.all([
+			// Latest plan with at least one un-accepted idea; surface as "Pick up
+			// where you left off."
+			db
+				.select({
+					id: contentPlans.id,
+					goal: contentPlans.goal,
+					rangeStart: contentPlans.rangeStart,
+					rangeEnd: contentPlans.rangeEnd,
+					status: contentPlans.status,
+					ideas: contentPlans.ideas,
+				})
+				.from(contentPlans)
+				.where(eq(contentPlans.userId, user.id))
+				.orderBy(desc(contentPlans.createdAt))
+				.limit(1),
+
+			db
+				.select({
+					newCount: sql<number>`count(*) filter (where ${ideas.status} = 'new')`,
+					total: count(),
+				})
+				.from(ideas)
+				.where(eq(ideas.userId, user.id)),
+
+			db
+				.select({
+					id: ideas.id,
+					title: ideas.title,
+					body: ideas.body,
+					source: ideas.source,
+					createdAt: ideas.createdAt,
+				})
+				.from(ideas)
+				.where(and(eq(ideas.userId, user.id), eq(ideas.status, "new")))
+				.orderBy(desc(ideas.createdAt))
+				.limit(3),
+
+			db
+				.select({
+					total: count(),
+					unread: sql<number>`count(*) filter (where ${feedItems.isRead} = false)`,
+				})
+				.from(feedItems)
+				.innerJoin(feeds, eq(feedItems.feedId, feeds.id))
+				.where(eq(feeds.userId, user.id)),
+
+			db
+				.select({
+					id: feedItems.id,
+					title: feedItems.title,
+					url: feedItems.url,
+					publishedAt: feedItems.publishedAt,
+					feedTitle: feeds.title,
+					isRead: feedItems.isRead,
+				})
+				.from(feedItems)
+				.innerJoin(feeds, eq(feedItems.feedId, feeds.id))
+				.where(eq(feeds.userId, user.id))
+				.orderBy(desc(feedItems.publishedAt))
+				.limit(3),
+
+			db
+				.select({
+					total: count(),
+					unread: sql<number>`count(*) filter (where ${inboxMessages.isRead} = false)`,
+				})
+				.from(inboxMessages)
+				.where(eq(inboxMessages.userId, user.id)),
+		]);
+
+	const activePlanRow = activePlan[0] ?? null;
+	const planPendingCount = activePlanRow
+		? (activePlanRow.ideas as Array<{ accepted?: boolean }>).filter(
+				(i) => !i.accepted,
+			).length
+		: 0;
+	const newIdeaCount = Number(ideaCounts[0]?.newCount ?? 0);
+	const totalIdeaCount = Number(ideaCounts[0]?.total ?? 0);
+	const unreadFeedCount = Number(feedTotals[0]?.unread ?? 0);
+	const totalFeedCount = Number(feedTotals[0]?.total ?? 0);
+	const unreadInboxCount = Number(inboxTotals[0]?.unread ?? 0);
+	const totalInboxCount = Number(inboxTotals[0]?.total ?? 0);
 
 	// ── View ────────────────────────────────────────────────────────────
 	const firstName = (user.name ?? user.email).split(/\s|@/)[0];
@@ -368,6 +461,22 @@ export default async function DashboardPage() {
 
 				{/* Sidebar */}
 				<aside className="lg:col-span-4 space-y-6">
+					{activePlanRow && planPendingCount > 0 ? (
+						<ActivePlanCard
+							planId={activePlanRow.id}
+							goal={activePlanRow.goal}
+							pending={planPendingCount}
+							rangeStart={activePlanRow.rangeStart}
+							rangeEnd={activePlanRow.rangeEnd}
+						/>
+					) : null}
+
+					<IdeasCard
+						newCount={newIdeaCount}
+						totalCount={totalIdeaCount}
+						fresh={freshIdeas}
+					/>
+
 					<ChannelsCard providers={allProviders} />
 
 					{readbackConnected.length > 0 ? (
@@ -383,43 +492,18 @@ export default async function DashboardPage() {
 						/>
 					) : null}
 
-					<article className="rounded-2xl border border-border bg-peach-100/60 p-6">
-						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-							From the field
-						</p>
-						<p className="mt-4 font-display text-[22px] leading-[1.2] tracking-[-0.01em] text-ink italic">
-							&ldquo;Show up consistently. Skip the rest.&rdquo;
-						</p>
-						<p className="mt-4 text-[13px] text-ink/65 leading-[1.55]">
-							Most of the lift comes from cadence. Keep your queue full one week
-							at a time and the rest takes care of itself.
-						</p>
-					</article>
+					{totalFeedCount > 0 ? (
+						<FeedDigestCard
+							unread={unreadFeedCount}
+							total={totalFeedCount}
+							items={latestFeedItems}
+						/>
+					) : null}
 
-					<article className="rounded-2xl border border-border bg-background-elev p-6">
-						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-							Engagement
-						</p>
-						<div className="mt-4 flex items-start gap-4">
-							<span className="w-10 h-10 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
-								<Inbox className="w-4 h-4 text-ink" />
-							</span>
-							<div className="flex-1">
-								<p className="text-[14px] text-ink font-medium">
-									Inbox is up to date
-								</p>
-								<p className="mt-1 text-[12.5px] text-ink/60 leading-[1.5]">
-									No new replies, mentions, or DMs need triage right now.
-								</p>
-							</div>
-						</div>
-						<Link
-							href="/app/inbox"
-							className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
-						>
-							Open Inbox
-						</Link>
-					</article>
+					<EngagementCard
+						unread={unreadInboxCount}
+						total={totalInboxCount}
+					/>
 				</aside>
 			</section>
 		</div>
@@ -493,6 +577,221 @@ function EmptyCard({
 				{ctaLabel}
 			</Link>
 		</div>
+	);
+}
+
+function ActivePlanCard({
+	planId,
+	goal,
+	pending,
+	rangeStart,
+	rangeEnd,
+}: {
+	planId: string;
+	goal: string;
+	pending: number;
+	rangeStart: Date;
+	rangeEnd: Date;
+}) {
+	const fmt = (d: Date) =>
+		new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(d);
+	return (
+		<article className="rounded-2xl border border-primary/40 bg-primary-soft/40 p-6">
+			<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+				Muse plan · pending
+			</p>
+			<p className="mt-2 font-display text-[20px] leading-[1.25] tracking-[-0.01em] text-ink">
+				{goal}
+			</p>
+			<p className="mt-1.5 text-[12.5px] text-ink/60">
+				{pending} idea{pending === 1 ? "" : "s"} waiting · {fmt(rangeStart)} → {fmt(rangeEnd)}
+			</p>
+			<Link
+				href={`/app/calendar/plan?id=${planId}`}
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
+			>
+				<Wand2 className="w-3.5 h-3.5 mr-1.5" />
+				Review plan
+			</Link>
+		</article>
+	);
+}
+
+function IdeasCard({
+	newCount,
+	totalCount,
+	fresh,
+}: {
+	newCount: number;
+	totalCount: number;
+	fresh: Array<{
+		id: string;
+		title: string | null;
+		body: string;
+		source: string;
+		createdAt: Date;
+	}>;
+}) {
+	return (
+		<article className="rounded-2xl border border-border bg-background-elev p-6">
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						Ideas
+					</p>
+					<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+						{newCount > 0
+							? `${newCount} new`
+							: totalCount > 0
+								? "Caught up"
+								: "Empty swipe file"}
+					</p>
+				</div>
+				<Link
+					href="/app/ideas"
+					className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
+				>
+					All ideas
+				</Link>
+			</div>
+			{fresh.length > 0 ? (
+				<ul className="mt-4 space-y-2">
+					{fresh.map((idea) => (
+						<li key={idea.id}>
+							<Link
+								href={`/app/composer?idea=${idea.id}`}
+								className="group flex items-start gap-2.5 text-[13px] text-ink/80 hover:text-ink transition-colors"
+							>
+								<Lightbulb className="w-3.5 h-3.5 mt-[3px] text-primary shrink-0" />
+								<span className="line-clamp-2 leading-[1.4]">
+									{idea.title ?? idea.body}
+								</span>
+							</Link>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="mt-3 text-[12.5px] text-ink/55 leading-[1.5]">
+					Capture something worth coming back to — a hook, a story, a link.
+				</p>
+			)}
+			<Link
+				href="/app/ideas"
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+			>
+				<Lightbulb className="w-3.5 h-3.5 mr-1.5" />
+				Capture new
+			</Link>
+		</article>
+	);
+}
+
+function FeedDigestCard({
+	unread,
+	total,
+	items,
+}: {
+	unread: number;
+	total: number;
+	items: Array<{
+		id: string;
+		title: string;
+		url: string | null;
+		publishedAt: Date | null;
+		feedTitle: string;
+		isRead: boolean;
+	}>;
+}) {
+	return (
+		<article className="rounded-2xl border border-border bg-background-elev p-6">
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						Feeds
+					</p>
+					<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+						{unread > 0 ? `${unread} unread` : `${total} items`}
+					</p>
+				</div>
+				<Link
+					href="/app/feeds"
+					className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
+				>
+					Reader
+				</Link>
+			</div>
+			<ul className="mt-4 space-y-3">
+				{items.map((item) => (
+					<li key={item.id}>
+						<a
+							href={item.url ?? "#"}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={cn(
+								"block text-[13px] leading-[1.45] hover:text-ink transition-colors",
+								item.isRead ? "text-ink/60" : "text-ink/85",
+							)}
+						>
+							<span className="block text-[11px] uppercase tracking-[0.16em] text-ink/45 mb-0.5">
+								{item.feedTitle}
+							</span>
+							<span className="line-clamp-2">{item.title}</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</article>
+	);
+}
+
+function EngagementCard({
+	unread,
+	total,
+}: {
+	unread: number;
+	total: number;
+}) {
+	const hasUnread = unread > 0;
+	return (
+		<article className="rounded-2xl border border-border bg-background-elev p-6">
+			<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+				Engagement
+			</p>
+			<div className="mt-4 flex items-start gap-4">
+				<span
+					className={cn(
+						"w-10 h-10 rounded-full border grid place-items-center shrink-0",
+						hasUnread
+							? "bg-primary-soft border-primary/40"
+							: "bg-peach-100 border-border",
+					)}
+				>
+					<Inbox className="w-4 h-4 text-ink" />
+				</span>
+				<div className="flex-1">
+					<p className="text-[14px] text-ink font-medium">
+						{hasUnread
+							? `${unread} new message${unread === 1 ? "" : "s"}`
+							: total > 0
+								? "Inbox is up to date"
+								: "Nothing in the inbox yet"}
+					</p>
+					<p className="mt-1 text-[12.5px] text-ink/60 leading-[1.5]">
+						{hasUnread
+							? "Replies and mentions waiting for triage."
+							: total > 0
+								? "No new replies, mentions, or DMs need triage right now."
+								: "We'll surface replies, mentions, and DMs here once your channels start hearing back."}
+					</p>
+				</div>
+			</div>
+			<Link
+				href="/app/inbox"
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+			>
+				Open Inbox
+			</Link>
+		</article>
 	);
 }
 
