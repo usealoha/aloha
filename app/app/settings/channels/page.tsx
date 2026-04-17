@@ -1,14 +1,25 @@
 import Link from "next/link";
 import { and, eq, notInArray } from "drizzle-orm";
-import { ArrowUpRight, Lock, Plus, ShieldCheck, Sparkle, Trash2 } from "lucide-react";
+import { ArrowUpRight, Bell, Clock, Lock, Plus, ShieldCheck, Sparkle, Trash2 } from "lucide-react";
 import { db } from "@/db";
-import { accounts, blueskyCredentials, mastodonCredentials } from "@/db/schema";
-import { MastodonChannelItem } from "./_components/mastodon-item";
+import {
+  accounts,
+  blueskyCredentials,
+  channelStates,
+  mastodonCredentials,
+} from "@/db/schema";
+import { MastodonListItem } from "./_components/mastodon-list-item";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import {
+  PLATFORM_GATING,
+  resolveEffectiveState,
+  type EffectiveState,
+  type PublishMode,
+} from "@/lib/channel-state";
 import { getCurrentUser } from "@/lib/current-user";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
-import { connectChannel, disconnectChannel } from "../actions";
+import { connectChannel, disconnectChannel, updateChannelPublishMode } from "../actions";
 import {
   LinkedInIcon,
   XIcon,
@@ -21,6 +32,7 @@ import {
   YouTubeIcon,
   MediumIcon,
   MastodonIcon,
+  RedditIcon,
 } from "@/app/auth/_components/provider-icons";
 
 export const dynamic = "force-dynamic";
@@ -113,7 +125,7 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Pins and idea pins.",
     Icon: PinterestIcon,
     mono: true,
-    status: "soon",
+    status: "available",
   },
   {
     id: "youtube",
@@ -122,6 +134,14 @@ const PROVIDERS: ProviderConfig[] = [
     Icon: YouTubeIcon,
     mono: true,
     status: "soon",
+  },
+  {
+    id: "reddit",
+    name: "Reddit",
+    purpose: "Post to your profile and subreddits.",
+    Icon: RedditIcon,
+    mono: true,
+    status: "available",
   },
 ];
 
@@ -228,7 +248,7 @@ export default async function ChannelsSettingsPage({
 }) {
   const user = (await getCurrentUser())!;
 
-  const [rows, blueskyRows, mastodonRows] = await Promise.all([
+  const [rows, blueskyRows, mastodonRows, stateRows] = await Promise.all([
     db
       .select({
         provider: accounts.provider,
@@ -247,14 +267,19 @@ export default async function ChannelsSettingsPage({
       .where(eq(blueskyCredentials.userId, user.id))
       .limit(1),
     db
-      .select({
-        id: mastodonCredentials.id,
-        instanceUrl: mastodonCredentials.instanceUrl,
-        username: mastodonCredentials.username,
-      })
+      .select({ id: mastodonCredentials.id })
       .from(mastodonCredentials)
       .where(eq(mastodonCredentials.userId, user.id))
       .limit(1),
+    db
+      .select({
+        channel: channelStates.channel,
+        publishMode: channelStates.publishMode,
+        reviewStartedAt: channelStates.reviewStartedAt,
+        notes: channelStates.notes,
+      })
+      .from(channelStates)
+      .where(eq(channelStates.userId, user.id)),
   ]);
 
   const connected = new Set(rows.map((r) => r.provider));
@@ -268,6 +293,22 @@ export default async function ChannelsSettingsPage({
   const needsReauth = new Set(
     rows.filter((r) => r.reauthRequired).map((r) => r.provider),
   );
+
+  const stateByChannel = new Map(stateRows.map((r) => [r.channel, r]));
+  const gatedConnected = PROVIDERS.filter(
+    (p) =>
+      p.status === "available" &&
+      connected.has(p.id) &&
+      PLATFORM_GATING[p.id] === "pending_approval",
+  ).map((p) => {
+    const override = stateByChannel.get(p.id) ?? {
+      publishMode: "auto" as PublishMode,
+      reviewStartedAt: null,
+      notes: null,
+    };
+    const effective = resolveEffectiveState(p.id, true, override);
+    return { provider: p, override, effective };
+  });
 
   const entitlements = await getEntitlements(user.id, connected.size);
   const atLimit = entitlements.channelsRemaining <= 0;
@@ -302,52 +343,21 @@ export default async function ChannelsSettingsPage({
 
       <ul className="rounded-3xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
         {[...PROVIDERS].sort((a, b) => {
+          if (a.status === "available" && b.status === "soon") return -1;
+          if (a.status === "soon" && b.status === "available") return 1;
           const ac = connected.has(a.id) ? 0 : 1;
           const bc = connected.has(b.id) ? 0 : 1;
           return ac - bc;
         }).map((p) => {
           if (p.id === "mastodon") {
             const isConnectedMastodon = connected.has("mastodon");
+            const isSoon = p.status === "soon";
             return (
-              <li
+              <MastodonListItem
                 key={p.id}
-                className="flex flex-col gap-4 px-5 py-4"
-              >
-                <div className="flex items-center gap-4">
-                  <span
-                    className={cn(
-                      "w-11 h-11 rounded-full border grid place-items-center shrink-0",
-                      isConnectedMastodon
-                        ? "bg-peach-100 border-peach-300"
-                        : "bg-background border-border",
-                      p.mono && "text-ink",
-                    )}
-                  >
-                    <p.Icon className="w-[18px] h-[18px]" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
-                      {isConnectedMastodon ? (
-                        <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
-                          <ShieldCheck className="w-3 h-3" />
-                          Connected
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-[12.5px] text-ink/60">
-                      {p.purpose}
-                    </p>
-                  </div>
-                </div>
-                <div className="pl-[3.25rem]">
-                  <MastodonChannelItem
-                    isConnected={isConnectedMastodon}
-                    instanceUrl={mastodonRow?.instanceUrl}
-                    username={mastodonRow?.username}
-                  />
-                </div>
-              </li>
+                isConnected={isConnectedMastodon}
+                isSoon={isSoon}
+              />
             );
           }
 
@@ -474,6 +484,10 @@ export default async function ChannelsSettingsPage({
         })}
       </ul>
 
+      {gatedConnected.length > 0 ? (
+        <ChannelStatusPanel items={gatedConnected} />
+      ) : null}
+
       <div className="rounded-2xl border border-dashed border-border-strong p-5 flex items-start gap-4">
         <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
           <ShieldCheck className="w-4 h-4 text-ink" />
@@ -491,5 +505,131 @@ export default async function ChannelsSettingsPage({
         </div>
       </div>
     </div>
+  );
+}
+
+type GatedItem = {
+  provider: ProviderConfig;
+  override: {
+    publishMode: PublishMode;
+    reviewStartedAt: Date | null;
+    notes: string | null;
+  };
+  effective: EffectiveState;
+};
+
+function stateChip(effective: EffectiveState) {
+  if (effective === "connected_review_pending") {
+    return {
+      label: "Awaiting approval",
+      Icon: Clock,
+      className: "bg-peach-100 text-ink border-peach-300",
+    };
+  }
+  if (effective === "connected_manual_assist") {
+    return {
+      label: "Manual assist",
+      Icon: Bell,
+      className: "bg-primary-soft text-primary-deep border-primary/40",
+    };
+  }
+  return {
+    label: "Live",
+    Icon: ShieldCheck,
+    className: "bg-ink text-background border-ink",
+  };
+}
+
+function modeCopy(effective: EffectiveState) {
+  if (effective === "connected_manual_assist") {
+    return "Scheduled posts stay drafted. At post time we'll ping you with the content pre-formatted to paste into the native app.";
+  }
+  return "Your scheduled posts will auto-publish here as soon as approval lands. Until then, we hold them without retrying.";
+}
+
+function ChannelStatusPanel({ items }: { items: GatedItem[] }) {
+  return (
+    <section className="rounded-3xl border border-border bg-background-elev overflow-hidden">
+      <header className="px-5 py-4 border-b border-border flex items-start gap-3">
+        <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-peach-300 grid place-items-center shrink-0">
+          <Clock className="w-4 h-4 text-ink" />
+        </span>
+        <div>
+          <p className="text-[14.5px] text-ink font-medium">Channel status</p>
+          <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55] max-w-2xl">
+            Some platforms require an app review before third-party tools can
+            publish. You can still draft, schedule, and generate — we just
+            hold the actual post until approval lands, or ping you to
+            publish it yourself.
+          </p>
+        </div>
+      </header>
+      <ul className="divide-y divide-border">
+        {items.map(({ provider, override, effective }) => {
+          const chip = stateChip(effective);
+          return (
+            <li
+              key={provider.id}
+              className="px-5 py-4 flex flex-col gap-4 sm:flex-row sm:items-start"
+            >
+              <span className="w-9 h-9 rounded-full bg-peach-100 border border-peach-300 grid place-items-center shrink-0 text-ink">
+                <provider.Icon className="w-[16px] h-[16px]" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[14px] text-ink font-medium">
+                    {provider.name}
+                  </p>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 h-5 px-2 rounded-full border text-[10.5px] font-medium tracking-wide",
+                      chip.className,
+                    )}
+                  >
+                    <chip.Icon className="w-3 h-3" />
+                    {chip.label}
+                  </span>
+                </div>
+                <p className="mt-1 text-[12.5px] text-ink/60 leading-[1.55] max-w-2xl">
+                  {modeCopy(effective)}
+                </p>
+                <form
+                  action={updateChannelPublishMode}
+                  className="mt-3 flex flex-wrap gap-2"
+                >
+                  <input type="hidden" name="channel" value={provider.id} />
+                  {(
+                    [
+                      { mode: "auto", label: "Default" },
+                      { mode: "review_pending", label: "Queue silently" },
+                      { mode: "manual_assist", label: "Remind me" },
+                    ] as const
+                  ).map((opt) => {
+                    const active = override.publishMode === opt.mode;
+                    return (
+                      <button
+                        key={opt.mode}
+                        type="submit"
+                        name="mode"
+                        value={opt.mode}
+                        aria-pressed={active}
+                        className={cn(
+                          "inline-flex items-center h-8 px-3 rounded-full text-[12px] font-medium transition-colors",
+                          active
+                            ? "bg-ink text-background"
+                            : "bg-background text-ink/70 border border-border hover:text-ink",
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </form>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

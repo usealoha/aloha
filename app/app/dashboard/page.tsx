@@ -8,13 +8,20 @@ import {
 	XIcon,
 } from "@/app/auth/_components/provider-icons";
 import { db } from "@/db";
-import { accounts, blueskyCredentials, posts } from "@/db/schema";
+import {
+	accounts,
+	blueskyCredentials,
+	platformInsights,
+	posts,
+} from "@/db/schema";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import { PLATFORM_GATING } from "@/lib/channel-state";
 import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 import { and, count, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import {
 	ArrowUpRight,
+	BarChart3,
 	CalendarDays,
 	Inbox,
 	PenSquare,
@@ -151,6 +158,44 @@ export default async function DashboardPage() {
 		...channelProviders.map((c) => c.provider),
 		...(hasBluesky ? ["bluesky" as const] : []),
 	];
+
+	// Reach over the last 7 days, per platform, from the nightly read-back
+	// cache. Only platforms that have returned data show up; gated channels
+	// (Meta / TikTok / YouTube until approval) are surfaced separately so
+	// the card is honest about what's missing vs. what's zero.
+	const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+	const reachRows = await db
+		.select({
+			platform: platformInsights.platform,
+			impressions: sql<string>`COALESCE(SUM(NULLIF(${platformInsights.metrics}->>'impressions', '')::bigint), 0)`,
+			posts: sql<number>`COUNT(*)`,
+		})
+		.from(platformInsights)
+		.where(
+			and(
+				eq(platformInsights.userId, user.id),
+				gte(platformInsights.platformPostedAt, sevenDaysAgo),
+			),
+		)
+		.groupBy(platformInsights.platform);
+
+	const reachByPlatform = new Map(
+		reachRows.map((r) => ({
+			platform: r.platform,
+			impressions: Number(r.impressions ?? 0),
+			posts: Number(r.posts ?? 0),
+		})).map((r) => [r.platform, r]),
+	);
+	const totalImpressions = reachRows.reduce(
+		(sum, r) => sum + Number(r.impressions ?? 0),
+		0,
+	);
+	const gatedConnected = allProviders.filter(
+		(p) => PLATFORM_GATING[p] === "pending_approval",
+	);
+	const readbackConnected = allProviders.filter(
+		(p) => p === "twitter" || p === "linkedin",
+	);
 
 	// ── View ────────────────────────────────────────────────────────────
 	const firstName = (user.name ?? user.email).split(/\s|@/)[0];
@@ -325,6 +370,19 @@ export default async function DashboardPage() {
 				<aside className="lg:col-span-4 space-y-6">
 					<ChannelsCard providers={allProviders} />
 
+					{readbackConnected.length > 0 ? (
+						<ReachCard
+							totalImpressions={totalImpressions}
+							perPlatform={readbackConnected.map((p) => ({
+								platform: p,
+								impressions: reachByPlatform.get(p)?.impressions ?? 0,
+								posts: reachByPlatform.get(p)?.posts ?? 0,
+								gated: PLATFORM_GATING[p] === "pending_approval",
+							}))}
+							gatedConnectedCount={gatedConnected.length}
+						/>
+					) : null}
+
 					<article className="rounded-2xl border border-border bg-peach-100/60 p-6">
 						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
 							From the field
@@ -490,6 +548,85 @@ function ChannelsCard({ providers }: { providers: string[] }) {
 			</Link>
 		</article>
 	);
+}
+
+function ReachCard({
+	totalImpressions,
+	perPlatform,
+	gatedConnectedCount,
+}: {
+	totalImpressions: number;
+	perPlatform: Array<{
+		platform: string;
+		impressions: number;
+		posts: number;
+		gated: boolean;
+	}>;
+	gatedConnectedCount: number;
+}) {
+	const hasAnyData = totalImpressions > 0 || perPlatform.some((p) => p.posts > 0);
+	return (
+		<article className="rounded-2xl border border-border bg-background-elev p-6">
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						Reach · last 7 days
+					</p>
+					<p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+						{hasAnyData ? formatCompact(totalImpressions) : "—"}
+					</p>
+					<p className="mt-1 text-[12px] text-ink/55">
+						{hasAnyData ? "impressions" : "syncing nightly"}
+					</p>
+				</div>
+				<span className="w-10 h-10 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
+					<BarChart3 className="w-4 h-4 text-ink" />
+				</span>
+			</div>
+
+			{perPlatform.length > 0 ? (
+				<ul className="mt-5 space-y-2">
+					{perPlatform.map((p) => (
+						<li
+							key={p.platform}
+							className="flex items-center justify-between text-[12.5px]"
+						>
+							<span className="inline-flex items-center gap-2 text-ink/75">
+								{PROVIDER_ICONS[p.platform] ? (
+									(() => {
+										const Icon = PROVIDER_ICONS[p.platform];
+										return <Icon className="w-3.5 h-3.5" />;
+									})()
+								) : null}
+								{PROVIDER_LABELS[p.platform] ?? p.platform}
+							</span>
+							<span className="text-ink/55">
+								{p.gated
+									? "awaiting approval"
+									: p.posts === 0
+										? "no posts yet"
+										: `${formatCompact(p.impressions)} · ${p.posts} post${p.posts === 1 ? "" : "s"}`}
+							</span>
+						</li>
+					))}
+				</ul>
+			) : null}
+
+			{gatedConnectedCount > 0 ? (
+				<p className="mt-5 text-[11.5px] text-ink/50 leading-[1.55]">
+					{gatedConnectedCount} channel{gatedConnectedCount === 1 ? "" : "s"} waiting
+					on platform approval. We&apos;ll backfill once it lands.
+				</p>
+			) : null}
+		</article>
+	);
+}
+
+function formatCompact(n: number): string {
+	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+	if (n >= 10_000) return `${(n / 1_000).toFixed(0)}K`;
+	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+	return n.toLocaleString();
 }
 
 function greet(now: Date, tz: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { refineContent } from "@/app/actions/ai";
+import { generateDraft, refineContent } from "@/app/actions/ai";
 import { saveDraft, schedulePost } from "@/app/actions/posts";
 import {
 	BlueskyIcon,
@@ -8,6 +8,7 @@ import {
 	InstagramIcon,
 	LinkedInIcon,
 	MediumIcon,
+	RedditIcon,
 	ThreadsIcon,
 	TikTokIcon,
 	XIcon as XBrandIcon,
@@ -24,6 +25,7 @@ import {
 	RotateCcw,
 	Send,
 	Sparkles,
+	Wand2,
 	X as XIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -42,6 +44,7 @@ const PLATFORM_ICONS: Record<
 	threads: ThreadsIcon,
 	bluesky: BlueskyIcon,
 	medium: MediumIcon,
+	reddit: RedditIcon,
 };
 
 const MAX_MEDIA = 4;
@@ -120,6 +123,13 @@ const PLATFORMS: Platform[] = [
 		limit: 100000,
 		accent: "bg-ink text-background",
 	},
+	{
+		id: "reddit",
+		name: "Reddit",
+		handle: "u/username",
+		limit: 40000,
+		accent: "bg-[#ff4500] text-white",
+	},
 ];
 
 type TabId = "all" | string;
@@ -145,9 +155,12 @@ export function Composer({
 	const [showSchedule, setShowSchedule] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 	const [isRefining, startRefining] = useTransition();
+	const [isGenerating, startGenerating] = useTransition();
 	const [isSaving, startSaving] = useTransition();
 	const [isPublishing, startPublishing] = useTransition();
 	const [formError, setFormError] = useState<string | null>(null);
+	const [showGenerate, setShowGenerate] = useState(false);
+	const [generateTopic, setGenerateTopic] = useState("");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// If the active tab's platform gets deselected, fall back to "all".
@@ -271,6 +284,22 @@ export function Composer({
 				handleEditorChange(refined);
 			} catch {
 				setFormError("Refine failed. Try again in a moment.");
+			}
+		});
+	};
+
+	const handleGenerate = () => {
+		if (!generateTopic.trim()) return;
+		setFormError(null);
+		startGenerating(async () => {
+			try {
+				const context = activePlatform?.id ?? selected[0] ?? "general";
+				const draft = await generateDraft(generateTopic, context);
+				handleEditorChange(draft);
+				setGenerateTopic("");
+				setShowGenerate(false);
+			} catch {
+				setFormError("Generate failed. Try again in a moment.");
 			}
 		});
 	};
@@ -462,6 +491,67 @@ export function Composer({
 					</div>
 
 					<div className="rounded-3xl border border-border bg-background-elev overflow-hidden">
+						{showGenerate ? (
+							<div className="flex flex-col gap-2 px-5 pt-4 pb-3 border-b border-border bg-peach-100/50">
+								<div className="flex items-center gap-2 text-[12px] text-ink/65">
+									<Wand2 className="w-3.5 h-3.5 text-primary" />
+									<span>
+										Generate a draft from a topic
+										{activePlatform
+											? ` for ${activePlatform.name}`
+											: selected.length > 0
+												? " — picks the first selected channel"
+												: ""}
+										.
+									</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<input
+										value={generateTopic}
+										onChange={(e) => setGenerateTopic(e.target.value)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" && !isGenerating) {
+												e.preventDefault();
+												handleGenerate();
+											}
+											if (e.key === "Escape") {
+												setShowGenerate(false);
+												setGenerateTopic("");
+											}
+										}}
+										placeholder="e.g. how we cut onboarding time in half"
+										autoFocus
+										className="flex-1 h-10 px-3 rounded-full border border-border bg-background text-[13.5px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-ink"
+									/>
+									<button
+										type="button"
+										onClick={handleGenerate}
+										disabled={isGenerating || !generateTopic.trim()}
+										className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+									>
+										{isGenerating ? (
+											<Loader2 className="w-3.5 h-3.5 animate-spin" />
+										) : (
+											<Wand2 className="w-3.5 h-3.5" />
+										)}
+										Write draft
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											setShowGenerate(false);
+											setGenerateTopic("");
+										}}
+										disabled={isGenerating}
+										aria-label="Close generate"
+										className="inline-flex items-center justify-center w-10 h-10 rounded-full text-ink/60 hover:text-ink hover:bg-background transition-colors"
+									>
+										<XIcon className="w-4 h-4" />
+									</button>
+								</div>
+							</div>
+						) : null}
+
 						{activePlatform ? (
 							<div className="flex items-center justify-between gap-3 px-5 pt-4 text-[12px] text-ink/60">
 								<span>
@@ -561,19 +651,35 @@ export function Composer({
 									}
 								/>
 							</div>
-							<button
-								type="button"
-								onClick={handleRefine}
-								disabled={isRefining || !editorValue.trim()}
-								className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
-							>
-								{isRefining ? (
-									<Loader2 className="w-3.5 h-3.5 animate-spin" />
-								) : (
-									<Sparkles className="w-3.5 h-3.5 text-primary" />
-								)}
-								Refine
-							</button>
+							<div className="flex items-center gap-1.5">
+								<button
+									type="button"
+									onClick={() => setShowGenerate((v) => !v)}
+									aria-pressed={showGenerate}
+									className={cn(
+										"inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[12.5px] font-medium transition-colors",
+										showGenerate
+											? "bg-ink text-background border-ink"
+											: "border-border-strong text-ink hover:border-ink",
+									)}
+								>
+									<Wand2 className="w-3.5 h-3.5 text-primary" />
+									Generate
+								</button>
+								<button
+									type="button"
+									onClick={handleRefine}
+									disabled={isRefining || !editorValue.trim()}
+									className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+								>
+									{isRefining ? (
+										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									) : (
+										<Sparkles className="w-3.5 h-3.5 text-primary" />
+									)}
+									Refine
+								</button>
+							</div>
 						</div>
 					</div>
 
