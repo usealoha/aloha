@@ -35,6 +35,9 @@ const envSchema = z.object({
   AUTH_REDDIT_SECRET: z.string().optional(),
   AUTH_PINTEREST_ID: z.string().optional(),
   AUTH_PINTEREST_SECRET: z.string().optional(),
+  // Notion workspace ingest (Muse brand-corpus).
+  NOTION_OAUTH_CLIENT_ID: z.string().optional(),
+  NOTION_OAUTH_CLIENT_SECRET: z.string().optional(),
 
   // Email
   RESEND_API_KEY: z.string().min(1),
