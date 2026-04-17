@@ -28,6 +28,39 @@ Platform constraints: {{platformConstraints}}
 Voice profile (write in this voice; treat it as non-negotiable):
 {{voiceBlock}}`,
   },
+  composerHashtags: {
+    name: "composer.hashtags",
+    version: 1,
+    systemPrompt: `You suggest hashtags for a social-media post, respecting platform norms.
+
+Output STRICT JSON: {"hashtags": string[]}. Each hashtag INCLUDES the leading '#'. No prose, no fences, no commentary.
+
+Target platform: {{platform}}
+Platform norms:
+{{platformNorms}}
+
+Rules:
+- Return the number of hashtags appropriate for the platform (see norms above).
+- Use lowercase unless a proper noun.
+- Prefer niche-specific over generic ("#indiedev" over "#developer").
+- Never invent hashtags that look like spam (#follow4follow, #like4like, etc.).
+- If the post content doesn't clearly suggest relevant hashtags, return an empty array rather than filler.`,
+  },
+  visionAltText: {
+    name: "vision.altText",
+    version: 1,
+    systemPrompt: `You write alt text for images attached to social-media posts. Alt text is for screen readers — it describes what's in the image concisely and factually.
+
+Rules:
+- One sentence, under 125 characters when possible.
+- Describe what is literally visible. Do NOT editorialise or guess at intent.
+- Start with the primary subject.
+- If the image contains readable text, include it verbatim in quotes.
+- Do not start with "Image of" / "Picture of" — just describe.
+- No emoji, no hashtags, no marketing language.
+
+Post context (may help disambiguate, use only if needed): {{postContext}}`,
+  },
   voiceTrain: {
     name: "voice.train",
     version: 1,

@@ -6,7 +6,7 @@
 // Feature code should never import a model slug directly.
 
 import { costMicrosFor, defaultModelFor, type FeatureKey } from "./models";
-import { openRouterChat } from "./openrouter";
+import { openRouterChat, openRouterChatStream } from "./openrouter";
 import { loadTemplate } from "./templates";
 import { logGeneration } from "./generations";
 
@@ -17,6 +17,10 @@ export type GenerateInput = {
   // Interpolated into the system prompt via `{{var}}` substitution.
   vars?: Record<string, string>;
   userMessage: string;
+  // Image URLs attached to the user message. When present the user content
+  // becomes a multipart block — requires a vision-capable model (Gemini Pro,
+  // etc.). Falls through as text-only when omitted.
+  images?: string[];
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -38,12 +42,23 @@ export async function generate(input: GenerateInput): Promise<GenerateResult> {
   const systemPrompt = interpolate(template.systemPrompt, input.vars ?? {});
 
   const start = Date.now();
+  const userContent =
+    input.images && input.images.length > 0
+      ? [
+          { type: "text" as const, text: input.userMessage },
+          ...input.images.map((url) => ({
+            type: "image_url" as const,
+            image_url: { url },
+          })),
+        ]
+      : input.userMessage;
+
   try {
     const { text, tokensIn, tokensOut, raw } = await openRouterChat({
       model,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: input.userMessage },
+        { role: "user", content: userContent },
       ],
       temperature: input.temperature,
       maxTokens: input.maxTokens,
@@ -101,4 +116,121 @@ function interpolate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) =>
     key in vars ? vars[key] : "",
   );
+}
+
+// Streaming façade. Yields text chunks as the model produces them and logs
+// a single generation row on completion. Consumers drive it with `for await`
+// on `.stream` and await `.done` for the final `GenerateResult`.
+//
+// Use this for multi-variant and long-form flows (plan generator, repurposer,
+// campaign planner, per-channel variant picker). For synchronous flows (refine,
+// hashtag suggest, alt-text) stick with `generate()` — the round-trip cost of
+// SSE parsing isn't worth it.
+export type GenerateStreamResult = {
+  stream: AsyncIterable<string>;
+  done: Promise<GenerateResult>;
+};
+
+export async function generateStream(
+  input: GenerateInput,
+): Promise<GenerateStreamResult> {
+  const model = input.model ?? defaultModelFor(input.feature);
+  const template = await loadTemplate(input.template.name, input.template.version);
+  const systemPrompt = interpolate(template.systemPrompt, input.vars ?? {});
+
+  const userContent =
+    input.images && input.images.length > 0
+      ? [
+          { type: "text" as const, text: input.userMessage },
+          ...input.images.map((url) => ({
+            type: "image_url" as const,
+            image_url: { url },
+          })),
+        ]
+      : input.userMessage;
+
+  const start = Date.now();
+
+  // Two halves of the same pipe: the iterable we return to the caller, and
+  // the promise that resolves once the upstream finishes and the log lands.
+  let resolveDone!: (r: GenerateResult) => void;
+  let rejectDone!: (err: unknown) => void;
+  const done = new Promise<GenerateResult>((resolve, reject) => {
+    resolveDone = resolve;
+    rejectDone = reject;
+  });
+
+  const source = openRouterChatStream({
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ],
+    temperature: input.temperature,
+    maxTokens: input.maxTokens,
+  });
+
+  async function* iterate(): AsyncIterable<string> {
+    let fullText = "";
+    let tokensIn = 0;
+    let tokensOut = 0;
+    try {
+      for await (const ev of source) {
+        if (ev.type === "chunk") {
+          fullText += ev.text;
+          yield ev.text;
+        } else {
+          tokensIn = ev.tokensIn;
+          tokensOut = ev.tokensOut;
+        }
+      }
+      const latencyMs = Date.now() - start;
+      const costMicros = costMicrosFor(model, tokensIn, tokensOut);
+      const generationId = await logGeneration({
+        userId: input.userId,
+        feature: input.feature,
+        templateName: template.name,
+        templateVersion: template.version,
+        model,
+        input: { vars: input.vars ?? {}, userMessage: input.userMessage },
+        output: { text: fullText },
+        tokensIn,
+        tokensOut,
+        costMicros,
+        latencyMs,
+        status: "ok",
+      });
+      resolveDone({
+        text: fullText,
+        generationId,
+        model,
+        tokensIn,
+        tokensOut,
+        costMicros,
+        latencyMs,
+      });
+    } catch (err) {
+      const latencyMs = Date.now() - start;
+      const message = err instanceof Error ? err.message : String(err);
+      await logGeneration({
+        userId: input.userId,
+        feature: input.feature,
+        templateName: template.name,
+        templateVersion: template.version,
+        model,
+        input: { vars: input.vars ?? {}, userMessage: input.userMessage },
+        output: { text: fullText },
+        tokensIn,
+        tokensOut,
+        costMicros: 0,
+        latencyMs,
+        status: "error",
+        errorMessage: message,
+      });
+      rejectDone(err);
+      throw err;
+    }
+  }
+
+  return { stream: iterate(), done };
 }
