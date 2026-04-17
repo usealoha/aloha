@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { CostCapExceededError } from "@/lib/ai/cost-cap";
-import { generatePlan, loadPlan, markIdeaAccepted } from "@/lib/ai/plan";
+import {
+  generatePlan,
+  loadPlan,
+  markIdeaAccepted,
+  regeneratePlanDay,
+} from "@/lib/ai/plan";
 import { getCurrentUser } from "@/lib/current-user";
 
 function parseStringList(raw: string): string[] {
@@ -102,4 +107,23 @@ export async function acceptPlanIdeasAction(formData: FormData) {
 
   revalidatePath("/app/calendar/plan");
   redirect(`/app/calendar/plan?id=${planId}&accepted=1`);
+}
+
+export async function regeneratePlanDayAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const planId = String(formData.get("planId") ?? "");
+  const date = String(formData.get("date") ?? "");
+  if (!planId || !date) throw new Error("planId and date required");
+
+  try {
+    await regeneratePlanDay(user.id, planId, date);
+  } catch (err) {
+    if (err instanceof CostCapExceededError) throw err;
+    throw err;
+  }
+
+  revalidatePath("/app/calendar/plan");
+  redirect(`/app/calendar/plan?id=${planId}`);
 }

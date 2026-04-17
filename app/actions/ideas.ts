@@ -3,8 +3,45 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { ideas } from "@/db/schema";
+import { ideas, type PostMedia } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+
+const ALLOWED_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function parseMedia(raw: string | null): PostMedia[] | null {
+  if (!raw) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+  const clean: PostMedia[] = [];
+  for (const m of parsed) {
+    if (
+      m &&
+      typeof m === "object" &&
+      typeof (m as PostMedia).url === "string" &&
+      typeof (m as PostMedia).mimeType === "string" &&
+      ALLOWED_MIMES.has((m as PostMedia).mimeType)
+    ) {
+      const item: PostMedia = {
+        url: (m as PostMedia).url,
+        mimeType: (m as PostMedia).mimeType,
+      };
+      if (typeof (m as PostMedia).alt === "string") item.alt = (m as PostMedia).alt;
+      clean.push(item);
+    }
+    if (clean.length >= 4) break;
+  }
+  return clean.length > 0 ? clean : null;
+}
 
 const VALID_STATUSES = ["new", "drafted", "archived"] as const;
 type IdeaStatus = (typeof VALID_STATUSES)[number];
@@ -29,6 +66,7 @@ export async function createIdeaAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   const url = String(formData.get("url") ?? "").trim() || null;
   const tags = parseTags(String(formData.get("tags") ?? ""));
+  const media = parseMedia(String(formData.get("media") ?? ""));
 
   await db.insert(ideas).values({
     userId: user.id,
@@ -36,6 +74,7 @@ export async function createIdeaAction(formData: FormData) {
     sourceUrl: url,
     title,
     body,
+    media,
     tags,
   });
   revalidatePath("/app/ideas");
