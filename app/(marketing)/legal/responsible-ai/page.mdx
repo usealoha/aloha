@@ -62,11 +62,11 @@ foundation-model provider.
 
 ## What never trains on your data
 
-- **Public AI models.** Your posts are never submitted to OpenAI,
-  Anthropic, Google, or any other foundation-model provider to be
-  used as training data. The OpenAI endpoints we use are governed
-  by OpenAI's standard API terms — prompts are not used to train
-  OpenAI's public models.
+- **Public AI models.** Your posts are never submitted to any
+  third-party foundation-model provider for use as training
+  data. The inference endpoints we rely on are governed by API
+  terms that prohibit prompts being used to train the provider's
+  public models.
 - **Other customers' voice models.** Your data stays in your
   workspace. Even a shared voice model on a Team plan only trains
   on the posts that workspace marks as voice-matching.
@@ -76,17 +76,16 @@ foundation-model provider.
 
 ## Where the models run
 
-- **Primary voice model** — a small, workspace-scoped model we
-  train and host ourselves in AWS us-east-1.
-- **Inference fallback for long-form drafts** — a third-party
-  foundation model (currently OpenAI) governed by OpenAI's
-  standard API terms. Prompts are scrubbed of identifying
-  metadata before transmission. Fallback is used only when your
-  voice model isn't confident.
-
-You can opt out of the fallback in Settings → Voice. The model
-will still draft for you, it just won't use long-form assistance
-for out-of-distribution content.
+- **Your voice profile** — trained and stored by Aloha,
+  workspace-scoped, hosted in AWS us-east-1. It captures tone,
+  cadence, and style from the material you provide; it does not
+  itself generate text.
+- **Inference** — third-party foundation-model endpoints we
+  route to behind our own service, governed by API terms that
+  prohibit training on your prompts. Providers are named in our
+  Data Processing Addendum and may change; the protections above
+  apply to any provider in the chain. Prompts are scrubbed of
+  identifying metadata before transmission.
 
 ## Your controls
 
