@@ -11,9 +11,21 @@
 // settings UI both consult. Flip a platform's gating to "ready" here when
 // the corresponding platform review lands — no other code should care.
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "@/db";
-import { channelStates } from "@/db/schema";
+import {
+  accounts,
+  blueskyCredentials,
+  channelStates,
+  mastodonCredentials,
+} from "@/db/schema";
+import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import type {
+  EffectiveState,
+  PublishMode,
+} from "./channel-state-format";
+
+export type { EffectiveState, PublishMode } from "./channel-state-format";
 
 export type GatingStatus = "ready" | "pending_approval";
 
@@ -33,14 +45,6 @@ export const PLATFORM_GATING: Record<string, GatingStatus> = {
   tiktok: "pending_approval",
   youtube: "pending_approval",
 };
-
-export type PublishMode = "auto" | "review_pending" | "manual_assist";
-
-export type EffectiveState =
-  | "not_connected"
-  | "connected_published"
-  | "connected_review_pending"
-  | "connected_manual_assist";
 
 export type ChannelStateRow = {
   publishMode: PublishMode;
@@ -153,4 +157,69 @@ export async function setChannelPublishMode(
         updatedAt: new Date(),
       },
     });
+}
+
+// Bulk resolver for the composer and calendar: loads every channel's
+// effective state for a user in one pass. Returns a map keyed by platform
+// id so both surfaces can just look up and render.
+export async function getEffectiveStatesForUser(
+  userId: string,
+): Promise<Record<string, EffectiveState>> {
+  const [oauthRows, blueskyRow, mastodonRow, stateRows] = await Promise.all([
+    db
+      .select({ provider: accounts.provider })
+      .from(accounts)
+      .where(
+        and(
+          eq(accounts.userId, userId),
+          notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
+        ),
+      ),
+    db
+      .select({ id: blueskyCredentials.id })
+      .from(blueskyCredentials)
+      .where(eq(blueskyCredentials.userId, userId))
+      .limit(1),
+    db
+      .select({ id: mastodonCredentials.id })
+      .from(mastodonCredentials)
+      .where(eq(mastodonCredentials.userId, userId))
+      .limit(1),
+    db
+      .select({
+        channel: channelStates.channel,
+        publishMode: channelStates.publishMode,
+        reviewStartedAt: channelStates.reviewStartedAt,
+        notes: channelStates.notes,
+      })
+      .from(channelStates)
+      .where(eq(channelStates.userId, userId)),
+  ]);
+
+  const connected = new Set<string>(oauthRows.map((r) => r.provider));
+  if (blueskyRow.length > 0) connected.add("bluesky");
+  if (mastodonRow.length > 0) connected.add("mastodon");
+
+  const overrides = new Map<string, ChannelStateRow>(
+    stateRows.map((r) => [
+      r.channel,
+      {
+        publishMode: r.publishMode,
+        reviewStartedAt: r.reviewStartedAt,
+        notes: r.notes,
+      },
+    ]),
+  );
+
+  const result: Record<string, EffectiveState> = {};
+  const defaultOverride: ChannelStateRow = {
+    publishMode: "auto",
+    reviewStartedAt: null,
+    notes: null,
+  };
+  for (const channel of connected) {
+    const override = overrides.get(channel) ?? defaultOverride;
+    result[channel] = resolveEffectiveState(channel, true, override);
+  }
+  return result;
 }
