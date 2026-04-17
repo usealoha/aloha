@@ -168,12 +168,14 @@ export function Composer({
 	bestWindows,
 	channelStates,
 	initialContent = "",
+	sourceIdeaId = null,
 }: {
 	author: Author;
 	connectedProviders: string[];
 	bestWindows: Record<string, BestWindow[]>;
 	channelStates: Record<string, EffectiveState>;
 	initialContent?: string;
+	sourceIdeaId?: string | null;
 }) {
 	const router = useRouter();
 	const [baseContent, setBaseContent] = useState(initialContent);
@@ -474,6 +476,7 @@ export function Composer({
 		platforms: selected,
 		media: baseMedia,
 		channelContent: overrides,
+		sourceIdeaId,
 	});
 
 	const handleSaveDraft = () => {

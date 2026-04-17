@@ -39,16 +39,21 @@ export default async function ComposerPage({
   ]);
 
   // If the composer was opened from an idea, pull the body so the editor
-  // starts populated. We don't auto-flip the idea to "drafted" here — the
-  // user might abandon; they can archive explicitly from /app/ideas.
+  // starts populated. We don't flip the idea to "drafted" on open — the
+  // flip happens when the user actually saves or schedules a post, in
+  // posts.ts.
   let initialContent = "";
+  let sourceIdeaId: string | null = null;
   if (ideaId) {
     const [idea] = await db
       .select({ id: ideas.id, body: ideas.body })
       .from(ideas)
       .where(and(eq(ideas.id, ideaId), eq(ideas.userId, user.id)))
       .limit(1);
-    if (idea) initialContent = idea.body;
+    if (idea) {
+      initialContent = idea.body;
+      sourceIdeaId = idea.id;
+    }
   }
 
   const connectedProviders = connected.map((c) => c.provider);
@@ -66,6 +71,7 @@ export default async function ComposerPage({
       bestWindows={bestWindows}
       channelStates={channelStates}
       initialContent={initialContent}
+      sourceIdeaId={sourceIdeaId}
     />
   );
 }
