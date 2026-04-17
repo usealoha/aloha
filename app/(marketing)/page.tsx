@@ -869,7 +869,7 @@ export default function LandingPage() {
 							</h2>
 						</div>
 						<p className="text-[14px] text-ink/60 max-w-sm">
-							Nine platforms today, more shipping this quarter. We build
+							Twelve platforms today, more shipping this quarter. We build
 							for the API, not the marketing page — if it breaks, we tell you
 							before the audience notices.
 						</p>
@@ -890,6 +890,9 @@ export default function LandingPage() {
 							{ n: "Pinterest", tag: "Pins · Boards", dot: "bg-peach-400" },
 							{ n: "YouTube", tag: "Shorts · Community", dot: "bg-peach-400" },
 							{ n: "Medium", tag: "Articles · Stories", dot: "bg-ink" },
+							{ n: "Bluesky", tag: "Feeds · Threads", dot: "bg-primary" },
+							{ n: "Mastodon", tag: "Federated · Open", dot: "bg-primary" },
+							{ n: "Reddit", tag: "Posts · Communities", dot: "bg-peach-400" },
 						].map((c) => {
 							const icon = SOCIAL_ICONS.find((i) => i.n === c.n);
 							return (
@@ -931,7 +934,7 @@ export default function LandingPage() {
 							Coming next quarter:
 						</span>
 						<span className="font-display text-ink">
-							Bluesky, Substack Notes, Mastodon.
+							Substack Notes, and more.
 						</span>
 					</div>
 				</div>

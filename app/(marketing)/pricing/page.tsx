@@ -137,7 +137,7 @@ const MATRIX: MatrixSection[] = [
 		rows: [
 			{
 				label: "Connected channels",
-				note: "X, LinkedIn, Facebook, Instagram, Threads, TikTok, YouTube",
+				note: "X, LinkedIn, Facebook, Instagram, Threads, TikTok, YouTube, Bluesky, Mastodon, Reddit, and more",
 				free: "3",
 				basic: "Per channel · declines at 10, 15, 20, 25",
 				muse: "Same",
