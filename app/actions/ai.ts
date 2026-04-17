@@ -202,3 +202,111 @@ export async function generateImageAction(
     throw new Error("Failed to generate image");
   }
 }
+
+export type PostScore = {
+  score: number;
+  oneLine: string;
+  strengths: string[];
+  weaknesses: string[];
+  improvementBrief: string;
+};
+
+export async function scorePost(
+  content: string,
+  platform: string = "general",
+): Promise<PostScore> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!content.trim()) throw new Error("Nothing to score yet.");
+
+  await registerPrompts();
+
+  try {
+    const result = await generate({
+      userId: user.id,
+      feature: "composer.score",
+      template: PROMPTS.composerScore,
+      vars: { platform, platformConstraints: constraintsFor(platform) },
+      userMessage: content.trim(),
+      temperature: 0.2,
+    });
+    return parseScoreJson(result.text);
+  } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
+    console.error("AI Score Error:", error);
+    throw new Error("Failed to score post");
+  }
+}
+
+function parseScoreJson(text: string): PostScore {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  let parsed: Partial<PostScore> | null = null;
+  try {
+    parsed = JSON.parse(cleaned) as Partial<PostScore>;
+  } catch {
+    throw new Error("Score response was not valid JSON.");
+  }
+  const score = clampInt(Number(parsed.score ?? 0), 0, 100);
+  return {
+    score,
+    oneLine: typeof parsed.oneLine === "string" ? parsed.oneLine : "",
+    strengths: sanitizeList(parsed.strengths),
+    weaknesses: sanitizeList(parsed.weaknesses),
+    improvementBrief:
+      typeof parsed.improvementBrief === "string" ? parsed.improvementBrief : "",
+  };
+}
+
+function clampInt(n: number, lo: number, hi: number): number {
+  if (!Number.isFinite(n)) return lo;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+
+function sanitizeList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((v): v is string => typeof v === "string")
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+export async function improveWithBrief(
+  content: string,
+  platform: string,
+  improvementBrief: string,
+): Promise<string> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!content.trim()) throw new Error("Nothing to improve yet.");
+  if (!improvementBrief.trim()) {
+    throw new Error("No improvement brief provided.");
+  }
+
+  await registerPrompts();
+  const voice = await loadCurrentVoice(user.id);
+
+  try {
+    const result = await generate({
+      userId: user.id,
+      feature: "composer.improve",
+      template: PROMPTS.composerImprove,
+      vars: {
+        platform,
+        improvementBrief: improvementBrief.trim(),
+        voiceBlock: buildVoiceBlock(voice),
+      },
+      userMessage: content.trim(),
+      temperature: 0.6,
+    });
+    return result.text.trim();
+  } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
+    console.error("AI Improve Error:", error);
+    throw new Error("Failed to improve post");
+  }
+}
