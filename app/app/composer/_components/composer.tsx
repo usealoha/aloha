@@ -1,6 +1,11 @@
 "use client";
 
-import { generateDraft, refineContent } from "@/app/actions/ai";
+import {
+	generateAltText,
+	generateDraft,
+	refineContent,
+	suggestHashtags,
+} from "@/app/actions/ai";
 import { saveDraft, schedulePost } from "@/app/actions/posts";
 import {
 	BlueskyIcon,
@@ -18,6 +23,7 @@ import { cn } from "@/lib/utils";
 import {
 	AlertCircle,
 	CalendarClock,
+	Hash,
 	Image as ImageIcon,
 	Loader2,
 	Paperclip,
@@ -25,12 +31,14 @@ import {
 	RotateCcw,
 	Send,
 	Sparkles,
+	Type,
 	Wand2,
 	X as XIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { PreviewCard } from "./preview-card";
+import { VariantsPanel, type VariantPlatform } from "./variants-panel";
 
 const PLATFORM_ICONS: Record<
 	string,
@@ -161,6 +169,10 @@ export function Composer({
 	const [formError, setFormError] = useState<string | null>(null);
 	const [showGenerate, setShowGenerate] = useState(false);
 	const [generateTopic, setGenerateTopic] = useState("");
+	const [showVariants, setShowVariants] = useState(false);
+	const [isHashing, startHashing] = useTransition();
+	const [hashSuggestions, setHashSuggestions] = useState<string[]>([]);
+	const [altTextLoading, setAltTextLoading] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// If the active tab's platform gets deselected, fall back to "all".
@@ -286,6 +298,65 @@ export function Composer({
 				setFormError("Refine failed. Try again in a moment.");
 			}
 		});
+	};
+
+	const handleSuggestHashtags = () => {
+		if (!editorValue.trim()) return;
+		setFormError(null);
+		startHashing(async () => {
+			try {
+				const context = activePlatform?.id ?? selected[0] ?? "general";
+				const tags = await suggestHashtags(editorValue, context);
+				setHashSuggestions(tags);
+			} catch {
+				setFormError("Hashtag suggest failed. Try again in a moment.");
+			}
+		});
+	};
+
+	const appendHashtag = (tag: string) => {
+		const current = editorValue;
+		if (current.includes(tag)) {
+			setHashSuggestions((prev) => prev.filter((t) => t !== tag));
+			return;
+		}
+		const next =
+			current.trimEnd().length === 0
+				? tag
+				: /\s$/.test(current)
+					? `${current}${tag}`
+					: `${current} ${tag}`;
+		handleEditorChange(next);
+		setHashSuggestions((prev) => prev.filter((t) => t !== tag));
+	};
+
+	const applyVariantToChannel = (platformId: string, text: string) => {
+		setOverrides((prev) => ({
+			...prev,
+			[platformId]: { ...prev[platformId], content: text },
+		}));
+		setActiveTab(platformId);
+	};
+
+	const variantPlatforms: VariantPlatform[] = selectedPlatforms.map((p) => ({
+		id: p.id,
+		name: p.name,
+		Icon: PLATFORM_ICONS[p.id],
+	}));
+
+	const handleGenerateAltText = async (m: PostMedia) => {
+		setAltTextLoading(m.url);
+		setFormError(null);
+		try {
+			const text = await generateAltText(m.url, baseContent);
+			setBaseMedia((prev) =>
+				prev.map((x) => (x.url === m.url ? { ...x, alt: text } : x)),
+			);
+		} catch {
+			setFormError("Alt text failed. Try again in a moment.");
+		} finally {
+			setAltTextLoading(null);
+		}
 	};
 
 	const handleGenerate = () => {
@@ -460,6 +531,15 @@ export function Composer({
 			<section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 				{/* Editor */}
 				<div className="lg:col-span-7">
+					{showVariants ? (
+						<div className="mb-6">
+							<VariantsPanel
+								platforms={variantPlatforms}
+								onAccept={applyVariantToChannel}
+								onClose={() => setShowVariants(false)}
+							/>
+						</div>
+					) : null}
 					{/* Tab strip */}
 					<div
 						role="tablist"
@@ -586,27 +666,76 @@ export function Composer({
 
 						{baseMedia.length > 0 ? (
 							<div className="px-5 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-								{baseMedia.map((m) => (
-									<div
-										key={m.url}
-										className="relative aspect-square rounded-xl overflow-hidden border border-border bg-background"
-									>
-										{/* eslint-disable-next-line @next/next/no-img-element */}
-										<img
-											src={m.url}
-											alt=""
-											className="w-full h-full object-cover"
-										/>
-										<button
-											type="button"
-											onClick={() => removeMedia(m.url)}
-											aria-label="Remove image"
-											className="absolute top-1.5 right-1.5 w-6 h-6 inline-flex items-center justify-center rounded-full bg-ink/80 text-background hover:bg-ink transition-colors"
+								{baseMedia.map((m) => {
+									const loading = altTextLoading === m.url;
+									return (
+										<div
+											key={m.url}
+											className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-background"
 										>
-											<XIcon className="w-3 h-3" />
-										</button>
-									</div>
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img
+												src={m.url}
+												alt={m.alt ?? ""}
+												className="w-full h-full object-cover"
+											/>
+											<button
+												type="button"
+												onClick={() => removeMedia(m.url)}
+												aria-label="Remove image"
+												className="absolute top-1.5 right-1.5 w-6 h-6 inline-flex items-center justify-center rounded-full bg-ink/80 text-background hover:bg-ink transition-colors"
+											>
+												<XIcon className="w-3 h-3" />
+											</button>
+											<button
+												type="button"
+												onClick={() => handleGenerateAltText(m)}
+												disabled={loading}
+												title={m.alt ? `Alt: ${m.alt}` : "Generate alt text"}
+												aria-label={m.alt ? "Regenerate alt text" : "Generate alt text"}
+												className={cn(
+													"absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 h-6 px-2 rounded-full text-[10.5px] font-medium transition-colors",
+													m.alt
+														? "bg-ink/80 text-background"
+														: "bg-background/90 text-ink border border-border hover:bg-background",
+												)}
+											>
+												{loading ? (
+													<Loader2 className="w-3 h-3 animate-spin" />
+												) : (
+													<Type className="w-3 h-3" />
+												)}
+												{m.alt ? "Alt set" : "Alt text"}
+											</button>
+										</div>
+									);
+								})}
+							</div>
+						) : null}
+
+						{hashSuggestions.length > 0 ? (
+							<div className="px-5 pt-3 pb-1 border-t border-border flex flex-wrap items-center gap-1.5">
+								<span className="text-[11px] uppercase tracking-[0.18em] text-ink/45 mr-1">
+									Suggested
+								</span>
+								{hashSuggestions.map((tag) => (
+									<button
+										key={tag}
+										type="button"
+										onClick={() => appendHashtag(tag)}
+										className="inline-flex items-center h-7 px-2.5 rounded-full bg-peach-100 border border-peach-300 text-[12px] text-ink hover:bg-peach-200 transition-colors"
+									>
+										{tag}
+									</button>
 								))}
+								<button
+									type="button"
+									onClick={() => setHashSuggestions([])}
+									aria-label="Dismiss suggestions"
+									className="inline-flex items-center justify-center w-7 h-7 rounded-full text-ink/50 hover:text-ink hover:bg-muted/50 transition-colors"
+								>
+									<XIcon className="w-3 h-3" />
+								</button>
 							</div>
 						) : null}
 
@@ -654,7 +783,10 @@ export function Composer({
 							<div className="flex items-center gap-1.5">
 								<button
 									type="button"
-									onClick={() => setShowGenerate((v) => !v)}
+									onClick={() => {
+										setShowGenerate((v) => !v);
+										if (!showGenerate) setShowVariants(false);
+									}}
 									aria-pressed={showGenerate}
 									className={cn(
 										"inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[12.5px] font-medium transition-colors",
@@ -668,6 +800,29 @@ export function Composer({
 								</button>
 								<button
 									type="button"
+									onClick={() => {
+										setShowVariants((v) => !v);
+										if (!showVariants) setShowGenerate(false);
+									}}
+									disabled={selectedPlatforms.length === 0}
+									aria-pressed={showVariants}
+									title={
+										selectedPlatforms.length === 0
+											? "Select a channel first"
+											: "Draft one version per selected channel"
+									}
+									className={cn(
+										"inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[12.5px] font-medium transition-colors disabled:opacity-40",
+										showVariants
+											? "bg-ink text-background border-ink"
+											: "border-border-strong text-ink hover:border-ink disabled:hover:border-border-strong",
+									)}
+								>
+									<Wand2 className="w-3.5 h-3.5 text-primary" />
+									Variants
+								</button>
+								<button
+									type="button"
 									onClick={handleRefine}
 									disabled={isRefining || !editorValue.trim()}
 									className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
@@ -678,6 +833,21 @@ export function Composer({
 										<Sparkles className="w-3.5 h-3.5 text-primary" />
 									)}
 									Refine
+								</button>
+								<button
+									type="button"
+									onClick={handleSuggestHashtags}
+									disabled={isHashing || !editorValue.trim()}
+									aria-label="Suggest hashtags"
+									title="Suggest hashtags"
+									className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+								>
+									{isHashing ? (
+										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									) : (
+										<Hash className="w-3.5 h-3.5 text-primary" />
+									)}
+									Hashtags
 								</button>
 							</div>
 						</div>
