@@ -15,7 +15,7 @@
 
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { brandVoice, platformContentCache } from "@/db/schema";
+import { brandCorpus, brandVoice, platformContentCache } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { PROMPTS, registerPrompts } from "./prompts";
 import { generate } from "./router";
@@ -69,8 +69,11 @@ export async function trainVoice(
 ): Promise<TrainVoiceResult> {
   await registerPrompts();
 
-  const samples = await loadCorpusSamples(input.userId, input.samplePostIds);
-  const corpus = assembleCorpus(samples, input.uploadedCorpus);
+  const [samples, corpusDocs] = await Promise.all([
+    loadCorpusSamples(input.userId, input.samplePostIds),
+    loadBrandCorpusForTraining(input.userId),
+  ]);
+  const corpus = assembleCorpus(samples, corpusDocs, input.uploadedCorpus);
 
   const result = await generate({
     userId: input.userId,
@@ -124,8 +127,24 @@ async function loadCorpusSamples(
 }
 
 type Sample = { id: string; platform: string; content: string };
+type CorpusDoc = { source: string; title: string | null; content: string };
 
-function assembleCorpus(samples: Sample[], uploaded: string | undefined): string {
+async function loadBrandCorpusForTraining(userId: string): Promise<CorpusDoc[]> {
+  return db
+    .select({
+      source: brandCorpus.source,
+      title: brandCorpus.title,
+      content: brandCorpus.content,
+    })
+    .from(brandCorpus)
+    .where(eq(brandCorpus.userId, userId));
+}
+
+function assembleCorpus(
+  samples: Sample[],
+  docs: CorpusDoc[],
+  uploaded: string | undefined,
+): string {
   const blocks: string[] = [];
 
   if (samples.length > 0) {
@@ -137,8 +156,18 @@ function assembleCorpus(samples: Sample[], uploaded: string | undefined): string
     }
   }
 
+  if (docs.length > 0) {
+    blocks.push(
+      "--- Long-form corpus (your writing workspace — Notion, Docs, uploads) ---",
+    );
+    for (const d of docs) {
+      const header = d.title ? `[${d.source}] ${d.title}` : `[${d.source}]`;
+      blocks.push(`${header}\n${d.content}`);
+    }
+  }
+
   if (uploaded && uploaded.trim()) {
-    blocks.push("--- Additional corpus (uploaded) ---");
+    blocks.push("--- Additional corpus (pasted) ---");
     blocks.push(uploaded.trim());
   }
 
