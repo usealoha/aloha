@@ -1,8 +1,14 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { posts, type ChannelOverride, type PostMedia } from "@/db/schema";
+import {
+  ideas,
+  posts,
+  type ChannelOverride,
+  type PostMedia,
+} from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { Client } from "@upstash/qstash";
 import { env } from "@/lib/env";
@@ -16,7 +22,30 @@ export type ComposerPayload = {
   platforms: string[];
   media?: PostMedia[];
   channelContent?: Record<string, ChannelOverride>;
+  // When the composer was seeded from an idea, the client threads the idea
+  // id back so we can stamp provenance on the post and flip the idea to
+  // `drafted`. Advisory — posts without a source work fine.
+  sourceIdeaId?: string | null;
 };
+
+async function flipIdeaToDrafted(
+  userId: string,
+  ideaId: string | null | undefined,
+) {
+  if (!ideaId) return;
+  // Only move from `new` → `drafted`. Respect manual `archived` or already
+  // `drafted` states — we don't want to un-archive by accident.
+  await db
+    .update(ideas)
+    .set({ status: "drafted", updatedAt: new Date() })
+    .where(
+      and(
+        eq(ideas.id, ideaId),
+        eq(ideas.userId, userId),
+        eq(ideas.status, "new"),
+      ),
+    );
+}
 
 export async function saveDraft(payload: ComposerPayload) {
   const session = await auth();
@@ -33,10 +62,14 @@ export async function saveDraft(payload: ComposerPayload) {
       media: payload.media ?? [],
       channelContent: sanitizeOverrides(payload.channelContent, payload.platforms),
       status: "draft",
+      sourceIdeaId: payload.sourceIdeaId ?? null,
     });
+
+    await flipIdeaToDrafted(session.user.id, payload.sourceIdeaId);
 
     revalidatePath("/app/dashboard");
     revalidatePath("/app/calendar");
+    revalidatePath("/app/ideas");
 
     return { success: true };
   } catch (error) {
@@ -68,10 +101,13 @@ export async function schedulePost(
         ),
         status: "scheduled",
         scheduledAt: payload.scheduledAt,
+        sourceIdeaId: payload.sourceIdeaId ?? null,
       })
       .returning();
 
     const newPost = results[0];
+
+    await flipIdeaToDrafted(session.user.id, payload.sourceIdeaId);
 
     const delay = Math.max(
       0,
@@ -88,6 +124,7 @@ export async function schedulePost(
 
     revalidatePath("/app/dashboard");
     revalidatePath("/app/calendar");
+    revalidatePath("/app/ideas");
 
     return { success: true, postId: newPost.id };
   } catch (error) {
