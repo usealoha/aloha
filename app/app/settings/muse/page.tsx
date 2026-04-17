@@ -124,7 +124,7 @@ export default async function MuseSettingsPage() {
 
         <div className="flex items-center justify-end gap-3">
           <p className="text-[12px] text-ink/55">
-            Training takes ~10 seconds. Runs on Gemini Pro via OpenRouter.
+            Training takes a few seconds.
           </p>
           <button
             type="submit"

@@ -71,9 +71,10 @@ const SUBPROCESSORS = [
 		region: "Global edge",
 	},
 	{
-		name: "OpenAI",
-		purpose: "Voice model inference fallback",
-		region: "US",
+		name: "AI inference providers",
+		purpose:
+			"Third-party model providers used to power Muse generation and voice features. Specific providers listed in our Data Processing Addendum.",
+		region: "US, EU",
 	},
 ];
 
