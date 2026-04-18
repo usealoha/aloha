@@ -2,12 +2,10 @@
 // stores the result in Vercel Blob, records an `assets` row, and logs a
 // `generations` row for cost accounting.
 //
-// Provider note: image generation doesn't flow through the text LLM router
-// (chat-completions doesn't carry image bytes cleanly). We call Google's
-// Generative AI image endpoint directly. Cost + tokens are still logged to
-// `generations` so the cost-cap and cost-dashboard code don't need to know
-// about two pipelines. When we swap the provider, the call site changes —
-// nothing else does.
+// Provider note: image generation rides OpenRouter's chat-completions endpoint
+// on an image-capable model. Cost + tokens are still logged to `generations`
+// so the cost-cap and cost-dashboard code don't need to know about two
+// pipelines. When we swap the model, only `callImageProvider` changes.
 
 import { put } from "@vercel/blob";
 import { randomUUID } from "crypto";
@@ -44,7 +42,7 @@ const DIMENSIONS: Record<ImageAspect, { width: number; height: number }> = {
 };
 
 // Model slug used in `generations.model`. Keep one place to change it.
-const IMAGE_MODEL = "google/imagen-3";
+const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
 
 export type GenerateImageInput = {
   userId: string;
@@ -140,25 +138,34 @@ export async function generateImage(
 
 // ---- provider call -------------------------------------------------------
 
-// Google Imagen 3 (via Generative Language API). The predict endpoint takes
-// a prompt + aspect ratio and returns base64-encoded image bytes. When we
-// swap providers (or move to OpenRouter's images endpoint once it's stable
-// for Imagen), this is the only function that changes.
+// OpenRouter exposes image-capable models (e.g. Gemini 2.5 Flash Image) via
+// its OpenAI-compatible chat completions endpoint. We request the `image`
+// modality and pull the first image out of `message.images`. `data_collection:
+// "deny"` tells OpenRouter to route only through providers that won't train
+// on our payloads. The `HTTP-Referer` + `X-Title` headers identify Aloha to
+// OpenRouter's attribution/leaderboard.
 async function callImageProvider(
   prompt: string,
   aspect: ImageAspect,
 ): Promise<{ bytes: ArrayBuffer; mimeType: string }> {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${env.GEMINI_API_KEY}`;
-  const res = await fetch(endpoint, {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+      "HTTP-Referer": env.APP_URL,
+      "X-Title": "Aloha",
+    },
     body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: aspect,
-        personGeneration: "allow_adult",
-      },
+      model: IMAGE_MODEL,
+      modalities: ["image", "text"],
+      messages: [
+        {
+          role: "user",
+          content: `Generate a single image with a ${aspect} aspect ratio. ${prompt}`,
+        },
+      ],
+      provider: { data_collection: "deny" },
     }),
   });
   if (!res.ok) {
@@ -168,18 +175,22 @@ async function callImageProvider(
     );
   }
   const json = (await res.json()) as {
-    predictions?: Array<{
-      bytesBase64Encoded?: string;
-      mimeType?: string;
+    choices?: Array<{
+      message?: {
+        images?: Array<{ image_url?: { url?: string } }>;
+      };
     }>;
   };
-  const pred = json.predictions?.[0];
-  if (!pred?.bytesBase64Encoded) {
+  const dataUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (!dataUrl) {
     throw new Error("Image provider returned no image data");
   }
-  const mimeType = pred.mimeType ?? "image/png";
-  const bytes = Uint8Array.from(
-    Buffer.from(pred.bytesBase64Encoded, "base64"),
-  ).buffer;
+  // OpenRouter returns images as `data:<mime>;base64,<payload>` URLs.
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) {
+    throw new Error("Image provider returned an unexpected image payload");
+  }
+  const mimeType = match[1];
+  const bytes = Uint8Array.from(Buffer.from(match[2], "base64")).buffer;
   return { bytes, mimeType };
 }
