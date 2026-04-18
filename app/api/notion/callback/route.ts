@@ -5,7 +5,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { env } from "@/lib/env";
-import { exchangeNotionCode, saveNotionConnection } from "@/lib/notion";
+import {
+  exchangeNotionCode,
+  saveNotionConnection,
+  syncNotionCorpus,
+} from "@/lib/notion";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +43,16 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("[notion] callback error", err);
     return fail("exchange_failed");
+  }
+
+  // Kick off an initial sync so the user lands on a populated corpus instead
+  // of an empty tile. Failures here aren't fatal — the connection is already
+  // saved and the user can hit "Sync now" manually.
+  try {
+    const result = await syncNotionCorpus(user.id);
+    console.log("[notion] initial sync", result);
+  } catch (err) {
+    console.error("[notion] initial sync failed", err);
   }
 
   const res = NextResponse.redirect(
