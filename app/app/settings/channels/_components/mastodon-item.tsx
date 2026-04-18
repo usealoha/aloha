@@ -80,22 +80,28 @@ export function MastodonChannelItem({
 
 			<form action={formAction} className="flex flex-col sm:flex-row gap-3">
 				<div className="flex-1 space-y-1">
+					<label htmlFor="instanceUrl" className="text-[12px] font-medium text-ink/70">
+						Instance URL
+					</label>
 					<input
 						id="instanceUrl"
 						name="instanceUrl"
-						type="url"
+						type="text"
 						placeholder="mastodon.social"
 						required
 						className="w-full h-10 px-3 rounded-xl border border-border bg-background text-[13px] text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
 					/>
 				</div>
 				<div className="flex-1 space-y-1">
+					<label htmlFor="accessToken" className="text-[12px] font-medium text-ink/70">
+						Access Token
+					</label>
 					<div className="relative">
 						<input
 							id="accessToken"
 							name="accessToken"
 							type={showToken ? "text" : "password"}
-							placeholder="Access token"
+							placeholder="Paste your access token"
 							required
 							className="w-full h-10 px-3 pr-10 rounded-xl border border-border bg-background text-[13px] text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
 						/>
@@ -119,11 +125,18 @@ export function MastodonChannelItem({
 				<summary className="cursor-pointer hover:text-ink/70">
 					How do I get an access token?
 				</summary>
-				<p className="mt-1.5 pl-2">
-					Go to your Mastodon instance settings → Development → New application.
-					Check &quot;read&quot; and &quot;write&quot; scopes, then copy the
-					access token.
-				</p>
+				<div className="mt-1.5 pl-2 space-y-1">
+					<ol className="list-decimal list-inside space-y-1">
+						<li>Go to your Mastodon instance settings → Development → New application</li>
+						<li>Enter <code className="bg-ink/10 px-1 rounded">urn:ietf:wg:oauth:2.0:oob</code> as the Redirect URI</li>
+						<li>Check these scopes:</li>
+					</ol>
+					<ul className="list-disc list-inside pl-4">
+						<li><strong>read</strong> — View your profile and posts</li>
+						<li><strong>write</strong> — Post and manage your statuses</li>
+					</ul>
+					<p>Save, then copy the access token and paste it above.</p>
+				</div>
 			</details>
 		</div>
 	);

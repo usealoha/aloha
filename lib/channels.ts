@@ -610,14 +610,14 @@ export const CHANNELS: Record<string, Channel> = {
     ],
     supports: [
       "Post to your Reddit profile",
-      "Post to subreddits you subscribe to",
+      "Post to one subreddit per post",
       "Link posts with custom titles",
       "Image posts with hosted images",
-      "Cross-post existing Reddit content",
     ],
     missing: [
       "Comment scheduling (Reddit API limitation)",
-      "Multi-subreddit posting (requires separate posts)",
+      "Posting to multiple subreddits in one action",
+      "Cross-posting existing Reddit content",
     ],
     voiceNote:
       "Reddit communities have distinct voices and rules. Composer helps you adapt your message to fit the subreddit's culture without losing your authentic voice.",

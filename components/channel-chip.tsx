@@ -10,6 +10,7 @@ import {
   ThreadsIcon,
   TikTokIcon,
   XIcon,
+  YouTubeIcon,
 } from "@/app/auth/_components/provider-icons";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ export const CHANNEL_LABELS: Record<string, string> = {
   reddit: "Reddit",
   pinterest: "Pinterest",
   mastodon: "Mastodon",
+  youtube: "YouTube",
 };
 
 export const CHANNEL_ICONS: Record<
@@ -42,6 +44,7 @@ export const CHANNEL_ICONS: Record<
   reddit: RedditIcon,
   pinterest: PinterestIcon,
   mastodon: MastodonIcon,
+  youtube: YouTubeIcon,
 };
 
 export function channelLabel(channel: string) {

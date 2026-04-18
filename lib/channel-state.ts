@@ -36,14 +36,14 @@ export const PLATFORM_GATING: Record<string, GatingStatus> = {
   linkedin: "ready",
   bluesky: "ready",
   mastodon: "ready",
-  medium: "ready",
-  reddit: "ready",
-  pinterest: "ready",
   facebook: "pending_approval",
   instagram: "pending_approval",
   threads: "pending_approval",
   tiktok: "pending_approval",
   youtube: "pending_approval",
+  reddit: "pending_approval",
+  medium: "pending_approval",
+  pinterest: "pending_approval",
 };
 
 export type ChannelStateRow = {
