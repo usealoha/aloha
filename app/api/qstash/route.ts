@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
   }
 
   const parsedBody = JSON.parse(body);
-  const { postId } = parsedBody;
+  const { postId, intendedScheduledAt } = parsedBody as {
+    postId?: string;
+    intendedScheduledAt?: string;
+  };
 
   if (!postId) {
     return new NextResponse("Post ID is required", { status: 400 });
@@ -45,6 +48,23 @@ export async function POST(req: NextRequest) {
 
     if (post.status !== "scheduled") {
       return new NextResponse("Post is not in scheduled state", { status: 400 });
+    }
+
+    // Stale-message guard: when a user reschedules or cancels, the old
+    // queued QStash message still fires at the original time. Compare the
+    // intended publish time from the body with the post's current
+    // scheduledAt — a mismatch means this message is from a stale
+    // schedule, and the newer one is still in flight (or the post is a
+    // fresh draft). No-op rather than double-publish.
+    if (intendedScheduledAt && post.scheduledAt) {
+      const intended = new Date(intendedScheduledAt).getTime();
+      const current = post.scheduledAt.getTime();
+      if (Math.abs(intended - current) > 5000) {
+        return NextResponse.json({
+          success: true,
+          skipped: "stale-schedule",
+        });
+      }
     }
 
     console.log(`[QStash] Publishing post: ${postId}`);
