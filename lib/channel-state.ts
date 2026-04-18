@@ -65,13 +65,39 @@ export async function loadChannelState(
     .from(channelStates)
     .where(and(eq(channelStates.userId, userId), eq(channelStates.channel, channel)))
     .limit(1);
-  return (
-    row ?? {
+  if (row) return row;
+
+  // First time we're asked about a gated channel for this user — seed a
+  // `reviewStartedAt` anchor so the 14-day auto-flip clock can ever reach
+  // its threshold. Without this seeding, channels would sit in
+  // `review_pending` forever because `reviewStartedAt` stays null.
+  // Idempotent via onConflictDoNothing — safe under concurrent reads.
+  const gating = PLATFORM_GATING[channel] ?? "ready";
+  if (gating === "pending_approval") {
+    const now = new Date();
+    await db
+      .insert(channelStates)
+      .values({
+        userId,
+        channel,
+        publishMode: "auto",
+        reviewStartedAt: now,
+      })
+      .onConflictDoNothing({
+        target: [channelStates.userId, channelStates.channel],
+      });
+    return {
       publishMode: "auto",
-      reviewStartedAt: null,
+      reviewStartedAt: now,
       notes: null,
-    }
-  );
+    };
+  }
+
+  return {
+    publishMode: "auto",
+    reviewStartedAt: null,
+    notes: null,
+  };
 }
 
 // Resolves the effective state for (user, channel, isConnected). The caller
@@ -210,6 +236,40 @@ export async function getEffectiveStatesForUser(
       },
     ]),
   );
+
+  // Seed missing rows for connected gated channels so the 14-day auto-flip
+  // clock has an anchor. One batch insert per call; onConflictDoNothing
+  // makes this race-safe.
+  const toSeed: Array<{ channel: string }> = [];
+  for (const channel of connected) {
+    if (overrides.has(channel)) continue;
+    if (PLATFORM_GATING[channel] === "pending_approval") {
+      toSeed.push({ channel });
+    }
+  }
+  if (toSeed.length > 0) {
+    const now = new Date();
+    await db
+      .insert(channelStates)
+      .values(
+        toSeed.map((s) => ({
+          userId,
+          channel: s.channel,
+          publishMode: "auto" as const,
+          reviewStartedAt: now,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [channelStates.userId, channelStates.channel],
+      });
+    for (const s of toSeed) {
+      overrides.set(s.channel, {
+        publishMode: "auto",
+        reviewStartedAt: now,
+        notes: null,
+      });
+    }
+  }
 
   const result: Record<string, EffectiveState> = {};
   const defaultOverride: ChannelStateRow = {
