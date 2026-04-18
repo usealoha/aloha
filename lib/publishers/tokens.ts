@@ -310,12 +310,46 @@ async function refreshPinterest(userId: string, refreshToken: string) {
 	return json.access_token;
 }
 
+async function refreshYouTube(userId: string, refreshToken: string) {
+	if (!env.AUTH_YOUTUBE_ID || !env.AUTH_YOUTUBE_SECRET) {
+		throw new PublishError(
+			"needs_reauth",
+			"YouTube client credentials missing",
+		);
+	}
+	const body = new URLSearchParams({
+		grant_type: "refresh_token",
+		refresh_token: refreshToken,
+		client_id: env.AUTH_YOUTUBE_ID,
+		client_secret: env.AUTH_YOUTUBE_SECRET,
+	});
+	const res = await fetch("https://oauth2.googleapis.com/token", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body,
+	});
+	if (!res.ok) {
+		throw new PublishError(
+			"needs_reauth",
+			`YouTube token refresh failed: ${res.status} ${await res.text().catch(() => "")}`,
+		);
+	}
+	const json = (await res.json()) as {
+		access_token: string;
+		refresh_token?: string;
+		expires_in: number;
+	};
+	// Google rarely rotates the refresh_token on refresh — preserve ours.
+	await writeRefreshedTokens(userId, "youtube", json);
+	return json.access_token;
+}
+
 // Returns a valid access token, refreshing if needed. Throws PublishError
 // with category "needs_reauth" if the account is missing, has no refresh
 // token, or the refresh call fails.
 export async function getFreshToken(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -361,6 +395,8 @@ export async function getFreshToken(
 		fresh = await refreshReddit(userId, account.refreshToken);
 	} else if (provider === "pinterest") {
 		fresh = await refreshPinterest(userId, account.refreshToken);
+	} else if (provider === "youtube") {
+		fresh = await refreshYouTube(userId, account.refreshToken);
 	} else {
 		fresh = await refreshFacebook(userId, account.refreshToken);
 	}
@@ -372,7 +408,7 @@ export async function getFreshToken(
 // when the stored expires_at says "still valid" but the provider disagrees.
 export async function forceRefresh(
 	userId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -414,6 +450,8 @@ export async function forceRefresh(
 		fresh = await refreshReddit(userId, account.refreshToken);
 	} else if (provider === "pinterest") {
 		fresh = await refreshPinterest(userId, account.refreshToken);
+	} else if (provider === "youtube") {
+		fresh = await refreshYouTube(userId, account.refreshToken);
 	} else {
 		fresh = await refreshFacebook(userId, account.refreshToken);
 	}
