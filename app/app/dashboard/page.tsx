@@ -11,11 +11,14 @@ import { db } from "@/db";
 import {
 	accounts,
 	blueskyCredentials,
+	brandCorpus,
+	campaigns,
 	contentPlans,
 	feedItems,
 	feeds,
 	ideas,
 	inboxMessages,
+	notionCredentials,
 	platformInsights,
 	posts,
 } from "@/db/schema";
@@ -27,9 +30,11 @@ import { and, count, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import {
 	ArrowUpRight,
 	BarChart3,
+	BookOpen,
 	CalendarDays,
 	Inbox,
 	Lightbulb,
+	Megaphone,
 	PenSquare,
 	Plug,
 	Sparkles,
@@ -205,8 +210,17 @@ export default async function DashboardPage() {
 	);
 
 	// ── Phase 3 surfaces ────────────────────────────────────────────────
-	const [activePlan, ideaCounts, freshIdeas, feedTotals, latestFeedItems, inboxTotals] =
-		await Promise.all([
+	const [
+		activePlan,
+		activeCampaign,
+		ideaCounts,
+		freshIdeas,
+		feedTotals,
+		latestFeedItems,
+		inboxTotals,
+		notionRows,
+		notionDocCount,
+	] = await Promise.all([
 			// Latest plan with at least one un-accepted idea; surface as "Pick up
 			// where you left off."
 			db
@@ -221,6 +235,28 @@ export default async function DashboardPage() {
 				.from(contentPlans)
 				.where(eq(contentPlans.userId, user.id))
 				.orderBy(desc(contentPlans.createdAt))
+				.limit(1),
+
+			// Most recent non-archived campaign — list its beat progress so
+			// the user can pick up a campaign mid-run from the dashboard.
+			db
+				.select({
+					id: campaigns.id,
+					name: campaigns.name,
+					kind: campaigns.kind,
+					status: campaigns.status,
+					rangeStart: campaigns.rangeStart,
+					rangeEnd: campaigns.rangeEnd,
+					beats: campaigns.beats,
+				})
+				.from(campaigns)
+				.where(
+					and(
+						eq(campaigns.userId, user.id),
+						notInArray(campaigns.status, ["archived", "complete"]),
+					),
+				)
+				.orderBy(desc(campaigns.createdAt))
 				.limit(1),
 
 			db
@@ -275,6 +311,26 @@ export default async function DashboardPage() {
 				})
 				.from(inboxMessages)
 				.where(eq(inboxMessages.userId, user.id)),
+
+			db
+				.select({
+					workspaceName: notionCredentials.workspaceName,
+					lastSyncedAt: notionCredentials.lastSyncedAt,
+					reauthRequired: notionCredentials.reauthRequired,
+				})
+				.from(notionCredentials)
+				.where(eq(notionCredentials.userId, user.id))
+				.limit(1),
+
+			db
+				.select({ total: count() })
+				.from(brandCorpus)
+				.where(
+					and(
+						eq(brandCorpus.userId, user.id),
+						eq(brandCorpus.source, "notion"),
+					),
+				),
 		]);
 
 	const activePlanRow = activePlan[0] ?? null;
@@ -283,12 +339,21 @@ export default async function DashboardPage() {
 				(i) => !i.accepted,
 			).length
 		: 0;
+
+	const activeCampaignRow = activeCampaign[0] ?? null;
+	const campaignBeats = activeCampaignRow
+		? (activeCampaignRow.beats as Array<{ accepted?: boolean }>)
+		: [];
+	const campaignPendingCount = campaignBeats.filter((b) => !b.accepted).length;
+	const campaignAcceptedCount = campaignBeats.length - campaignPendingCount;
 	const newIdeaCount = Number(ideaCounts[0]?.newCount ?? 0);
 	const totalIdeaCount = Number(ideaCounts[0]?.total ?? 0);
 	const unreadFeedCount = Number(feedTotals[0]?.unread ?? 0);
 	const totalFeedCount = Number(feedTotals[0]?.total ?? 0);
 	const unreadInboxCount = Number(inboxTotals[0]?.unread ?? 0);
 	const totalInboxCount = Number(inboxTotals[0]?.total ?? 0);
+	const notion = notionRows[0] ?? null;
+	const notionDocs = Number(notionDocCount[0]?.total ?? 0);
 
 	// ── View ────────────────────────────────────────────────────────────
 	const firstName = (user.name ?? user.email).split(/\s|@/)[0];
@@ -461,6 +526,19 @@ export default async function DashboardPage() {
 
 				{/* Sidebar */}
 				<aside className="lg:col-span-4 space-y-6">
+					{activeCampaignRow && campaignBeats.length > 0 ? (
+						<ActiveCampaignCard
+							campaignId={activeCampaignRow.id}
+							name={activeCampaignRow.name}
+							kind={activeCampaignRow.kind}
+							pending={campaignPendingCount}
+							accepted={campaignAcceptedCount}
+							total={campaignBeats.length}
+							rangeStart={activeCampaignRow.rangeStart}
+							rangeEnd={activeCampaignRow.rangeEnd}
+						/>
+					) : null}
+
 					{activePlanRow && planPendingCount > 0 ? (
 						<ActivePlanCard
 							planId={activePlanRow.id}
@@ -478,6 +556,15 @@ export default async function DashboardPage() {
 					/>
 
 					<ChannelsCard providers={allProviders} />
+
+					<KnowledgeCard
+						connected={!!notion}
+						workspaceName={notion?.workspaceName ?? null}
+						reauthRequired={notion?.reauthRequired ?? false}
+						lastSyncedAt={notion?.lastSyncedAt ?? null}
+						docCount={notionDocs}
+						tz={tz}
+					/>
 
 					{readbackConnected.length > 0 ? (
 						<ReachCard
@@ -577,6 +664,73 @@ function EmptyCard({
 				{ctaLabel}
 			</Link>
 		</div>
+	);
+}
+
+const CAMPAIGN_KIND_LABELS: Record<string, string> = {
+	launch: "Launch",
+	webinar: "Webinar",
+	sale: "Sale",
+	drip: "Drip",
+	evergreen: "Evergreen",
+	custom: "Custom",
+};
+
+function ActiveCampaignCard({
+	campaignId,
+	name,
+	kind,
+	pending,
+	accepted,
+	total,
+	rangeStart,
+	rangeEnd,
+}: {
+	campaignId: string;
+	name: string;
+	kind: string;
+	pending: number;
+	accepted: number;
+	total: number;
+	rangeStart: Date;
+	rangeEnd: Date;
+}) {
+	const fmt = (d: Date) =>
+		new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(
+			d,
+		);
+	const pct = total > 0 ? Math.round((accepted / total) * 100) : 0;
+	return (
+		<article className="rounded-2xl border border-primary/40 bg-primary-soft/40 p-6">
+			<div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.22em] text-ink/55">
+				<span className="inline-flex items-center gap-1.5 font-semibold">
+					<Megaphone className="w-3 h-3" />
+					Campaign
+				</span>
+				<span>{CAMPAIGN_KIND_LABELS[kind] ?? kind}</span>
+			</div>
+			<p className="mt-2 font-display text-[20px] leading-[1.25] tracking-[-0.01em] text-ink">
+				{name}
+			</p>
+			<p className="mt-1.5 text-[12.5px] text-ink/60">
+				{accepted} of {total} beats drafted
+				{pending > 0 ? ` · ${pending} pending` : ""} · {fmt(rangeStart)} → {fmt(rangeEnd)}
+			</p>
+			<div className="mt-3 h-1.5 rounded-full bg-background border border-border overflow-hidden">
+				<div
+					className="h-full bg-primary"
+					style={{ width: `${pct}%` }}
+					aria-label={`${pct}% drafted`}
+				/>
+			</div>
+			<Link
+				href={`/app/campaigns/${campaignId}`}
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
+			>
+				<Megaphone className="w-3.5 h-3.5 mr-1.5" />
+				Review beats
+			</Link>
+		</article>
 	);
 }
 
@@ -844,6 +998,88 @@ function ChannelsCard({ providers }: { providers: string[] }) {
 			>
 				<Plug className="w-3.5 h-3.5 mr-1.5" />
 				{hasAny ? "Add another" : "Connect a channel"}
+			</Link>
+		</article>
+	);
+}
+
+function KnowledgeCard({
+	connected,
+	workspaceName,
+	reauthRequired,
+	lastSyncedAt,
+	docCount,
+	tz,
+}: {
+	connected: boolean;
+	workspaceName: string | null;
+	reauthRequired: boolean;
+	lastSyncedAt: Date | null;
+	docCount: number;
+	tz: string;
+}) {
+	return (
+		<article className="rounded-2xl border border-border bg-background-elev p-6">
+			<div className="flex items-start justify-between gap-4">
+				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						Knowledge
+					</p>
+					<p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+						{connected ? docCount.toLocaleString() : "—"}
+					</p>
+					<p className="mt-1 text-[12px] text-ink/55">
+						{connected
+							? docCount === 1
+								? "doc training Muse"
+								: "docs training Muse"
+							: "train Muse on your writing"}
+					</p>
+				</div>
+				<span className="w-10 h-10 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
+					<BookOpen className="w-4 h-4 text-ink" />
+				</span>
+			</div>
+
+			{connected ? (
+				<div className="mt-5 space-y-2 text-[12.5px]">
+					<div className="flex items-center justify-between text-ink/75">
+						<span className="inline-flex items-center gap-2">
+							<span className="inline-flex items-center justify-center w-5 h-5 rounded bg-ink text-background text-[10px] font-bold">
+								N
+							</span>
+							Notion
+						</span>
+						<span className="text-ink/55 truncate max-w-[55%]">
+							{reauthRequired
+								? "reconnect needed"
+								: workspaceName ?? "connected"}
+						</span>
+					</div>
+					{lastSyncedAt && !reauthRequired ? (
+						<p className="text-[11.5px] text-ink/50">
+							Last synced {formatDay(lastSyncedAt, tz)} at{" "}
+							{formatTime(lastSyncedAt, tz)}
+						</p>
+					) : null}
+				</div>
+			) : (
+				<p className="mt-5 text-[12.5px] text-ink/60 leading-[1.55]">
+					Connect Notion to let Muse learn from the docs you&apos;ve already
+					written — not just your last few posts.
+				</p>
+			)}
+
+			<Link
+				href="/app/settings/muse"
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+			>
+				<BookOpen className="w-3.5 h-3.5 mr-1.5" />
+				{reauthRequired
+					? "Reconnect"
+					: connected
+						? "Manage sources"
+						: "Connect Notion"}
 			</Link>
 		</article>
 	);
