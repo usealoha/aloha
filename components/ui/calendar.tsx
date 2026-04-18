@@ -59,12 +59,12 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50",
+          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50",
+          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -72,7 +72,7 @@ function Calendar({
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
-          "flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-sm font-medium",
+          "flex h-(--cell-size) w-full items-center justify-center gap-2 text-sm font-medium",
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
@@ -80,7 +80,7 @@ function Calendar({
           defaultClassNames.dropdown_root
         ),
         dropdown: cn(
-          "absolute inset-0 cursor-pointer opacity-0",
+          "absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed",
           defaultClassNames.dropdown
         ),
         caption_label: cn(
