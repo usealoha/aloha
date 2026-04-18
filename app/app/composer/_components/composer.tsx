@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import type { BestWindow } from "@/lib/best-time-format";
 import { formatWindow } from "@/lib/best-time-format";
 import type { EffectiveState } from "@/lib/channel-state-format";
@@ -378,8 +379,13 @@ export function Composer({
 				const context = activePlatform?.id ?? selected[0] ?? "general";
 				const tags = await suggestHashtags(editorValue, context);
 				setHashSuggestions(tags);
+				if (tags.length === 0) {
+					toast.message("No hashtag suggestions for this post.");
+				}
 			} catch (err) {
-				setFormError(messageFromErr(err, "Hashtag suggest failed. Try again in a moment."));
+				const msg = messageFromErr(err, "Hashtag suggest failed. Try again in a moment.");
+				setFormError(msg);
+				toast.error(msg);
 			}
 		});
 	};
