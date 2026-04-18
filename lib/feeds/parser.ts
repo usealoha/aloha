@@ -187,9 +187,11 @@ function firstMatch(source: string, re: RegExp): string | null {
 }
 
 function stripHtml(s: string): string {
-  return decodeEntities(s.replace(/<[^>]+>/g, " "))
-    .replace(/\s+/g, " ")
-    .trim();
+  const decoded = decodeEntities(s);
+  const stripped = decoded.replace(/<[^>]+>/g, " ").trim();
+  // If stripping removed everything (e.g., content was "<antirez>"),
+  // fall back to the decoded original to preserve the title.
+  return stripped.length > 0 ? stripped.replace(/\s+/g, " ") : decoded;
 }
 
 function cleanSummary(s: string): string {
