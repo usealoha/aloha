@@ -225,6 +225,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: env.AUTH_REDDIT_SECRET,
     },
     {
+      id: "youtube",
+      name: "YouTube",
+      type: "oauth",
+      checks: ["state", "pkce"],
+      authorization: {
+        url: "https://accounts.google.com/o/oauth2/v2/auth",
+        params: {
+          // `offline` + `consent` are both required to reliably receive a
+          // refresh_token on reconnect — Google omits it otherwise.
+          access_type: "offline",
+          prompt: "consent",
+          scope: [
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/youtube.upload",
+            "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/youtube.force-ssl",
+          ].join(" "),
+        },
+      },
+      token: "https://oauth2.googleapis.com/token",
+      userinfo: "https://openidconnect.googleapis.com/v1/userinfo",
+      async profile(profile: {
+        sub: string;
+        name?: string;
+        picture?: string;
+        email?: string;
+      }) {
+        return {
+          id: profile.sub,
+          name: profile.name ?? "YouTube",
+          email: profile.email ?? null,
+          image: profile.picture ?? null,
+        };
+      },
+      clientId: env.AUTH_YOUTUBE_ID,
+      clientSecret: env.AUTH_YOUTUBE_SECRET,
+    },
+    {
       id: "pinterest",
       name: "Pinterest",
       type: "oauth",
