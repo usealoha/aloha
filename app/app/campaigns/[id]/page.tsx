@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { ChannelChip } from "@/components/channel-chip";
 import {
   acceptCampaignBeatsAction,
   regenerateCampaignBeatAction,
@@ -29,20 +30,6 @@ const KIND_LABELS: Record<string, string> = {
   drip: "Drip",
   evergreen: "Evergreen",
   custom: "Custom",
-};
-
-const CHANNEL_LABELS: Record<string, string> = {
-  twitter: "X",
-  linkedin: "LinkedIn",
-  facebook: "Facebook",
-  instagram: "Instagram",
-  tiktok: "TikTok",
-  threads: "Threads",
-  bluesky: "Bluesky",
-  medium: "Medium",
-  reddit: "Reddit",
-  pinterest: "Pinterest",
-  mastodon: "Mastodon",
 };
 
 const PHASE_LABELS: Record<string, string> = {
@@ -124,11 +111,11 @@ export default async function CampaignDetailPage({
           <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-border text-[11px] uppercase tracking-[0.18em] text-ink/60">
             {KIND_LABELS[campaign.kind] ?? campaign.kind}
           </span>
-          <span className="text-[11px] text-ink/55">
-            {campaign.channels
-              .map((c) => CHANNEL_LABELS[c] ?? c)
-              .join(" · ")}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {campaign.channels.map((c) => (
+              <ChannelChip key={c} channel={c} />
+            ))}
+          </div>
         </div>
         <h1 className="mt-3 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-ink">
           {campaign.name}
@@ -250,7 +237,7 @@ function BeatRow({
           >
             {PHASE_LABELS[beat.phase] ?? beat.phase}
           </span>
-          <span>{CHANNEL_LABELS[beat.channel] ?? beat.channel}</span>
+          <ChannelChip channel={beat.channel} />
           <span aria-hidden>·</span>
           <span>{beat.format}</span>
           {accepted ? (
