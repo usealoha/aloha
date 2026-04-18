@@ -341,6 +341,8 @@ export default async function ChannelsSettingsPage({
         />
       ) : null}
 
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+      <div className="space-y-8 min-w-0">
       <ul className="rounded-3xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
         {[...PROVIDERS].sort((a, b) => {
           if (a.status === "available" && b.status === "soon") return -1;
@@ -487,43 +489,47 @@ export default async function ChannelsSettingsPage({
       {gatedConnected.length > 0 ? (
         <ChannelStatusPanel items={gatedConnected} />
       ) : null}
-
-      <div className="rounded-2xl border border-dashed border-border-strong p-5 flex items-start gap-4">
-        <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
-          <ShieldCheck className="w-4 h-4 text-ink" />
-        </span>
-        <div>
-          <p className="text-[13.5px] text-ink font-medium">
-            We keep this list tight on purpose.
-          </p>
-          <p className="mt-1 text-[12.5px] text-ink/60 leading-[1.55] max-w-2xl">
-            Aloha requests the narrowest OAuth scopes each network allows —
-            enough to read and write your own posts, nothing broader. You can
-            also revoke access directly in your account settings on each
-            provider, and we&apos;ll fail gracefully the next time we try.
-          </p>
-        </div>
       </div>
 
-      <Link
-        href="/app/settings/muse"
-        className="group rounded-2xl border border-border bg-background-elev p-5 flex items-start gap-4 hover:bg-muted/40 transition-colors"
-      >
-        <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-peach-300 grid place-items-center shrink-0">
-          <BookOpen className="w-4 h-4 text-ink" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13.5px] text-ink font-medium">
+      <aside className="lg:sticky lg:top-6 space-y-4">
+        <section className="rounded-3xl border border-dashed border-peach-300/70 bg-peach-100/40 p-5">
+          <div className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-primary-deep">
+            <ShieldCheck className="w-3 h-3" />
+            Scopes
+          </div>
+          <p className="mt-2 text-[13px] text-ink font-medium leading-[1.4]">
+            We keep this list tight on purpose.
+          </p>
+          <p className="mt-1.5 text-[12px] text-ink/65 leading-[1.55]">
+            Aloha requests the narrowest OAuth scopes each network allows —
+            enough to read and write your own posts, nothing broader. Revoke
+            access directly in your account settings on each provider and
+            we&apos;ll fail gracefully the next time we try.
+          </p>
+        </section>
+
+        <Link
+          href="/app/settings/muse"
+          className="group block rounded-3xl border border-border bg-background-elev p-5 hover:bg-muted/40 transition-colors"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-ink/60">
+              <BookOpen className="w-3 h-3" />
+              Knowledge sources
+            </span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-ink/40 group-hover:text-ink transition-colors shrink-0" />
+          </div>
+          <p className="mt-2 text-[13px] text-ink font-medium leading-[1.4]">
             Looking for Notion or Google Docs?
           </p>
-          <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55] max-w-2xl">
-            Knowledge sources feed Muse — your writing voice model — not the
-            publishing pipeline. They live on the{" "}
+          <p className="mt-1.5 text-[12px] text-ink/65 leading-[1.55]">
+            Those feed Muse — your writing voice model — not the publishing
+            pipeline. They live on the{" "}
             <span className="text-ink font-medium">Muse</span> tab.
           </p>
-        </div>
-        <ArrowUpRight className="w-4 h-4 text-ink/40 group-hover:text-ink transition-colors mt-1 shrink-0" />
-      </Link>
+        </Link>
+      </aside>
+      </div>
     </div>
   );
 }
