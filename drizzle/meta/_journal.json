@@ -169,6 +169,20 @@
       "when": 1776607186700,
       "tag": "0023_superb_infant_terrible",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1776611272257,
+      "tag": "0024_cold_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1776612893776,
+      "tag": "0025_purple_calypso",
+      "breakpoints": true
     }
   ]
 }
