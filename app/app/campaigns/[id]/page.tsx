@@ -4,10 +4,11 @@ import {
   Calendar as CalendarIcon,
   Check,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { ChannelChip } from "@/components/channel-chip";
+import { CampaignControls } from "./_components/campaign-controls";
+import { CreateDraftsSubmit } from "./_components/create-drafts-submit";
 import {
   acceptCampaignBeatsAction,
   regenerateCampaignBeatAction,
@@ -107,15 +108,26 @@ export default async function CampaignDetailPage({
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to campaigns
         </Link>
-        <div className="mt-4 flex items-center gap-3 flex-wrap">
-          <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-border text-[11px] uppercase tracking-[0.18em] text-ink/60">
-            {KIND_LABELS[campaign.kind] ?? campaign.kind}
-          </span>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {campaign.channels.map((c) => (
-              <ChannelChip key={c} channel={c} />
-            ))}
+        <div className="mt-4 flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-border text-[11px] uppercase tracking-[0.18em] text-ink/60">
+              {KIND_LABELS[campaign.kind] ?? campaign.kind}
+            </span>
+            {campaign.status === "paused" ? (
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-primary/40 bg-primary-soft/50 text-[11px] uppercase tracking-[0.18em] text-primary-deep">
+                Paused
+              </span>
+            ) : null}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {campaign.channels.map((c) => (
+                <ChannelChip key={c} channel={c} />
+              ))}
+            </div>
           </div>
+          <CampaignControls
+            campaignId={campaign.id}
+            status={campaign.status}
+          />
         </div>
         <h1 className="mt-3 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-ink">
           {campaign.name}
@@ -187,14 +199,7 @@ export default async function CampaignDetailPage({
             Tick the beats you want. Each becomes a draft post scheduled
             for noon on its day — tune in composer.
           </p>
-          <button
-            type="submit"
-            form="campaign-accept-form"
-            className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
-          >
-            <Sparkles className="w-4 h-4" />
-            Create drafts
-          </button>
+          <CreateDraftsSubmit formId="campaign-accept-form" />
         </div>
       </div>
     </div>
