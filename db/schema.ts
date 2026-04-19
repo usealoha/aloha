@@ -171,7 +171,9 @@ export const posts = pgTable("posts", {
     .$type<Record<string, ChannelOverride>>()
     .default({})
     .notNull(),
-  status: text("status", { enum: ["draft", "scheduled", "published", "failed"] })
+  status: text("status", {
+    enum: ["draft", "scheduled", "published", "failed", "deleted"],
+  })
     .default("draft")
     .notNull(),
   scheduledAt: timestamp("scheduledAt"),
@@ -190,6 +192,7 @@ export const posts = pgTable("posts", {
   }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { mode: "date" }),
 });
 
 // One row per (post × platform) attempt. Lets us represent partial success
@@ -215,6 +218,10 @@ export const postDeliveries = pgTable("post_deliveries", {
       "needs_reauth",
       "pending_review",
       "manual_assist",
+      // `deleted` = we successfully removed the remote post via the platform's
+      // delete API. `remotePostId` / `remoteUrl` are preserved as a tombstone
+      // so the UI can still show "was at <url>, deleted on <date>".
+      "deleted",
     ],
   })
     .default("pending")
@@ -225,6 +232,7 @@ export const postDeliveries = pgTable("post_deliveries", {
   errorMessage: text("errorMessage"),
   attemptCount: integer("attemptCount").default(0).notNull(),
   publishedAt: timestamp("publishedAt", { mode: "date" }),
+  deletedAt: timestamp("deletedAt", { mode: "date" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

@@ -141,6 +141,20 @@
       "when": 1776560933241,
       "tag": "0019_great_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1776584514612,
+      "tag": "0020_quick_natasha_romanoff",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1776588182448,
+      "tag": "0021_minor_brood",
+      "breakpoints": true
     }
   ]
 }
