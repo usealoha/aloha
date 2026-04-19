@@ -160,11 +160,11 @@ export default async function CalendarPage({
 					<ViewSelect value={view} anchorKey={anchorKey} />
 
 					<Link
-						href="/app/calendar/plan"
+						href="/app/campaigns/new"
 						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink hover:border-ink transition-colors"
 					>
 						<Wand2 className="w-4 h-4 text-primary" />
-						Plan with Muse
+						New campaign
 					</Link>
 
 					<Link

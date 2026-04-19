@@ -81,20 +81,20 @@ export default function RootLayout({
 						unstyled: true,
 						classNames: {
 							toast:
-								"w-full flex items-start gap-3 rounded-xl border border-[var(--border-strong)] bg-[var(--background-elev)] text-[var(--foreground)] px-4 py-3 shadow-[0_10px_30px_-12px_rgba(26,22,18,0.25)] font-sans",
+								"group relative w-full flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--background-elev)] text-[var(--foreground)] pl-4 pr-10 py-3 shadow-[0_10px_30px_-12px_rgba(26,22,18,0.25)] font-sans",
 							title: "text-[13px] font-medium leading-snug",
 							description:
 								"text-[12.5px] leading-snug text-[var(--muted-foreground)]",
-							icon: "mt-0.5 shrink-0 text-[var(--peach-400)]",
+							icon: "mt-0.5 shrink-0",
 							closeButton:
-								"!bg-transparent !border-0 !text-[var(--muted-foreground)] hover:!text-[var(--foreground)]",
+								"!absolute !top-2 !right-2 !left-auto !translate-x-0 !translate-y-0 !size-6 !rounded-md !bg-transparent !border-0 !text-[var(--muted-foreground)] hover:!bg-[var(--muted)] hover:!text-[var(--foreground)] transition-colors",
 							success:
-								"border-[var(--peach-300)] bg-[var(--peach-100)] text-[var(--ink)]",
+								"[&_[data-icon]]:text-emerald-600 dark:[&_[data-icon]]:text-emerald-400",
 							error:
-								"border-[color-mix(in_oklab,var(--destructive)_35%,var(--border-strong))] bg-[color-mix(in_oklab,var(--destructive)_10%,var(--background-elev))] text-[var(--ink)]",
-							info: "border-[var(--border-strong)] bg-[var(--background-elev)]",
+								"[&_[data-icon]]:text-[var(--destructive)]",
+							info: "[&_[data-icon]]:text-[var(--muted-foreground)]",
 							warning:
-								"border-[var(--peach-300)] bg-[var(--peach-100)] text-[var(--ink)]",
+								"[&_[data-icon]]:text-[var(--peach-400)]",
 						},
 					}}
 				/>
