@@ -30,6 +30,13 @@ export type PlanIdea = {
   title: string;
   angle: string;
   format: IdeaFormat;
+  // Richer scaffolding (plan.generate v2). Optional so v1 plans still render.
+  hook?: string;
+  keyPoints?: string[];
+  cta?: string;
+  hashtags?: string[];
+  mediaSuggestion?: string;
+  rationale?: string;
   accepted?: boolean;
   acceptedPostId?: string;
 };
@@ -172,7 +179,41 @@ function parsePlanJson(
 
     if (!title || !date || !allowed.has(channel)) continue;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    ideas.push({ date, channel, title, angle, format });
+
+    const hook = typeof r.hook === "string" ? r.hook.trim() : "";
+    const cta = typeof r.cta === "string" ? r.cta.trim() : "";
+    const mediaSuggestion =
+      typeof r.mediaSuggestion === "string" ? r.mediaSuggestion.trim() : "";
+    const rationale =
+      typeof r.rationale === "string" ? r.rationale.trim() : "";
+    const keyPoints = Array.isArray(r.keyPoints)
+      ? r.keyPoints
+          .filter((k): k is string => typeof k === "string")
+          .map((k) => k.trim())
+          .filter(Boolean)
+          .slice(0, 8)
+      : [];
+    const hashtags = Array.isArray(r.hashtags)
+      ? r.hashtags
+          .filter((k): k is string => typeof k === "string")
+          .map((k) => (k.startsWith("#") ? k : `#${k}`))
+          .filter((k) => /^#[\w-]+$/.test(k))
+          .slice(0, 20)
+      : [];
+
+    ideas.push({
+      date,
+      channel,
+      title,
+      angle,
+      format,
+      ...(hook ? { hook } : {}),
+      ...(keyPoints.length > 0 ? { keyPoints } : {}),
+      ...(cta ? { cta } : {}),
+      ...(hashtags.length > 0 ? { hashtags } : {}),
+      ...(mediaSuggestion ? { mediaSuggestion } : {}),
+      ...(rationale ? { rationale } : {}),
+    });
   }
 
   if (ideas.length === 0) {

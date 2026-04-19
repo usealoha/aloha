@@ -8,6 +8,7 @@
 export type FeatureKey =
   | "composer.refine"
   | "composer.generate"
+  | "composer.draft"
   | "composer.variants"
   | "composer.fanout"
   | "composer.hashtags"
@@ -35,6 +36,7 @@ export const MODELS: Record<Tier, string> = {
 const FEATURE_TIER: Record<FeatureKey, Tier> = {
   "composer.refine": "flash",
   "composer.generate": "flash",
+  "composer.draft": "pro",
   "composer.variants": "flash",
   "composer.fanout": "flash",
   "composer.hashtags": "flash",
