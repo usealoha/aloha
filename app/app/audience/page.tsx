@@ -77,17 +77,26 @@ export default async function AudiencePage() {
 						asked to hear from you.
 					</p>
 				</div>
-				{page ? (
+				<div className="flex items-center gap-2">
 					<Link
-						href={`/u/${page.slug}`}
-						target="_blank"
-						rel="noreferrer"
+						href="/app/audience/sending"
 						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
 					>
-						<ExternalLink className="w-4 h-4" />
-						View public page
+						<Mail className="w-4 h-4" />
+						Sending domain
 					</Link>
-				) : null}
+					{page ? (
+						<Link
+							href={`/u/${page.slug}`}
+							target="_blank"
+							rel="noreferrer"
+							className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
+						>
+							<ExternalLink className="w-4 h-4" />
+							View public page
+						</Link>
+					) : null}
+				</div>
 			</header>
 
 			<section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
