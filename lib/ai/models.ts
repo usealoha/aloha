@@ -20,6 +20,7 @@ export type FeatureKey =
   | "repurpose.fanout"
   | "campaign.beatsheet"
   | "campaign.cadence"
+  | "broadcast.draft"
   | "inbox.triage"
   | "inbox.reply"
   | "insights.commentary"
@@ -48,6 +49,7 @@ const FEATURE_TIER: Record<FeatureKey, Tier> = {
   "repurpose.fanout": "flash",
   "campaign.beatsheet": "sonnet",
   "campaign.cadence": "sonnet",
+  "broadcast.draft": "pro",
   "inbox.triage": "sonnet",
   "inbox.reply": "pro",
   "insights.commentary": "pro",
