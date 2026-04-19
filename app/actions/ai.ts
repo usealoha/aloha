@@ -65,6 +65,99 @@ export async function generateDraft(topic: string, platform: string = "general")
   }
 }
 
+export type RichDraft = {
+  body: string;
+  hook: string;
+  altHooks: string[];
+  keyPoints: string[];
+  cta: string;
+  hashtags: string[];
+  mediaSuggestion: string;
+  rationale: string;
+  formatGuidance: string;
+};
+
+// Structured counterpart to `generateDraft` — returns body plus the
+// scaffolding the composer sidebar surfaces (alt hooks, key points, CTA,
+// hashtags, media suggestion, rationale). Single Pro/Flash call; callers
+// persist `body` into `posts.content` and the rest into `posts.draftMeta`.
+export async function generateRichDraft(
+  topic: string,
+  platform: string = "general",
+): Promise<RichDraft> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!topic.trim()) throw new Error("Topic is required");
+
+  await registerPrompts();
+  const voice = await loadCurrentVoice(user.id);
+
+  try {
+    const result = await generate({
+      userId: user.id,
+      feature: "composer.draft",
+      template: PROMPTS.composerDraft,
+      vars: {
+        platform,
+        platformConstraints: constraintsFor(platform),
+        voiceBlock: buildVoiceBlock(voice),
+      },
+      userMessage: `Topic / brief: ${topic.trim()}`,
+      temperature: 0.75,
+    });
+    return parseRichDraftJson(result.text);
+  } catch (error) {
+    if (error instanceof CostCapExceededError) throw error;
+    console.error("AI Rich Draft Error:", error);
+    throw new Error("Failed to generate draft");
+  }
+}
+
+function parseRichDraftJson(text: string): RichDraft {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  let parsed: Partial<RichDraft> | null = null;
+  try {
+    parsed = JSON.parse(cleaned) as Partial<RichDraft>;
+  } catch {
+    throw new Error("Draft response was not valid JSON.");
+  }
+  const strArr = (v: unknown, cap: number): string[] =>
+    Array.isArray(v)
+      ? v
+          .filter((x): x is string => typeof x === "string")
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .slice(0, cap)
+      : [];
+  const hashtags = strArr(parsed.hashtags, 20).map((h) =>
+    h.startsWith("#") ? h : `#${h}`,
+  );
+  const body = typeof parsed.body === "string" ? parsed.body.trim() : "";
+  if (!body) throw new Error("Draft came back empty. Try again.");
+  return {
+    body,
+    hook: typeof parsed.hook === "string" ? parsed.hook.trim() : "",
+    altHooks: strArr(parsed.altHooks, 5),
+    keyPoints: strArr(parsed.keyPoints, 8),
+    cta: typeof parsed.cta === "string" ? parsed.cta.trim() : "",
+    hashtags,
+    mediaSuggestion:
+      typeof parsed.mediaSuggestion === "string"
+        ? parsed.mediaSuggestion.trim()
+        : "",
+    rationale:
+      typeof parsed.rationale === "string" ? parsed.rationale.trim() : "",
+    formatGuidance:
+      typeof parsed.formatGuidance === "string"
+        ? parsed.formatGuidance.trim()
+        : "",
+  };
+}
+
 // Per-platform hashtag norms. The trainer reads these as guidance and hits
 // the right count + tone for the network. Kept tight — model does the
 // heavy lifting from the content itself.

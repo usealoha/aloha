@@ -7,6 +7,7 @@ import {
   ideas,
   posts,
   type ChannelOverride,
+  type DraftMeta,
   type PostMedia,
 } from "@/db/schema";
 import { revalidatePath } from "next/cache";
@@ -28,6 +29,11 @@ export type ComposerPayload = {
   // id back so we can stamp provenance on the post and flip the idea to
   // `drafted`. Advisory — posts without a source work fine.
   sourceIdeaId?: string | null;
+  // Structured scaffolding from Muse (hook, key points, CTA, alt hooks,
+  // hashtags, media suggestion, rationale). Passed through on save; the
+  // composer sidebar reads it on open. Undefined means "don't touch" on
+  // update; null clears.
+  draftMeta?: DraftMeta | null;
 };
 
 async function flipIdeaToDrafted(
@@ -65,6 +71,7 @@ export async function saveDraft(payload: ComposerPayload) {
       channelContent: sanitizeOverrides(payload.channelContent, payload.platforms),
       status: "draft",
       sourceIdeaId: payload.sourceIdeaId ?? null,
+      draftMeta: payload.draftMeta ?? null,
     });
 
     await flipIdeaToDrafted(session.user.id, payload.sourceIdeaId);
@@ -104,6 +111,7 @@ export async function schedulePost(
         status: "scheduled",
         scheduledAt: payload.scheduledAt,
         sourceIdeaId: payload.sourceIdeaId ?? null,
+        draftMeta: payload.draftMeta ?? null,
       })
       .returning();
 
@@ -195,6 +203,10 @@ export async function updatePost(
         ),
         status: nextStatus,
         scheduledAt: scheduleRequested ? payload.scheduledAt! : null,
+        // `undefined` means "leave alone"; null clears; a value overwrites.
+        ...(payload.draftMeta !== undefined
+          ? { draftMeta: payload.draftMeta }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(posts.id, postId));

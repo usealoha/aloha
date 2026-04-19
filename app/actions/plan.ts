@@ -10,8 +10,56 @@ import {
   loadPlan,
   markIdeaAccepted,
   regeneratePlanDay,
+  type PlanIdea,
 } from "@/lib/ai/plan";
 import { getCurrentUser } from "@/lib/current-user";
+
+// Builds the editor-ready body from a plan idea. Falls back to
+// title + angle for legacy (v1) ideas that have none of the richer fields.
+function composeDraftBody(idea: PlanIdea): string {
+  const hasRicher =
+    idea.hook || (idea.keyPoints && idea.keyPoints.length > 0) || idea.cta;
+  if (!hasRicher) {
+    return idea.title + (idea.angle ? `\n\n${idea.angle}` : "");
+  }
+  const parts: string[] = [];
+  if (idea.hook) parts.push(idea.hook);
+  if (idea.keyPoints && idea.keyPoints.length > 0) {
+    // Thread/carousel formats read better as numbered beats; single/long-form
+    // flow as paragraphs.
+    const isBeatFormat =
+      idea.format === "thread" || idea.format === "carousel";
+    parts.push(
+      isBeatFormat
+        ? idea.keyPoints.map((k, i) => `${i + 1}. ${k}`).join("\n")
+        : idea.keyPoints.join("\n\n"),
+    );
+  }
+  if (idea.cta) parts.push(idea.cta);
+  if (idea.hashtags && idea.hashtags.length > 0) {
+    parts.push(idea.hashtags.join(" "));
+  }
+  return parts.join("\n\n");
+}
+
+// Short human-readable format hint shown in the composer sidebar. Not prompt
+// context — just UI copy.
+function formatGuidanceFor(format: string, channel: string): string {
+  switch (format) {
+    case "thread":
+      return `Thread on ${channel} — each beat is one post, hook carries the reader to the next.`;
+    case "carousel":
+      return `Carousel — each beat is one slide, big type, one idea per card.`;
+    case "long-form":
+      return `Long-form — headline + scannable sections, aim for depth over brevity.`;
+    case "short-video":
+      return `Short video — hook in the first 3s, beats pace the script, caption is the CTA.`;
+    case "link":
+      return `Link post — framing sits outside the preview, let the link title do work.`;
+    default:
+      return `Single post — hook, payoff, close. Tight.`;
+  }
+}
 
 function parseStringList(raw: string): string[] {
   return raw
@@ -91,7 +139,21 @@ export async function acceptPlanIdeasAction(formData: FormData) {
     // Noon UTC on the proposed day — a neutral default; the user tunes the
     // exact minute in the composer.
     const scheduledAt = new Date(`${idea.date}T12:00:00Z`);
-    const content = idea.title + (idea.angle ? `\n\n${idea.angle}` : "");
+    const content = composeDraftBody(idea);
+    const draftMeta = {
+      ...(idea.hook ? { hook: idea.hook } : {}),
+      ...(idea.keyPoints && idea.keyPoints.length > 0
+        ? { keyPoints: idea.keyPoints }
+        : {}),
+      ...(idea.cta ? { cta: idea.cta } : {}),
+      ...(idea.hashtags && idea.hashtags.length > 0
+        ? { hashtags: idea.hashtags }
+        : {}),
+      ...(idea.mediaSuggestion ? { mediaSuggestion: idea.mediaSuggestion } : {}),
+      ...(idea.rationale ? { rationale: idea.rationale } : {}),
+      format: idea.format,
+      formatGuidance: formatGuidanceFor(idea.format, idea.channel),
+    };
     const [post] = await db
       .insert(posts)
       .values({
@@ -100,6 +162,7 @@ export async function acceptPlanIdeasAction(formData: FormData) {
         platforms: [idea.channel],
         status: "draft",
         scheduledAt,
+        draftMeta: Object.keys(draftMeta).length > 0 ? draftMeta : null,
       })
       .returning({ id: posts.id });
     await markIdeaAccepted(planId, idea.id, post.id);
