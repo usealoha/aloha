@@ -69,6 +69,9 @@ const envSchema = z.object({
   // Blob store and one "production" Blob store on Vercel, then set this token
   // per environment. Local dev uses the development store's token in .env.local.
   BLOB_READ_WRITE_TOKEN: z.string().min(1),
+
+  // Cron secret for scheduled cleanup jobs
+  CRON_SECRET: z.string().optional(),
 });
 
 // Validate process.env
