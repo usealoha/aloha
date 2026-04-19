@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CHANNEL_ICONS, CHANNEL_LABELS } from "@/components/channel-chip";
-import { PostRowActions } from "./_components/post-row-actions";
+import { PostsList } from "./_components/posts-list";
 
 export const dynamic = "force-dynamic";
 
@@ -338,83 +338,8 @@ export default async function PostsPage({
 					)}
 				</div>
 			) : (
-				<ul className="rounded-2xl border border-border bg-background-elev divide-y divide-border overflow-hidden">
-					{rows.map((p) => {
-						const meta = STATUS_META[p.status];
-						const Icon = meta?.icon ?? FileText;
-						const ts = p.publishedAt ?? p.scheduledAt ?? p.createdAt;
-
-						return (
-							<li key={p.id} className="relative group">
-								<Link
-									href={`/app/composer?post=${p.id}`}
-									className="flex items-start gap-5 px-5 py-4 pr-14 hover:bg-muted/40 transition-colors"
-								>
-									<div className="w-[100px] shrink-0 space-y-1.5">
-										<span
-											className={cn(
-												"inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-medium",
-												meta?.badgeClass ?? "bg-muted text-ink/70",
-											)}
-										>
-											<Icon className="w-3 h-3" />
-											{meta?.label ?? p.status}
-										</span>
-										<p className="text-[12px] text-ink/55 leading-[1.4]">
-											{formatDate(ts, tz)}
-										</p>
-									</div>
-									<div className="flex-1 min-w-0">
-										<p className="text-[14.5px] text-ink leading-[1.5] line-clamp-2">
-											{p.content}
-										</p>
-										<div className="mt-2 flex flex-wrap items-center gap-1.5">
-											{p.platforms.map((pl) => {
-												const ChannelIcon = CHANNEL_ICONS[pl];
-												return (
-													<span
-														key={pl}
-														title={CHANNEL_LABELS[pl] ?? pl}
-														aria-label={CHANNEL_LABELS[pl] ?? pl}
-														className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-peach-100 border border-border text-ink/75"
-													>
-														{ChannelIcon ? (
-															<ChannelIcon className="w-3 h-3" />
-														) : (
-															<span className="text-[10px]">
-																{(CHANNEL_LABELS[pl] ?? pl).slice(0, 1)}
-															</span>
-														)}
-													</span>
-												);
-											})}
-										</div>
-									</div>
-								</Link>
-								<div className="absolute inset-y-0 right-4 flex items-center">
-									<PostRowActions
-										postId={p.id}
-										status={p.status as "draft" | "scheduled" | "published" | "failed" | "deleted"}
-										platforms={p.platforms}
-									/>
-								</div>
-							</li>
-						);
-					})}
-				</ul>
+				<PostsList rows={rows} tz={tz} filter={filter} />
 			)}
 		</div>
 	);
-}
-
-
-
-function formatDate(date: Date, tz: string) {
-	return new Intl.DateTimeFormat("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "numeric",
-		minute: "2-digit",
-		timeZone: tz,
-	}).format(date);
 }

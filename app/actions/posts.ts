@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import {
@@ -338,6 +338,61 @@ export async function permanentDeletePost(postId: string) {
   revalidatePath("/app/ideas");
   revalidatePath("/app/posts");
   return { success: true };
+}
+
+// Bulk delete multiple posts in one call. Two modes:
+//
+//   - "local"     → soft delete (status='deleted', deletedAt set). Works for
+//                   any owned post; remote copies on platforms are untouched.
+//                   Matches the per-row "Remove from Aloha only" / "Delete post"
+//                   flows. Published posts included in the set keep their live
+//                   copies — users wanting to unpublish from platforms use the
+//                   per-row action.
+//   - "permanent" → hard delete rows. Only valid when every selected post is
+//                   already in `deleted` state (the UI only offers this on the
+//                   deleted tab).
+//
+// Returns the count actually affected so the caller can tell the user
+// "Deleted 4 posts" accurately.
+export async function bulkDeletePosts(
+  postIds: string[],
+  mode: "local" | "permanent",
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (postIds.length === 0) return { success: true, count: 0 };
+
+  const owned = await db
+    .select({ id: posts.id, status: posts.status })
+    .from(posts)
+    .where(
+      and(eq(posts.userId, session.user.id), inArray(posts.id, postIds)),
+    );
+  const ownedIds = owned.map((r) => r.id);
+  if (ownedIds.length === 0) return { success: true, count: 0 };
+
+  if (mode === "permanent") {
+    const allDeleted = owned.every((r) => r.status === "deleted");
+    if (!allDeleted) {
+      throw new Error("Only deleted posts can be permanently deleted.");
+    }
+    await db.delete(posts).where(inArray(posts.id, ownedIds));
+  } else {
+    await db
+      .update(posts)
+      .set({
+        status: "deleted",
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(inArray(posts.id, ownedIds));
+  }
+
+  revalidatePath("/app/dashboard");
+  revalidatePath("/app/calendar");
+  revalidatePath("/app/ideas");
+  revalidatePath("/app/posts");
+  return { success: true, count: ownedIds.length };
 }
 
 // Keep only entries that actually differ from base and target a selected
