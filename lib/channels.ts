@@ -641,6 +641,57 @@ export const CHANNELS: Record<string, Channel> = {
     },
     cta: { line1: "Join the conversation.", line2: "On your schedule." },
   },
+
+  telegram: {
+    slug: "telegram",
+    name: "Telegram",
+    tagline: "Messages. Channels. Broadcasts.",
+    eyebrow: "For Telegram",
+    headline: {
+      line1: "Broadcast to your",
+      line2: "community, directly.",
+    },
+    lead:
+      "Telegram is where your most engaged audience lives. Send messages, images, and updates directly to your channel or group — no algorithms, no feeds, just direct connection.",
+    accent: "bg-peach-300",
+    postTypes: [
+      { label: "Text messages", desc: "Send plain text or HTML-formatted messages directly to your channel.", tone: "bg-peach-300" },
+      { label: "Photo posts", desc: "Share images with captions. Perfect for announcements and visual updates.", tone: "bg-peach-200" },
+      { label: "Channel broadcasts", desc: "Reach your entire subscriber base with a single scheduled message.", tone: "bg-peach-100" },
+    ],
+    supports: [
+      "Scheduled messages to channels and groups",
+      "Photo posts with captions",
+      "HTML formatting support",
+      "Two-way messaging via bot",
+      "Direct audience connection without algorithm",
+    ],
+    missing: [
+      "Video posts (not yet supported)",
+      "Polls and quizzes (coming soon)",
+    ],
+    voiceNote:
+      "Telegram audiences expect direct, valuable communication. Composer keeps your messages clear and focused — no fluff, just what matters.",
+    bestTimes: [
+      10, 8, 6, 5, 6, 10, 18, 28, 40, 50, 56, 58,
+      56, 52, 48, 46, 48, 54, 64, 72, 76, 66, 46, 26,
+    ],
+    peakInsight:
+      "Telegram engagement peaks twice: morning (9–11am) and evening (7–10pm). Channel posts get more reads than group messages.",
+    templates: [
+      { name: "Daily update", desc: "A single valuable message posted at your peak time each day.", count: "1 message" },
+      { name: "Weekly digest", desc: "A curated summary of the week's content, sent every Friday.", count: "1 message" },
+      { name: "Announcement drop", desc: "Important news with an image, timed for maximum visibility.", count: "1 post" },
+    ],
+    testimonial: {
+      q: "My Telegram channel has the highest engagement of any platform. People actually read what I send.",
+      n: "Riley T.",
+      r: "Creator · 15K channel subscribers",
+      ini: "R",
+      tone: "bg-peach-300",
+    },
+    cta: { line1: "Reach directly.", line2: "No algorithm needed." },
+  },
 };
 
 export const CHANNEL_SLUGS = Object.keys(CHANNELS);

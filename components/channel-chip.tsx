@@ -7,6 +7,7 @@ import {
   MediumIcon,
   PinterestIcon,
   RedditIcon,
+  TelegramIcon,
   ThreadsIcon,
   TikTokIcon,
   XIcon,
@@ -27,6 +28,7 @@ export const CHANNEL_LABELS: Record<string, string> = {
   pinterest: "Pinterest",
   mastodon: "Mastodon",
   youtube: "YouTube",
+  telegram: "Telegram",
 };
 
 export const CHANNEL_ICONS: Record<
@@ -45,6 +47,7 @@ export const CHANNEL_ICONS: Record<
   pinterest: PinterestIcon,
   mastodon: MastodonIcon,
   youtube: YouTubeIcon,
+  telegram: TelegramIcon,
 };
 
 export function channelLabel(channel: string) {
