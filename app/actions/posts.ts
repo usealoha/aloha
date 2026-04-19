@@ -12,9 +12,11 @@ import {
 import { revalidatePath } from "next/cache";
 import { Client } from "@upstash/qstash";
 import { env } from "@/lib/env";
+import { unpublishPost } from "@/lib/unpublishers";
 
 const qstashClient = new Client({
   token: env.QSTASH_TOKEN,
+  baseUrl: env.QSTASH_URL,
 });
 
 export type ComposerPayload = {
@@ -221,6 +223,109 @@ export async function updatePost(
     console.error("Update Post Error:", error);
     throw new Error("Failed to update post");
   }
+}
+
+// Deletes a post. Two modes:
+//
+//   - mode: "local"   → soft deletes the post by setting status to 'deleted'
+//                       and setting deletedAt timestamp. The post will be
+//                       permanently removed after 30 days automatically, or
+//                       can be permanently deleted immediately from the
+//                       deleted tab. Remote copies on platforms are untouched.
+//                       Safe for drafts, scheduled, failed posts.
+//
+//   - mode: "remote"  → calls each platform's delete API for every
+//                       published delivery, then flips the post row to
+//                       `deleted` (kept as a tombstone so history /
+//                       analytics don't vanish). Only valid for posts that
+//                       have at least one published delivery.
+//
+// Irreversible — callers should gate behind a confirm dialog.
+export async function deletePost(
+  postId: string,
+  mode: "local" | "remote",
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const [existing] = await db
+    .select({
+      id: posts.id,
+      userId: posts.userId,
+      status: posts.status,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.userId, session.user.id)))
+    .limit(1);
+  if (!existing) throw new Error("Post not found");
+
+  if (mode === "remote") {
+    if (existing.status !== "published") {
+      throw new Error(
+        "Only published posts can be deleted from their platforms.",
+      );
+    }
+    // Unpublish from platforms first
+    const summary = await unpublishPost(postId);
+    // Then soft delete the post
+    await db
+      .update(posts)
+      .set({
+        status: "deleted",
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(posts.id, postId));
+    revalidatePath("/app/dashboard");
+    revalidatePath("/app/calendar");
+    revalidatePath("/app/ideas");
+    revalidatePath("/app/posts");
+    return { success: summary.allOk, mode, results: summary.results };
+  }
+
+  // Local delete — soft delete by setting status to 'deleted' and deletedAt
+  await db
+    .update(posts)
+    .set({
+      status: "deleted",
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(posts.id, postId));
+  revalidatePath("/app/dashboard");
+  revalidatePath("/app/calendar");
+  revalidatePath("/app/ideas");
+  revalidatePath("/app/posts");
+  return { success: true, mode, results: [] as const };
+}
+
+// Permanently deletes a post that has already been soft deleted.
+// This is irreversible and removes the row completely from the database.
+export async function permanentDeletePost(postId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const [existing] = await db
+    .select({
+      id: posts.id,
+      userId: posts.userId,
+      status: posts.status,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.userId, session.user.id)))
+    .limit(1);
+  if (!existing) throw new Error("Post not found");
+  if (existing.status !== "deleted") {
+    throw new Error("Only deleted posts can be permanently deleted.");
+  }
+
+  // Permanently delete the row. post_deliveries cascades via FK.
+  await db.delete(posts).where(eq(posts.id, postId));
+  revalidatePath("/app/dashboard");
+  revalidatePath("/app/calendar");
+  revalidatePath("/app/ideas");
+  revalidatePath("/app/posts");
+  return { success: true };
 }
 
 // Keep only entries that actually differ from base and target a selected

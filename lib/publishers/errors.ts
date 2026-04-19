@@ -6,6 +6,7 @@ export type PublishErrorCategory =
 	| "rate_limited" // 429 — should retry later
 	| "forbidden" // 403 — content / scope issue, don't retry
 	| "invalid_content" // 4xx content-specific — don't retry
+	| "unsupported_platform" // platform has no API for this action (e.g. IG delete)
 	| "transient"; // 5xx / network — safe to retry
 
 export class PublishError extends Error {
