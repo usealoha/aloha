@@ -10,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   Lightbulb,
+  Mail,
   Megaphone,
   PenSquare,
   Rss,
@@ -40,6 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Feeds", href: "/app/feeds", icon: Rss },
   { label: "Inbox", href: "/app/inbox", icon: Inbox },
   { label: "Audience", href: "/app/audience", icon: Users },
+  { label: "Broadcasts", href: "/app/broadcasts", icon: Mail },
   { label: "Automations", href: "/app/automations", icon: Sparkles },
 ];
 
