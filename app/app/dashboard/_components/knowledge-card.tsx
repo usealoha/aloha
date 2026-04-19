@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { NotionIcon } from "@/app/auth/_components/provider-icons";
+import Link from "next/link";
 
 interface KnowledgeCardProps {
 	connected: boolean;
@@ -61,9 +61,7 @@ export function KnowledgeCard({
 				<div className="mt-5 space-y-2 text-[12.5px]">
 					<div className="flex items-center justify-between text-ink/75">
 						<span className="inline-flex items-center gap-2">
-							<span className="inline-flex items-center justify-center w-5 h-5 rounded bg-ink text-background text-[10px] font-bold">
-								N
-							</span>
+							<NotionIcon className="w-4 h-4" />
 							Notion
 						</span>
 						<span className="text-ink/55 truncate max-w-[55%]">
