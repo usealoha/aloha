@@ -1,1 +1,0 @@
-ALTER TABLE "ideas" ADD COLUMN "media" jsonb;

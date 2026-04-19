@@ -1,1 +1,0 @@
-ALTER TABLE "post_deliveries" ADD COLUMN "deletedAt" timestamp;
