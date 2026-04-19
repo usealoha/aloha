@@ -2,8 +2,8 @@
 
 import {
 	generateAltText,
-	generateDraft,
 	generateImageAction,
+	generateRichDraft,
 	refineContent,
 	suggestHashtags,
 } from "@/app/actions/ai";
@@ -27,11 +27,17 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ChannelOverride, PostMedia } from "@/db/schema";
+import type { ChannelOverride, DraftMeta, PostMedia } from "@/db/schema";
 import type { BestWindow } from "@/lib/best-time-format";
 import { formatWindow } from "@/lib/best-time-format";
 import type { EffectiveState } from "@/lib/channel-state-format";
 import { stateOr, stateStyles } from "@/lib/channel-state-format";
+import {
+	buildTzLocalInput,
+	formatTzLocalInputForDisplay,
+	tzLocalInputToUtcDate,
+	utcIsoToTzLocalInput,
+} from "@/lib/tz";
 import { cn } from "@/lib/utils";
 import {
 	AlertCircle,
@@ -58,6 +64,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DraftMetaPanel } from "./draft-meta-panel";
 import { FanoutPanel } from "./fanout-panel";
 import { ImportPanel } from "./import-panel";
 import { LibraryPanel } from "./library-panel";
@@ -178,6 +185,7 @@ export function Composer({
 	initialOverrides = {},
 	initialScheduledAt = null,
 	initialStatus = null,
+	initialDraftMeta = null,
 	editingPostId = null,
 	sourceIdeaId = null,
 	sourceIdeaTitle = null,
@@ -192,6 +200,7 @@ export function Composer({
 	initialOverrides?: Record<string, ChannelOverride>;
 	initialScheduledAt?: string | null;
 	initialStatus?: "draft" | "scheduled" | "published" | "failed" | null;
+	initialDraftMeta?: DraftMeta | null;
 	editingPostId?: string | null;
 	sourceIdeaId?: string | null;
 	sourceIdeaTitle?: string | null;
@@ -200,10 +209,11 @@ export function Composer({
 	const [baseContent, setBaseContent] = useState(initialContent);
 	const isEditing = editingPostId !== null;
 	const isReadOnly = initialStatus === "published";
-	// datetime-local inputs want "YYYY-MM-DDTHH:mm" — slice the ISO and drop
-	// the timezone so the browser treats it as local time.
+	// datetime-local strings are tz-less wall-clock. We always treat them as
+	// the user's configured tz (not the browser's), so hydrate from the UTC
+	// instant through the tz helper.
 	const defaultSchedule = initialScheduledAt
-		? initialScheduledAt.slice(0, 16)
+		? utcIsoToTzLocalInput(initialScheduledAt, author.timezone)
 		: "";
 	const [baseMedia, setBaseMedia] = useState<PostMedia[]>(initialMedia);
 	const [overrides, setOverrides] =
@@ -237,6 +247,8 @@ export function Composer({
 	};
 	const [showGenerate, setShowGenerate] = useState(false);
 	const [generateTopic, setGenerateTopic] = useState("");
+	const [draftMeta, setDraftMeta] = useState<DraftMeta | null>(initialDraftMeta);
+	const [showDraftMeta, setShowDraftMeta] = useState(Boolean(initialDraftMeta));
 	const [showVariants, setShowVariants] = useState(false);
 	const [showFanout, setShowFanout] = useState(false);
 	const [showImport, setShowImport] = useState(false);
@@ -521,8 +533,19 @@ export function Composer({
 		startGenerating(async () => {
 			try {
 				const context = activePlatform?.id ?? selected[0] ?? "general";
-				const draft = await generateDraft(generateTopic, context);
-				handleEditorChange(draft);
+				const rich = await generateRichDraft(generateTopic, context);
+				handleEditorChange(rich.body);
+				setDraftMeta({
+					hook: rich.hook,
+					altHooks: rich.altHooks,
+					keyPoints: rich.keyPoints,
+					cta: rich.cta,
+					hashtags: rich.hashtags,
+					mediaSuggestion: rich.mediaSuggestion,
+					rationale: rich.rationale,
+					formatGuidance: rich.formatGuidance,
+				});
+				setShowDraftMeta(true);
 				setGenerateTopic("");
 				setShowGenerate(false);
 			} catch (err) {
@@ -533,12 +556,46 @@ export function Composer({
 		});
 	};
 
+	// Swap the first line of the body with the picked hook. If the body is
+	// empty, just set it. If the first line already matches, no-op.
+	const handleSwapHook = (hook: string) => {
+		const lines = baseContent.split("\n");
+		if (lines.length === 0 || lines[0] === "") {
+			handleEditorChange(hook + (baseContent ? `\n${baseContent}` : ""));
+			return;
+		}
+		if (lines[0] === hook) return;
+		lines[0] = hook;
+		handleEditorChange(lines.join("\n"));
+		setDraftMeta((m) => (m ? { ...m, hook } : m));
+	};
+
+	// Append hashtags that aren't already present. Adds a blank line before if
+	// the body doesn't end with one.
+	const handleApplyHashtags = (tags: string[]) => {
+		if (tags.length === 0) return;
+		const existing = new Set(
+			(baseContent.match(/#[\w-]+/g) ?? []).map((t) => t.toLowerCase()),
+		);
+		const additions = tags.filter((t) => !existing.has(t.toLowerCase()));
+		if (additions.length === 0) return;
+		const sep = baseContent.endsWith("\n\n")
+			? ""
+			: baseContent.endsWith("\n")
+				? "\n"
+				: baseContent
+					? "\n\n"
+					: "";
+		handleEditorChange(baseContent + sep + additions.join(" "));
+	};
+
 	const buildPayload = () => ({
 		content: baseContent,
 		platforms: selected,
 		media: baseMedia,
 		channelContent: overrides,
 		sourceIdeaId,
+		draftMeta,
 	});
 
 	const handleSaveDraft = () => {
@@ -569,7 +626,7 @@ export function Composer({
 		setFormError(null);
 		startPublishing(async () => {
 			try {
-				const when = new Date(scheduledAt);
+				const when = tzLocalInputToUtcDate(scheduledAt, author.timezone);
 				if (editingPostId) {
 					await updatePost(editingPostId, {
 						...buildPayload(),
@@ -805,7 +862,7 @@ export function Composer({
 								<div className="flex items-center gap-2 text-[12px] text-ink/65">
 									<Wand2 className="w-3.5 h-3.5 text-primary" />
 									<span>
-										Generate a draft from a topic
+										Muse drafts the post + the scaffolding — hook options, beats, CTA, hashtags
 										{activePlatform
 											? ` for ${activePlatform.name}`
 											: selected.length > 0
@@ -1211,6 +1268,14 @@ export function Composer({
 								<ToolDivider />
 
 								{/* Polish */}
+								{draftMeta ? (
+									<ToolButton
+										onClick={() => setShowDraftMeta((v) => !v)}
+										active={showDraftMeta}
+										label="Muse scaffolding — hooks, beats, CTA"
+										icon={<Sparkles className="w-4 h-4" />}
+									/>
+								) : null}
 								<ToolButton
 									onClick={() => {
 										setShowScore((v) => !v);
@@ -1298,6 +1363,16 @@ export function Composer({
 								targets={variantPlatforms}
 								onAccept={applyVariantToChannel}
 								onClose={() => setShowImport(false)}
+							/>
+						</div>
+					) : null}
+					{showDraftMeta && draftMeta ? (
+						<div className="mt-6">
+							<DraftMetaPanel
+								meta={draftMeta}
+								onSwapHook={handleSwapHook}
+								onApplyHashtags={handleApplyHashtags}
+								onClose={() => setShowDraftMeta(false)}
 							/>
 						</div>
 					) : null}
@@ -1502,8 +1577,16 @@ function SchedulePopover({
 }) {
 	const ref = useRef<HTMLDivElement>(null);
 
-	// Parse scheduledAt into date and time components
-	const selectedDate = scheduledAt ? new Date(scheduledAt) : undefined;
+	// `scheduledAt` is a "YYYY-MM-DDTHH:mm" wall-clock string in the user's
+	// configured tz. The calendar widget wants a Date whose *browser-local*
+	// Y/M/D equals the picked day, so we synthesize one from the string
+	// components (no parsing that could drift across tzs).
+	const selectedDate = scheduledAt
+		? (() => {
+				const [y, m, d] = scheduledAt.slice(0, 10).split("-").map(Number);
+				return new Date(y, m - 1, d);
+			})()
+		: undefined;
 	const [selectedTime, setSelectedTime] = useState<string>(
 		scheduledAt ? scheduledAt.slice(11, 16) : "12:00",
 	);
@@ -1543,33 +1626,51 @@ function SchedulePopover({
 
 	const handleDateSelect = (date: Date | undefined) => {
 		if (!date) return;
-		// Combine selected date with current time
-		const [hours, minutes] = selectedTime.split(":").map(Number);
-		const newDate = new Date(date);
-		newDate.setHours(hours, minutes, 0, 0);
-		setScheduledAt(newDate.toISOString().slice(0, 16));
+		// The calendar returns a Date whose browser-local Y/M/D is the picked
+		// day. Read those components directly and pair with the chosen time —
+		// no tz arithmetic, since `scheduledAt` is a wall-clock string.
+		setScheduledAt(
+			buildTzLocalInput(
+				date.getFullYear(),
+				date.getMonth() + 1,
+				date.getDate(),
+				selectedTime,
+			),
+		);
 	};
 
 	const handleTimeChange = (time: string) => {
 		setSelectedTime(time);
 		if (selectedDate) {
-			const [hours, minutes] = time.split(":").map(Number);
-			const newDate = new Date(selectedDate);
-			newDate.setHours(hours, minutes, 0, 0);
-			setScheduledAt(newDate.toISOString().slice(0, 16));
+			setScheduledAt(
+				buildTzLocalInput(
+					selectedDate.getFullYear(),
+					selectedDate.getMonth() + 1,
+					selectedDate.getDate(),
+					time,
+				),
+			);
 		}
 	};
 
 	const preview = scheduledAt
-		? new Intl.DateTimeFormat("en-US", {
-				dateStyle: "medium",
-				timeStyle: "short",
-			}).format(new Date(scheduledAt))
+		? formatTzLocalInputForDisplay(scheduledAt, timezone)
 		: "Schedule";
 
-	// Calculate min date (today, can't select past dates)
-	const minDate = new Date();
-	minDate.setHours(0, 0, 0, 0);
+	// Calculate min date (today in the user's tz, can't select past dates).
+	// The calendar compares its picked Date against this via browser-local
+	// Y/M/D, so we build `minDate` with the user's tz Y/M/D at browser
+	// midnight — keeps the gate aligned with what "today" means for them.
+	const minDate = (() => {
+		const parts = new Intl.DateTimeFormat("en-CA", {
+			timeZone: timezone,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		}).formatToParts(new Date());
+		const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+		return new Date(get("year"), get("month") - 1, get("day"));
+	})();
 
 	return (
 		<div ref={ref} className="relative">

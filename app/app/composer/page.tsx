@@ -7,6 +7,7 @@ import {
   ideas,
   posts,
   type ChannelOverride,
+  type DraftMeta,
   type PostMedia,
 } from "@/db/schema";
 import { getBestWindowsForUser } from "@/lib/best-time";
@@ -55,6 +56,7 @@ export default async function ComposerPage({
   let initialOverrides: Record<string, ChannelOverride> = {};
   let initialScheduledAt: string | null = null;
   let initialStatus: "draft" | "scheduled" | "published" | "failed" | null = null;
+  let initialDraftMeta: DraftMeta | null = null;
   let editingPostId: string | null = null;
   let sourceIdeaId: string | null = null;
   let sourceIdeaTitle: string | null = null;
@@ -73,6 +75,7 @@ export default async function ComposerPage({
         status: posts.status,
         scheduledAt: posts.scheduledAt,
         sourceIdeaId: posts.sourceIdeaId,
+        draftMeta: posts.draftMeta,
       })
       .from(posts)
       .where(and(eq(posts.id, postId), eq(posts.userId, user.id)))
@@ -85,6 +88,7 @@ export default async function ComposerPage({
       initialOverrides = post.channelContent;
       initialStatus = post.status as "draft" | "scheduled" | "published" | "failed";
       initialScheduledAt = post.scheduledAt?.toISOString() ?? null;
+      initialDraftMeta = post.draftMeta ?? null;
       sourceIdeaId = post.sourceIdeaId;
       if (sourceIdeaId) {
         const [idea] = await db
@@ -130,6 +134,7 @@ export default async function ComposerPage({
       initialOverrides={initialOverrides}
       initialScheduledAt={initialScheduledAt}
       initialStatus={initialStatus}
+      initialDraftMeta={initialDraftMeta}
       editingPostId={editingPostId}
       sourceIdeaId={sourceIdeaId}
       sourceIdeaTitle={sourceIdeaTitle}
