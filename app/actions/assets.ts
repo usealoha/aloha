@@ -1,12 +1,51 @@
 "use server";
 
 import { del } from "@vercel/blob";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { assets } from "@/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentUser } from "@/lib/current-user";
+
+export type LibraryAsset = {
+  id: string;
+  url: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  alt: string | null;
+  prompt: string | null;
+  source: "upload" | "generated" | "imported";
+  createdAt: string;
+};
+
+export async function listLibraryAssets(limit = 60): Promise<LibraryAsset[]> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const rows = await db
+    .select({
+      id: assets.id,
+      url: assets.url,
+      mimeType: assets.mimeType,
+      width: assets.width,
+      height: assets.height,
+      alt: assets.alt,
+      prompt: assets.prompt,
+      source: assets.source,
+      createdAt: assets.createdAt,
+    })
+    .from(assets)
+    .where(eq(assets.userId, user.id))
+    .orderBy(desc(assets.createdAt))
+    .limit(limit);
+
+  return rows.map((r) => ({
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
 
 export async function deleteGeneratedAssetAction(formData: FormData) {
   const user = await getCurrentUser();

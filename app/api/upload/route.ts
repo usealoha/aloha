@@ -1,6 +1,8 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { db } from "@/db";
+import { assets } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { env } from "@/lib/env";
 
@@ -47,6 +49,14 @@ export async function POST(req: Request) {
     access: "public",
     contentType: file.type,
     token: env.BLOB_READ_WRITE_TOKEN,
+  });
+
+  await db.insert(assets).values({
+    userId: user.id,
+    source: "upload",
+    url: blob.url,
+    mimeType: file.type,
+    metadata: { originalName: file.name, size: file.size },
   });
 
   return NextResponse.json({ url: blob.url, mimeType: file.type });
