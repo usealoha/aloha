@@ -1,4 +1,5 @@
 import { Receiver } from "@upstash/qstash";
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -78,6 +79,10 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ success: true, summary });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { source: "qstash.publish" },
+      extra: { postId },
+    });
     console.error("[QStash] Error publishing post:", error);
     // publishPost handles per-platform failure; only whole-dispatcher
     // crashes land here — treat as unrecoverable for this run.

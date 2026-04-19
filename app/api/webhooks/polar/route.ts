@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 import { env } from "@/lib/env";
 import { upsertSubscriptionFromPolar } from "@/lib/billing/service";
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest) {
 				break;
 		}
 	} catch (err) {
+		Sentry.captureException(err, {
+			tags: { source: "polar.webhook", eventType: event.type },
+		});
 		console.error(`[polar.webhook] handler failed for ${event.type}`, err);
 		return new NextResponse("Handler error", { status: 500 });
 	}
