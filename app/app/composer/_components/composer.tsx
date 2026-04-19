@@ -20,6 +20,11 @@ import {
 	XIcon as XBrandIcon,
 } from "@/app/auth/_components/provider-icons";
 import { Calendar } from "@/components/ui/calendar";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { TimePicker } from "@/components/ui/time-picker";
 import {
 	Tooltip,
@@ -311,6 +316,25 @@ export function Composer({
 		);
 	const canSubmit =
 		hasBody && selected.length > 0 && !overLimit && !isUploading;
+
+	// "Direct publish" is only meaningful on channels whose effective state is
+	// connected_published. For manual_assist / review_pending channels the
+	// worker silently falls back to a reminder email, so we hide the Publish
+	// button when none of the selected channels can actually post, and we
+	// surface the fallback in the Schedule popover.
+	const publishableSelected = selectedPlatforms.filter(
+		(p) => stateOr(channelStates, p.id) === "connected_published",
+	);
+	const notifyOnlySelected = selectedPlatforms.filter(
+		(p) => stateOr(channelStates, p.id) !== "connected_published",
+	);
+	const anyPublishable = publishableSelected.length > 0;
+	const scheduleHint =
+		notifyOnlySelected.length > 0
+			? `Channels without direct publishing (${notifyOnlySelected
+					.map((p) => p.name)
+					.join(", ")}) get a reminder email at this time.`
+			: null;
 
 	const handleEditorChange = (value: string) => {
 		if (activeTab === "all") {
@@ -666,71 +690,101 @@ export function Composer({
 		});
 	};
 
+	type DrawerTabId =
+		| "muse"
+		| "scaffolding"
+		| "variants"
+		| "fanout"
+		| "import"
+		| "score"
+		| "library"
+		| "image";
+
+	const activeDrawer: DrawerTabId | null = showGenerate
+		? "muse"
+		: showDraftMeta && draftMeta
+			? "scaffolding"
+			: showVariants
+				? "variants"
+				: showFanout && fanoutSourcePlatform
+					? "fanout"
+					: showImport
+						? "import"
+						: showScore && scorePlatform
+							? "score"
+							: showLibrary
+								? "library"
+								: showImageGen
+									? "image"
+									: null;
+
+	const closeAllDrawers = () => {
+		setShowGenerate(false);
+		setShowDraftMeta(false);
+		setShowVariants(false);
+		setShowFanout(false);
+		setShowImport(false);
+		setShowScore(false);
+		setShowLibrary(false);
+		setShowImageGen(false);
+	};
+
+	const toggleDrawer = (id: DrawerTabId) => {
+		if (activeDrawer === id) {
+			closeAllDrawers();
+			return;
+		}
+		closeAllDrawers();
+		switch (id) {
+			case "muse":
+				setShowGenerate(true);
+				break;
+			case "scaffolding":
+				setShowDraftMeta(true);
+				break;
+			case "variants":
+				setShowVariants(true);
+				break;
+			case "fanout":
+				setShowFanout(true);
+				break;
+			case "import":
+				setShowImport(true);
+				break;
+			case "score":
+				setShowScore(true);
+				break;
+			case "library":
+				setShowLibrary(true);
+				break;
+			case "image":
+				setShowImageGen(true);
+				break;
+		}
+	};
+
 	return (
-		<div className="space-y-10">
-			{/* Header */}
-			<header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						{isEditing
-							? `${headerEyebrowForStatus(initialStatus)} · ${author.workspaceName ?? "Workspace"}`
-							: `New post · ${author.workspaceName ?? "Workspace"}`}
-					</p>
-					<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
-						{isEditing ? (
-							<>
-								Edit
-								<span className="text-primary"> this one.</span>
-							</>
-						) : (
-							<>
-								Compose
-								<span className="text-primary"> your next one.</span>
-							</>
-						)}
-					</h1>
-				</div>
-
-				<div className="flex items-center gap-2 flex-wrap">
-					<button
-						type="button"
-						onClick={handleSaveDraft}
-						disabled={!canSubmit || isSaving || isReadOnly}
-						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
-					>
-						{isSaving ? (
-							<Loader2 className="w-4 h-4 animate-spin" />
-						) : (
-							<Paperclip className="w-4 h-4" />
-						)}
-						{isEditing ? "Save changes" : "Save draft"}
-					</button>
-
-					<SchedulePopover
-						scheduledAt={scheduledAt}
-						setScheduledAt={setScheduledAt}
-						open={showSchedule}
-						setOpen={setShowSchedule}
-						onConfirm={handleSchedule}
-						disabled={!canSubmit || isPublishing || isReadOnly}
-						busy={isPublishing && scheduledAt !== ""}
-						timezone={author.timezone}
-					/>
-
-					<button
-						type="button"
-						onClick={handlePublishNow}
-						disabled={!canSubmit || isPublishing || isReadOnly}
-						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-					>
-						{isPublishing && !scheduledAt ? (
-							<Loader2 className="w-4 h-4 animate-spin" />
-						) : (
-							<Send className="w-4 h-4" />
-						)}
-						Publish
-					</button>
-				</div>
+		<div className="space-y-8 pb-12">
+			{/* Page header: eyebrow + title (actions live inside the editor card) */}
+			<header>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					{isEditing
+						? `${headerEyebrowForStatus(initialStatus)} · ${author.workspaceName ?? "Workspace"}`
+						: `New post · ${author.workspaceName ?? "Workspace"}`}
+				</p>
+				<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
+					{isEditing ? (
+						<>
+							Edit
+							<span className="text-primary"> this one.</span>
+						</>
+					) : (
+						<>
+							Compose
+							<span className="text-primary"> your next one.</span>
+						</>
+					)}
+				</h1>
 			</header>
 
 			{isReadOnly ? (
@@ -766,187 +820,154 @@ export function Composer({
 				</div>
 			) : null}
 
-			{/* Channel chips */}
-			<section>
-				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-3">
-					Publish to
-				</p>
-				<div className="flex flex-wrap gap-1.5">
-					{PLATFORMS.map((p) => {
-						const isSelected = selected.includes(p.id);
-						const Icon = PLATFORM_ICONS[p.id];
-						return (
-							<button
-								key={p.id}
-								type="button"
-								onClick={() => toggle(p.id)}
-								aria-pressed={isSelected}
-								className={cn(
-									"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full border text-[12px] font-medium transition-colors",
-									isSelected
-										? "bg-peach-100 text-ink border-border"
-										: "bg-background-elev text-ink/70 border-border-strong hover:border-ink hover:text-ink",
-								)}
-							>
-								{Icon && <Icon className="w-3.5 h-3.5" />}
-								{p.name}
-							</button>
-						);
-					})}
+			{/* Editor card: two chip header bars → core editor + floating preview → footers */}
+			<div className="rounded-3xl border border-border bg-background-elev overflow-hidden">
+				{/* Header bar 1: publish-to channels + char counter */}
+				<div className="flex items-center gap-4 flex-wrap px-5 py-3 border-b border-border bg-muted/40">
+					<p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-ink/55 shrink-0">
+						Publish to
+					</p>
+					<div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+						{PLATFORMS.map((p) => {
+							const isSelected = selected.includes(p.id);
+							const Icon = PLATFORM_ICONS[p.id];
+							const state = isSelected ? stateOr(channelStates, p.id) : null;
+							const style = state ? stateStyles(state) : null;
+							return (
+								<button
+									key={p.id}
+									type="button"
+									onClick={() => toggle(p.id)}
+									aria-pressed={isSelected}
+									className={cn(
+										"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full border text-[12px] font-medium transition-colors",
+										isSelected
+											? "bg-peach-100 text-ink border-border"
+											: "bg-background-elev text-ink/70 border-border-strong hover:border-ink hover:text-ink",
+									)}
+								>
+									{Icon && <Icon className="w-3.5 h-3.5" />}
+									{p.name}
+									{isSelected && style && state !== "connected_published" ? (
+										<span
+											aria-label={style.label}
+											title={style.tooltip}
+											className={cn(
+												"ml-0.5 inline-block w-1.5 h-1.5 rounded-full",
+												style.dotClass,
+											)}
+										/>
+									) : null}
+								</button>
+							);
+						})}
+					</div>
+					<div className="shrink-0">
+						<CharCounter
+							length={editorValue.length}
+							limit={activeLimit}
+							tightestPlatforms={
+								activePlatform
+									? editorValue.length > activeLimit
+										? [activePlatform.name]
+										: []
+									: perPlatformOverflow.map((x) => x.platform.name)
+							}
+						/>
+					</div>
 				</div>
+
 				{connectedProviders.length === 0 ? (
-					<p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-ink/55">
+					<p className="flex items-center gap-1.5 px-5 py-2 border-b border-border bg-peach-100/50 text-[12px] text-ink/65">
 						<Plug className="w-3.5 h-3.5" />
 						No channels connected yet. You can still draft and schedule —
 						connect from Settings to go live.
 					</p>
 				) : null}
-			</section>
 
-			{/* Main grid */}
-			<section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-				{/* Editor */}
-				<div className="lg:col-span-7">
-					{/* Tab strip */}
-					<div
-						role="tablist"
-						aria-label="Content scope"
-						className="flex flex-wrap items-center gap-1 mb-3"
+				{/* Header bar 2: scope tabs — Draft | channels */}
+				<div
+					role="tablist"
+					aria-label="Content scope"
+					className="flex flex-wrap items-center gap-1 px-5 py-3 border-b border-border bg-muted/25"
+				>
+					<TabButton
+						active={activeTab === "all"}
+						onClick={() => setActiveTab("all")}
 					>
-						<TabButton
-							active={activeTab === "all"}
-							onClick={() => setActiveTab("all")}
-						>
-							All channels
-						</TabButton>
-						{selectedPlatforms.map((p) => {
-							const Icon = PLATFORM_ICONS[p.id];
-							const over = effectiveContent(p.id).length > p.limit;
-							const state = stateOr(channelStates, p.id);
-							const style = stateStyles(state);
-							return (
-								<TabButton
-									key={p.id}
-									active={activeTab === p.id}
-									onClick={() => setActiveTab(p.id)}
-									dot={isOverridden(p.id)}
-									warn={over}
-								>
-									{Icon && <Icon className="w-3.5 h-3.5" />}
-									{p.name}
-									{state !== "connected_published" ? (
-										<span
-											aria-label={style.label}
-											title={style.tooltip}
-											className={cn(
-												"ml-1.5 inline-block w-1.5 h-1.5 rounded-full",
-												style.dotClass,
-											)}
-										/>
-									) : null}
-								</TabButton>
-							);
-						})}
-					</div>
+						Draft
+					</TabButton>
+					{selectedPlatforms.length > 0 ? <ToolDivider /> : null}
+					{selectedPlatforms.map((p) => {
+						const Icon = PLATFORM_ICONS[p.id];
+						const over = effectiveContent(p.id).length > p.limit;
+						const state = stateOr(channelStates, p.id);
+						const style = stateStyles(state);
+						return (
+							<TabButton
+								key={p.id}
+								active={activeTab === p.id}
+								onClick={() => setActiveTab(p.id)}
+								dot={isOverridden(p.id)}
+								warn={over}
+							>
+								{Icon && <Icon className="w-3.5 h-3.5" />}
+								{p.name}
+								{state !== "connected_published" ? (
+									<span
+										aria-label={style.label}
+										title={style.tooltip}
+										className={cn(
+											"ml-1.5 inline-block w-1.5 h-1.5 rounded-full",
+											style.dotClass,
+										)}
+									/>
+								) : null}
+							</TabButton>
+						);
+					})}
+				</div>
 
-					{activePlatform && bestWindows[activePlatform.id]?.length ? (
+				{activePlatform && bestWindows[activePlatform.id]?.length ? (
+					<div className="px-5 py-2 border-b border-border">
 						<BestWindowHint
 							platformName={activePlatform.name}
 							window={bestWindows[activePlatform.id][0]}
 						/>
-					) : null}
+					</div>
+				) : null}
 
-					<div className="rounded-3xl border border-border bg-background-elev overflow-hidden">
-						{showGenerate ? (
-							<div className="flex flex-col gap-2 px-5 pt-4 pb-3 border-b border-border bg-peach-100/50">
-								<div className="flex items-center gap-2 text-[12px] text-ink/65">
-									<Wand2 className="w-3.5 h-3.5 text-primary" />
-									<span>
-										Muse drafts the post + the scaffolding — hook options, beats, CTA, hashtags
-										{activePlatform
-											? ` for ${activePlatform.name}`
-											: selected.length > 0
-												? " — picks the first selected channel"
-												: ""}
-										.
-									</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<input
-										value={generateTopic}
-										onChange={(e) => setGenerateTopic(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" && !isGenerating) {
-												e.preventDefault();
-												handleGenerate();
-											}
-											if (e.key === "Escape") {
-												setShowGenerate(false);
-												setGenerateTopic("");
-											}
-										}}
-										placeholder="e.g. how we cut onboarding time in half"
-										autoFocus
-										className="flex-1 h-10 px-3 rounded-full border border-border bg-background text-[13.5px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-ink"
-									/>
-									<button
-										type="button"
-										onClick={handleGenerate}
-										disabled={isGenerating || !generateTopic.trim()}
-										className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-									>
-										{isGenerating ? (
-											<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										) : (
-											<Wand2 className="w-3.5 h-3.5" />
-										)}
-										Write draft
-									</button>
-									<button
-										type="button"
-										onClick={() => {
-											setShowGenerate(false);
-											setGenerateTopic("");
-										}}
-										disabled={isGenerating}
-										aria-label="Close generate"
-										className="inline-flex items-center justify-center w-10 h-10 rounded-full text-ink/60 hover:text-ink hover:bg-background transition-colors"
-									>
-										<XIcon className="w-4 h-4" />
-									</button>
-								</div>
-							</div>
+				{activePlatform ? (
+					<div className="flex items-center justify-between gap-3 px-5 py-2 border-b border-border text-[12px] text-ink/60">
+						<span>
+							{isOverridden(activePlatform.id)
+								? `Customized for ${activePlatform.name}.`
+								: `Inheriting from Draft. Edit to customize for ${activePlatform.name}.`}
+						</span>
+						{isOverridden(activePlatform.id) ? (
+							<button
+								type="button"
+								onClick={() => handleResetOverride(activePlatform.id)}
+								className="inline-flex items-center gap-1 text-[12px] text-ink/70 hover:text-ink transition-colors"
+							>
+								<RotateCcw className="w-3 h-3" />
+								Reset to base
+							</button>
 						) : null}
+					</div>
+				) : null}
 
-						{activePlatform ? (
-							<div className="flex items-center justify-between gap-3 px-5 pt-4 text-[12px] text-ink/60">
-								<span>
-									{isOverridden(activePlatform.id)
-										? `Customized for ${activePlatform.name}.`
-										: `Inheriting from all channels. Edit to customize for ${activePlatform.name}.`}
-								</span>
-								{isOverridden(activePlatform.id) ? (
-									<button
-										type="button"
-										onClick={() => handleResetOverride(activePlatform.id)}
-										className="inline-flex items-center gap-1 text-[12px] text-ink/70 hover:text-ink transition-colors"
-									>
-										<RotateCcw className="w-3 h-3" />
-										Reset to base
-									</button>
-								) : null}
-							</div>
-						) : null}
-
+				<div className="grid grid-cols-1 lg:grid-cols-12">
+					<div className="lg:col-span-7 min-w-0">
 						<textarea
 							value={editorValue}
 							onChange={(e) => handleEditorChange(e.target.value)}
 							placeholder={
 								activePlatform
 									? `Write a version tailored for ${activePlatform.name}…`
-									: "Write something worth showing up for…"
+									: "Write the base draft — each channel inherits from here."
 							}
-							className="w-full min-h-[340px] p-7 lg:p-8 bg-transparent focus:outline-none resize-none text-[17px] leading-[1.6] text-ink placeholder:text-ink/35 font-sans"
+							className="w-full min-h-[360px] p-7 lg:p-8 bg-transparent focus:outline-none resize-none text-[17px] leading-[1.6] text-ink placeholder:text-ink/35 font-sans"
 							aria-label="Post content"
 						/>
 
@@ -1001,84 +1022,6 @@ export function Composer({
 							</div>
 						) : null}
 
-						{showImageGen ? (
-							<div className="px-5 py-4 border-t border-border bg-peach-100/40 space-y-3">
-								<div className="flex items-center gap-2 text-[12px] text-ink/65">
-									<ImagePlus className="w-3.5 h-3.5 text-primary" />
-									<span>
-										Describe the image you want — Muse generates it in your
-										chosen aspect.
-									</span>
-								</div>
-								<input
-									value={imagePrompt}
-									onChange={(e) => setImagePrompt(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" && !isImaging) {
-											e.preventDefault();
-											handleGenerateImage();
-										}
-										if (e.key === "Escape") {
-											setShowImageGen(false);
-											setImagePrompt("");
-										}
-									}}
-									placeholder="e.g. a warm editorial shot of a reading nook, soft morning light"
-									autoFocus
-									className="w-full h-10 px-3 rounded-full border border-border bg-background text-[13.5px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-ink"
-								/>
-								<div className="flex items-center justify-between gap-2 flex-wrap">
-									<div className="flex items-center gap-1.5">
-										{(["1:1", "4:5", "16:9", "9:16"] as const).map((a) => {
-											const active = imageAspect === a;
-											return (
-												<button
-													key={a}
-													type="button"
-													onClick={() => setImageAspect(a)}
-													aria-pressed={active}
-													className={cn(
-														"inline-flex items-center h-8 px-3 rounded-full text-[12px] font-medium transition-colors",
-														active
-															? "bg-ink text-background"
-															: "bg-background text-ink/65 border border-border hover:text-ink",
-													)}
-												>
-													{a}
-												</button>
-											);
-										})}
-									</div>
-									<div className="flex items-center gap-2">
-										<button
-											type="button"
-											onClick={() => {
-												setShowImageGen(false);
-												setImagePrompt("");
-											}}
-											disabled={isImaging}
-											className="inline-flex items-center h-10 px-4 rounded-full text-[13px] text-ink/65 hover:text-ink transition-colors"
-										>
-											Cancel
-										</button>
-										<button
-											type="button"
-											onClick={handleGenerateImage}
-											disabled={isImaging || !imagePrompt.trim()}
-											className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-										>
-											{isImaging ? (
-												<Loader2 className="w-3.5 h-3.5 animate-spin" />
-											) : (
-												<ImagePlus className="w-3.5 h-3.5" />
-											)}
-											Generate
-										</button>
-									</div>
-								</div>
-							</div>
-						) : null}
-
 						{hashSuggestions.length > 0 ? (
 							<div className="px-5 pt-3 pb-1 border-t border-border flex flex-wrap items-center gap-1.5">
 								<span className="text-[11px] uppercase tracking-[0.18em] text-ink/45 mr-1">
@@ -1104,6 +1047,78 @@ export function Composer({
 								</button>
 							</div>
 						) : null}
+					</div>
+
+					<aside className="lg:col-span-5 p-4 lg:p-5 flex flex-col gap-4 h-full">
+						{activePlatform ? (
+							<div className="rounded-2xl shadow-[0_14px_32px_-18px_rgba(26,22,18,0.28)]">
+								<PreviewCard
+									platform={activePlatform}
+									author={author}
+									content={effectiveContent(activePlatform.id)}
+								/>
+							</div>
+						) : (
+							<div className="rounded-2xl border border-dashed border-border-strong bg-background/60 px-6 py-12 text-center shadow-[0_14px_32px_-18px_rgba(26,22,18,0.18)]">
+								<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
+									Live preview
+								</p>
+								<p className="text-[13px] text-ink/55 leading-normal">
+									Pick a channel above to see how this draft will look there.
+								</p>
+							</div>
+						)}
+
+						<div className="mt-auto flex flex-wrap items-center justify-end gap-2">
+							<button
+								type="button"
+								onClick={handleSaveDraft}
+								disabled={!canSubmit || isSaving || isReadOnly}
+								className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+							>
+								{isSaving ? (
+									<Loader2 className="w-4 h-4 animate-spin" />
+								) : (
+									<Paperclip className="w-4 h-4" />
+								)}
+								{isEditing ? "Save changes" : "Save draft"}
+							</button>
+
+							<SchedulePopover
+								scheduledAt={scheduledAt}
+								setScheduledAt={setScheduledAt}
+								open={showSchedule}
+								setOpen={setShowSchedule}
+								onConfirm={handleSchedule}
+								disabled={!canSubmit || isPublishing || isReadOnly}
+								busy={isPublishing && scheduledAt !== ""}
+								timezone={author.timezone}
+								hint={scheduleHint}
+							/>
+
+							{anyPublishable ? (
+								<button
+									type="button"
+									onClick={handlePublishNow}
+									disabled={!canSubmit || isPublishing || isReadOnly}
+									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+									title={
+										notifyOnlySelected.length > 0
+											? `Publishes to ${publishableSelected.map((p) => p.name).join(", ")}. ${notifyOnlySelected.map((p) => p.name).join(", ")} need a schedule to get a reminder.`
+											: `Publish to ${publishableSelected.map((p) => p.name).join(", ")}`
+									}
+								>
+									{isPublishing && !scheduledAt ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										<Send className="w-4 h-4" />
+									)}
+									Publish
+								</button>
+							) : null}
+						</div>
+					</aside>
+				</div>
 
 						<TooltipProvider delay={250}>
 							<div className="flex flex-wrap items-center gap-1 px-3 py-2 border-t border-border">
@@ -1115,8 +1130,6 @@ export function Composer({
 									hidden
 									onChange={(e) => handleFilesSelected(e.target.files)}
 								/>
-
-								{/* Media */}
 								<ToolButton
 									onClick={() => fileInputRef.current?.click()}
 									disabled={isUploading || baseMedia.length >= MAX_MEDIA}
@@ -1133,171 +1146,7 @@ export function Composer({
 										)
 									}
 								/>
-								<ToolButton
-									onClick={() => setShowImageGen((v) => !v)}
-									disabled={baseMedia.length >= MAX_MEDIA}
-									active={showImageGen}
-									label={
-										baseMedia.length >= MAX_MEDIA
-											? `Up to ${MAX_MEDIA} images`
-											: "Generate image"
-									}
-									icon={<ImagePlus className="w-4 h-4" />}
-								/>
-								<ToolButton
-									onClick={() => {
-										setShowLibrary((v) => !v);
-										if (!showLibrary) {
-											setShowGenerate(false);
-											setShowVariants(false);
-											setShowFanout(false);
-											setShowImport(false);
-											setShowScore(false);
-										}
-									}}
-									disabled={baseMedia.length >= MAX_MEDIA}
-									active={showLibrary}
-									label={
-										baseMedia.length >= MAX_MEDIA
-											? `Up to ${MAX_MEDIA} images`
-											: "Attach from library"
-									}
-									icon={<Images className="w-4 h-4" />}
-								/>
-
 								<ToolDivider />
-
-								<div className="px-1">
-									<CharCounter
-										length={editorValue.length}
-										limit={activeLimit}
-										tightestPlatforms={
-											activePlatform
-												? editorValue.length > activeLimit
-													? [activePlatform.name]
-													: []
-												: perPlatformOverflow.map((x) => x.platform.name)
-										}
-									/>
-								</div>
-
-								<ToolDivider />
-
-								{/* Compose */}
-								<ToolButton
-									onClick={() => {
-										setShowGenerate((v) => !v);
-										if (!showGenerate) {
-											setShowVariants(false);
-											setShowFanout(false);
-											setShowImport(false);
-											setShowScore(false);
-											setShowLibrary(false);
-										}
-									}}
-									active={showGenerate}
-									label="Draft from a topic"
-									icon={<Wand2 className="w-4 h-4" />}
-								/>
-								<ToolButton
-									onClick={() => {
-										setShowVariants((v) => !v);
-										if (!showVariants) {
-											setShowGenerate(false);
-											setShowFanout(false);
-											setShowImport(false);
-											setShowScore(false);
-											setShowLibrary(false);
-										}
-									}}
-									disabled={selectedPlatforms.length === 0}
-									active={showVariants}
-									label={
-										selectedPlatforms.length === 0
-											? "Select a channel first"
-											: "Draft one version per selected channel"
-									}
-									icon={<Layers className="w-4 h-4" />}
-								/>
-								<ToolButton
-									onClick={() => {
-										setShowFanout((v) => !v);
-										if (!showFanout) {
-											setShowGenerate(false);
-											setShowVariants(false);
-											setShowImport(false);
-											setShowScore(false);
-											setShowLibrary(false);
-										}
-									}}
-									disabled={!canFanout}
-									active={showFanout}
-									label={
-										!fanoutSourcePlatform
-											? "Open a channel tab to fan out from"
-											: fanoutTargets.length === 0
-												? "Select another channel to fan out to"
-												: effectiveContent(fanoutSourcePlatform.id).trim()
-															.length === 0
-													? "Write something on this channel first"
-													: `Fan out this ${fanoutSourcePlatform.name} post to the other channels`
-									}
-									icon={<GitBranch className="w-4 h-4" />}
-								/>
-								<ToolButton
-									onClick={() => {
-										setShowImport((v) => !v);
-										if (!showImport) {
-											setShowGenerate(false);
-											setShowVariants(false);
-											setShowFanout(false);
-											setShowScore(false);
-											setShowLibrary(false);
-										}
-									}}
-									disabled={selectedPlatforms.length === 0}
-									active={showImport}
-									label={
-										selectedPlatforms.length === 0
-											? "Select a channel first"
-											: "Import from a URL"
-									}
-									icon={<FileText className="w-4 h-4" />}
-								/>
-
-								<ToolDivider />
-
-								{/* Polish */}
-								{draftMeta ? (
-									<ToolButton
-										onClick={() => setShowDraftMeta((v) => !v)}
-										active={showDraftMeta}
-										label="Muse scaffolding — hooks, beats, CTA"
-										icon={<Sparkles className="w-4 h-4" />}
-									/>
-								) : null}
-								<ToolButton
-									onClick={() => {
-										setShowScore((v) => !v);
-										if (!showScore) {
-											setShowGenerate(false);
-											setShowVariants(false);
-											setShowFanout(false);
-											setShowImport(false);
-											setShowLibrary(false);
-										}
-									}}
-									disabled={!canScore}
-									active={showScore}
-									label={
-										!scorePlatform
-											? "Select a channel to score against"
-											: scoreContent.trim().length < 20
-												? "Write a bit more to score"
-												: `Score this ${scorePlatform.name} post`
-									}
-									icon={<Gauge className="w-4 h-4" />}
-								/>
 								<ToolButton
 									onClick={handleRefine}
 									disabled={isRefining || !editorValue.trim()}
@@ -1324,114 +1173,322 @@ export function Composer({
 								/>
 							</div>
 						</TooltipProvider>
-					</div>
 
-					{showLibrary ? (
-						<div className="mt-6">
-							<LibraryPanel
-								attachedUrls={baseMedia.map((m) => m.url)}
-								remainingSlots={MAX_MEDIA - baseMedia.length}
-								onAttach={handleAttachFromLibrary}
-								onClose={() => setShowLibrary(false)}
-							/>
-						</div>
-					) : null}
-					{showVariants ? (
-						<div className="mt-6">
-							<VariantsPanel
-								platforms={variantPlatforms}
-								onAccept={applyVariantToChannel}
-								onClose={() => setShowVariants(false)}
-							/>
-						</div>
-					) : null}
-					{showFanout && fanoutSourcePlatform ? (
-						<div className="mt-6">
-							<FanoutPanel
-								sourcePlatform={fanoutSourcePlatform.id}
-								sourcePlatformName={fanoutSourcePlatform.name}
-								sourceContent={effectiveContent(fanoutSourcePlatform.id)}
-								targets={fanoutTargets}
-								onAccept={applyVariantToChannel}
-								onClose={() => setShowFanout(false)}
-							/>
-						</div>
-					) : null}
-					{showImport ? (
-						<div className="mt-6">
-							<ImportPanel
-								targets={variantPlatforms}
-								onAccept={applyVariantToChannel}
-								onClose={() => setShowImport(false)}
-							/>
-						</div>
-					) : null}
-					{showDraftMeta && draftMeta ? (
-						<div className="mt-6">
-							<DraftMetaPanel
-								meta={draftMeta}
-								onSwapHook={handleSwapHook}
-								onApplyHashtags={handleApplyHashtags}
-								onClose={() => setShowDraftMeta(false)}
-							/>
-						</div>
-					) : null}
-					{showScore && scorePlatform ? (
-						<div className="mt-6">
-							<ScorePanel
-								platformId={scorePlatform.id}
-								platformName={scorePlatform.name}
-								content={scoreContent}
-								onImprove={(text) => {
-									if (activeTab === scorePlatform.id) {
-										handleEditorChange(text);
-									} else if (activeTab === "all") {
-										setBaseContent(text);
-									} else {
-										applyVariantToChannel(scorePlatform.id, text);
+						{/* Second footer: Assist — Muse / Variants / Fan out / Score / Import / Image / Library */}
+						<TooltipProvider delay={250}>
+							<div className="flex items-center gap-1 px-3 py-2 border-t border-border bg-muted/50 overflow-x-auto">
+								<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 px-2 shrink-0">
+									Assist
+								</p>
+								<ToolDivider />
+								<DrawerTab
+									active={activeDrawer === "muse"}
+									onClick={() => toggleDrawer("muse")}
+									icon={<Wand2 className="w-3.5 h-3.5" />}
+									label="Draft from a topic — Muse writes the post + scaffolding"
+								>
+									Muse
+								</DrawerTab>
+								{draftMeta ? (
+									<DrawerTab
+										active={activeDrawer === "scaffolding"}
+										onClick={() => toggleDrawer("scaffolding")}
+										icon={<Sparkles className="w-3.5 h-3.5" />}
+										label="Muse scaffolding — hooks, beats, CTA, hashtags"
+									>
+										Scaffolding
+									</DrawerTab>
+								) : null}
+								<DrawerTab
+									active={activeDrawer === "variants"}
+									onClick={() => toggleDrawer("variants")}
+									disabled={selectedPlatforms.length === 0}
+									icon={<Layers className="w-3.5 h-3.5" />}
+									label={
+										selectedPlatforms.length === 0
+											? "Select a channel first"
+											: "Draft one version per selected channel"
 									}
-								}}
-								onClose={() => setShowScore(false)}
-							/>
-						</div>
-					) : null}
+								>
+									Variants
+								</DrawerTab>
+								<DrawerTab
+									active={activeDrawer === "fanout"}
+									onClick={() => toggleDrawer("fanout")}
+									disabled={!canFanout}
+									icon={<GitBranch className="w-3.5 h-3.5" />}
+									label={
+										!fanoutSourcePlatform
+											? "Open a channel tab to fan out from"
+											: fanoutTargets.length === 0
+												? "Select another channel to fan out to"
+												: effectiveContent(fanoutSourcePlatform.id).trim()
+															.length === 0
+													? "Write something on this channel first"
+													: `Fan out this ${fanoutSourcePlatform.name} post`
+									}
+								>
+									Fan out
+								</DrawerTab>
+								<DrawerTab
+									active={activeDrawer === "score"}
+									onClick={() => toggleDrawer("score")}
+									disabled={!canScore}
+									icon={<Gauge className="w-3.5 h-3.5" />}
+									label={
+										!scorePlatform
+											? "Select a channel to score against"
+											: scoreContent.trim().length < 20
+												? "Write a bit more to score"
+												: `Score this ${scorePlatform.name} post`
+									}
+								>
+									Score
+								</DrawerTab>
+								<DrawerTab
+									active={activeDrawer === "import"}
+									onClick={() => toggleDrawer("import")}
+									disabled={selectedPlatforms.length === 0}
+									icon={<FileText className="w-3.5 h-3.5" />}
+									label={
+										selectedPlatforms.length === 0
+											? "Select a channel first"
+											: "Import from a URL"
+									}
+								>
+									Import
+								</DrawerTab>
+								<DrawerTab
+									active={activeDrawer === "image"}
+									onClick={() => toggleDrawer("image")}
+									disabled={baseMedia.length >= MAX_MEDIA}
+									icon={<ImagePlus className="w-3.5 h-3.5" />}
+									label={
+										baseMedia.length >= MAX_MEDIA
+											? `Up to ${MAX_MEDIA} images`
+											: "Generate image"
+									}
+								>
+									Image
+								</DrawerTab>
+								<DrawerTab
+									active={activeDrawer === "library"}
+									onClick={() => toggleDrawer("library")}
+									disabled={baseMedia.length >= MAX_MEDIA}
+									icon={<Images className="w-3.5 h-3.5" />}
+									label={
+										baseMedia.length >= MAX_MEDIA
+											? `Up to ${MAX_MEDIA} images`
+											: "Attach from library"
+									}
+								>
+									Library
+								</DrawerTab>
+								{activeDrawer ? (
+									<button
+										type="button"
+										onClick={closeAllDrawers}
+										aria-label="Close panel"
+										className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded-full text-ink/60 hover:text-ink hover:bg-background/70 transition-colors shrink-0"
+									>
+										<XIcon className="w-4 h-4" />
+									</button>
+								) : null}
+							</div>
+						</TooltipProvider>
 
-					<p className="mt-4 text-[12px] text-ink/50 leading-normal">
-						{activePlatform
-							? "Changes here only affect this channel. Switch to All channels to edit the shared copy."
-							: "Tip: write once for everyone, then open a channel tab to fine-tune the version that ships there."}
-					</p>
-				</div>
+						{activeDrawer ? (
+							<div className="border-t border-border bg-muted/30">
+								{activeDrawer === "muse" ? (
+									<div className="px-5 py-4 lg:px-6 lg:py-5 space-y-3">
+										<div className="flex items-center gap-2 text-[12px] text-ink/65">
+											<Wand2 className="w-3.5 h-3.5 text-primary" />
+											<span>
+												Muse drafts the post + the scaffolding — hook options,
+												beats, CTA, hashtags
+												{activePlatform
+													? ` for ${activePlatform.name}`
+													: selected.length > 0
+														? " — picks the first selected channel"
+														: ""}
+												.
+											</span>
+										</div>
+										<div className="flex items-center gap-2 flex-wrap">
+											<input
+												value={generateTopic}
+												onChange={(e) => setGenerateTopic(e.target.value)}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" && !isGenerating) {
+														e.preventDefault();
+														handleGenerate();
+													}
+													if (e.key === "Escape") {
+														closeAllDrawers();
+														setGenerateTopic("");
+													}
+												}}
+												placeholder="e.g. how we cut onboarding time in half"
+												autoFocus
+												className="flex-1 min-w-[240px] h-10 px-3 rounded-full border border-border bg-background-elev text-[13.5px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-ink"
+											/>
+											<button
+												type="button"
+												onClick={handleGenerate}
+												disabled={isGenerating || !generateTopic.trim()}
+												className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+											>
+												{isGenerating ? (
+													<Loader2 className="w-3.5 h-3.5 animate-spin" />
+												) : (
+													<Wand2 className="w-3.5 h-3.5" />
+												)}
+												Write draft
+											</button>
+										</div>
+									</div>
+								) : null}
 
-				{/* Preview */}
-				<aside className="lg:col-span-5">
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-3">
-						Live preview
-					</p>
-					{selectedPlatforms.length === 0 ? (
-						<div className="rounded-2xl border border-dashed border-border-strong bg-background-elev px-6 py-10 text-center text-[13px] text-ink/55">
-							Pick a channel to see the preview.
-						</div>
-					) : activePlatform ? (
-						<PreviewCard
-							platform={activePlatform}
-							author={author}
-							content={effectiveContent(activePlatform.id)}
-						/>
-					) : (
-						<div className="space-y-4">
-							{selectedPlatforms.map((p) => (
-								<PreviewCard
-									key={p.id}
-									platform={p}
-									author={author}
-									content={effectiveContent(p.id)}
-								/>
-							))}
-						</div>
-					)}
-				</aside>
-			</section>
+								{activeDrawer === "scaffolding" && draftMeta ? (
+									<DraftMetaPanel
+										meta={draftMeta}
+										onSwapHook={handleSwapHook}
+										onApplyHashtags={handleApplyHashtags}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "variants" ? (
+									<VariantsPanel
+										platforms={variantPlatforms}
+										onAccept={applyVariantToChannel}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "fanout" && fanoutSourcePlatform ? (
+									<FanoutPanel
+										sourcePlatform={fanoutSourcePlatform.id}
+										sourcePlatformName={fanoutSourcePlatform.name}
+										sourceContent={effectiveContent(fanoutSourcePlatform.id)}
+										targets={fanoutTargets}
+										onAccept={applyVariantToChannel}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "import" ? (
+									<ImportPanel
+										targets={variantPlatforms}
+										onAccept={applyVariantToChannel}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "score" && scorePlatform ? (
+									<ScorePanel
+										platformId={scorePlatform.id}
+										platformName={scorePlatform.name}
+										content={scoreContent}
+										onImprove={(text) => {
+											if (activeTab === scorePlatform.id) {
+												handleEditorChange(text);
+											} else if (activeTab === "all") {
+												setBaseContent(text);
+											} else {
+												applyVariantToChannel(scorePlatform.id, text);
+											}
+										}}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "library" ? (
+									<LibraryPanel
+										attachedUrls={baseMedia.map((m) => m.url)}
+										remainingSlots={MAX_MEDIA - baseMedia.length}
+										onAttach={handleAttachFromLibrary}
+										onClose={closeAllDrawers}
+									/>
+								) : null}
+
+								{activeDrawer === "image" ? (
+									<div className="px-5 py-4 lg:px-6 lg:py-5 space-y-3">
+										<div className="flex items-center gap-2 text-[12px] text-ink/65">
+											<ImagePlus className="w-3.5 h-3.5 text-primary" />
+											<span>
+												Describe the image you want — Muse generates it in
+												your chosen aspect.
+											</span>
+										</div>
+										<input
+											value={imagePrompt}
+											onChange={(e) => setImagePrompt(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" && !isImaging) {
+													e.preventDefault();
+													handleGenerateImage();
+												}
+												if (e.key === "Escape") {
+													closeAllDrawers();
+													setImagePrompt("");
+												}
+											}}
+											placeholder="e.g. a warm editorial shot of a reading nook, soft morning light"
+											autoFocus
+											className="w-full h-10 px-3 rounded-full border border-border bg-background-elev text-[13.5px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-ink"
+										/>
+										<div className="flex items-center justify-between gap-2 flex-wrap">
+											<div className="flex items-center gap-1.5">
+												{(["1:1", "4:5", "16:9", "9:16"] as const).map((a) => {
+													const active = imageAspect === a;
+													return (
+														<button
+															key={a}
+															type="button"
+															onClick={() => setImageAspect(a)}
+															aria-pressed={active}
+															className={cn(
+																"inline-flex items-center h-8 px-3 rounded-full text-[12px] font-medium transition-colors",
+																active
+																	? "bg-ink text-background"
+																	: "bg-background-elev text-ink/65 border border-border hover:text-ink",
+															)}
+														>
+															{a}
+														</button>
+													);
+												})}
+											</div>
+											<div className="flex items-center gap-2">
+												<button
+													type="button"
+													onClick={closeAllDrawers}
+													disabled={isImaging}
+													className="inline-flex items-center h-10 px-4 rounded-full text-[13px] text-ink/65 hover:text-ink transition-colors"
+												>
+													Cancel
+												</button>
+												<button
+													type="button"
+													onClick={handleGenerateImage}
+													disabled={isImaging || !imagePrompt.trim()}
+													className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+												>
+													{isImaging ? (
+														<Loader2 className="w-3.5 h-3.5 animate-spin" />
+													) : (
+														<ImagePlus className="w-3.5 h-3.5" />
+													)}
+													Generate
+												</button>
+											</div>
+										</div>
+									</div>
+								) : null}
+							</div>
+						) : null}
+			</div>
 		</div>
 	);
 }
@@ -1524,6 +1581,48 @@ function ToolDivider() {
 	return <span aria-hidden className="w-px h-5 bg-border mx-1 shrink-0" />;
 }
 
+function DrawerTab({
+	icon,
+	label,
+	onClick,
+	active,
+	disabled,
+	children,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	onClick: () => void;
+	active?: boolean;
+	disabled?: boolean;
+	children: React.ReactNode;
+}) {
+	const button = (
+		<button
+			type="button"
+			onClick={onClick}
+			disabled={disabled}
+			aria-pressed={active}
+			aria-label={label}
+			className={cn(
+				"inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12.5px] font-medium transition-colors shrink-0",
+				active
+					? "bg-ink text-background"
+					: "text-ink/70 hover:text-ink hover:bg-muted/60",
+				"disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink/70",
+			)}
+		>
+			{icon}
+			{children}
+		</button>
+	);
+	return (
+		<Tooltip>
+			<TooltipTrigger render={button} />
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
+	);
+}
+
 function CharCounter({
 	length,
 	limit,
@@ -1565,6 +1664,7 @@ function SchedulePopover({
 	disabled,
 	busy,
 	timezone,
+	hint,
 }: {
 	scheduledAt: string;
 	setScheduledAt: (v: string) => void;
@@ -1574,9 +1674,8 @@ function SchedulePopover({
 	disabled: boolean;
 	busy: boolean;
 	timezone: string;
+	hint?: string | null;
 }) {
-	const ref = useRef<HTMLDivElement>(null);
-
 	// `scheduledAt` is a "YYYY-MM-DDTHH:mm" wall-clock string in the user's
 	// configured tz. The calendar widget wants a Date whose *browser-local*
 	// Y/M/D equals the picked day, so we synthesize one from the string
@@ -1597,32 +1696,6 @@ function SchedulePopover({
 			setSelectedTime(scheduledAt.slice(11, 16));
 		}
 	}, [scheduledAt]);
-
-	useEffect(() => {
-		if (!open) return;
-		const onDown = (e: MouseEvent) => {
-			const target = e.target as HTMLElement | null;
-			if (!target) return;
-			if (ref.current?.contains(target)) return;
-			// Ignore clicks inside portaled popups (e.g. the TimePicker hour select).
-			if (
-				target.closest(
-					'[role="listbox"],[role="option"],[role="dialog"],[data-floating-ui-portal]',
-				)
-			)
-				return;
-			setOpen(false);
-		};
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setOpen(false);
-		};
-		document.addEventListener("mousedown", onDown);
-		document.addEventListener("keydown", onKey);
-		return () => {
-			document.removeEventListener("mousedown", onDown);
-			document.removeEventListener("keydown", onKey);
-		};
-	}, [open, setOpen]);
 
 	const handleDateSelect = (date: Date | undefined) => {
 		if (!date) return;
@@ -1673,85 +1746,96 @@ function SchedulePopover({
 	})();
 
 	return (
-		<div ref={ref} className="relative">
-			<button
-				type="button"
-				onClick={() => setOpen(!open)}
-				className={cn(
-					"inline-flex items-center gap-1.5 h-11 px-5 rounded-full border text-[14px] font-medium transition-colors",
-					scheduledAt
-						? "bg-peach-100 border-ink/20 text-ink"
-						: "bg-background-elev border-border-strong text-ink hover:border-ink",
-				)}
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger
+				render={
+					<button
+						type="button"
+						className={cn(
+							"inline-flex items-center gap-1.5 h-10 px-4 rounded-full border text-[13px] font-medium transition-colors",
+							scheduledAt
+								? "bg-peach-100 border-ink/20 text-ink"
+								: "bg-background-elev border-border-strong text-ink hover:border-ink",
+						)}
+					>
+						<CalendarClock className="w-4 h-4" />
+						{preview}
+					</button>
+				}
+			/>
+			<PopoverContent
+				align="center"
+				sideOffset={8}
+				className="w-[360px] p-5"
 			>
-				<CalendarClock className="w-4 h-4" />
-				{preview}
-			</button>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					Schedule
+				</p>
+				<p className="mt-1 text-[12.5px] text-ink/60 leading-normal">
+					Your timezone: <span className="text-ink">{timezone}</span>
+				</p>
 
-			{open ? (
-				<div className="absolute right-0 mt-2 w-[360px] rounded-2xl border border-border-strong bg-background-elev shadow-[0_18px_48px_-24px_rgba(26,22,18,0.25)] p-5 z-50">
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						Schedule
+				{hint ? (
+					<p className="mt-3 flex items-start gap-1.5 rounded-xl border border-border bg-peach-100/60 px-3 py-2 text-[12px] text-ink/75 leading-[1.45]">
+						<AlertCircle className="w-3.5 h-3.5 mt-[2px] text-primary shrink-0" />
+						<span>{hint}</span>
 					</p>
-					<p className="mt-1 text-[12.5px] text-ink/60 leading-normal">
-						Your timezone: <span className="text-ink">{timezone}</span>
-					</p>
+				) : null}
 
-					<div className="mt-4 rounded-xl border border-border-strong bg-background p-3">
-						<Calendar
-							mode="single"
-							selected={selectedDate}
-							onSelect={handleDateSelect}
-							defaultMonth={selectedDate}
-							captionLayout="dropdown"
-							startMonth={new Date(minDate.getFullYear(), 0)}
-							endMonth={new Date(minDate.getFullYear() + 5, 11)}
-							disabled={{ before: minDate }}
-							autoFocus
-							className="w-full p-0 [--cell-size:--spacing(8)]"
-							classNames={{
-								root: "w-full",
-								month: "relative flex w-full flex-col gap-4",
-								month_caption:
-									"flex h-(--cell-size) w-full items-center justify-center",
-								button_previous:
-									"absolute top-0 left-0 z-10 size-8 p-0 inline-flex items-center justify-center rounded-full text-ink hover:bg-muted/50 transition-colors",
-								button_next:
-									"absolute top-0 right-0 z-10 size-8 p-0 inline-flex items-center justify-center rounded-full text-ink hover:bg-muted/50 transition-colors",
-							}}
-						/>
-					</div>
-
-					<div className="mt-4 flex items-center gap-2">
-						<Clock className="w-4 h-4 text-ink/50 shrink-0" />
-						<span className="text-[12.5px] text-ink/60 mr-auto">Time</span>
-						<TimePicker value={selectedTime} onChange={handleTimeChange} />
-					</div>
-
-					<div className="mt-5 flex items-center gap-2">
-						<button
-							type="button"
-							onClick={() => {
-								setScheduledAt("");
-								setOpen(false);
-							}}
-							className="flex-1 h-10 rounded-full text-[13px] text-ink/70 hover:text-ink transition-colors"
-						>
-							Clear
-						</button>
-						<button
-							type="button"
-							onClick={onConfirm}
-							disabled={disabled || !scheduledAt}
-							className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-						>
-							{busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-							Schedule
-						</button>
-					</div>
+				<div className="mt-4 rounded-xl border border-border-strong bg-background p-3">
+					<Calendar
+						mode="single"
+						selected={selectedDate}
+						onSelect={handleDateSelect}
+						defaultMonth={selectedDate}
+						captionLayout="dropdown"
+						startMonth={new Date(minDate.getFullYear(), 0)}
+						endMonth={new Date(minDate.getFullYear() + 5, 11)}
+						disabled={{ before: minDate }}
+						autoFocus
+						className="w-full p-0 [--cell-size:--spacing(8)]"
+						classNames={{
+							root: "w-full",
+							month: "relative flex w-full flex-col gap-4",
+							month_caption:
+								"flex h-(--cell-size) w-full items-center justify-center",
+							button_previous:
+								"absolute top-0 left-0 z-10 size-8 p-0 inline-flex items-center justify-center rounded-full text-ink hover:bg-muted/50 transition-colors",
+							button_next:
+								"absolute top-0 right-0 z-10 size-8 p-0 inline-flex items-center justify-center rounded-full text-ink hover:bg-muted/50 transition-colors",
+						}}
+					/>
 				</div>
-			) : null}
-		</div>
+
+				<div className="mt-4 flex items-center gap-2">
+					<Clock className="w-4 h-4 text-ink/50 shrink-0" />
+					<span className="text-[12.5px] text-ink/60 mr-auto">Time</span>
+					<TimePicker value={selectedTime} onChange={handleTimeChange} />
+				</div>
+
+				<div className="mt-5 flex items-center gap-2">
+					<button
+						type="button"
+						onClick={() => {
+							setScheduledAt("");
+							setOpen(false);
+						}}
+						className="flex-1 h-10 rounded-full text-[13px] text-ink/70 hover:text-ink transition-colors"
+					>
+						Clear
+					</button>
+					<button
+						type="button"
+						onClick={onConfirm}
+						disabled={disabled || !scheduledAt}
+						className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+					>
+						{busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+						Schedule
+					</button>
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }
 
