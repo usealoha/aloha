@@ -3,6 +3,10 @@
 		{
 			"path": "/api/cron/cleanup-deleted-posts?key=${CRON_SECRET}",
 			"schedule": "0 0 * * *"
+		},
+		{
+			"path": "/api/cron/automations?key=${CRON_SECRET}",
+			"schedule": "* * * * *"
 		}
 	]
 }

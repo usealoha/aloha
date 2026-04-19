@@ -50,7 +50,6 @@ const envSchema = z.object({
   RESEND_WEBHOOK_SECRET: z.string().optional(),
 
   // AI
-  GEMINI_API_KEY: z.string().min(1),
   OPENROUTER_API_KEY: z.string().min(1),
   
   // QStash
@@ -60,7 +59,10 @@ const envSchema = z.object({
   QSTASH_NEXT_SIGNING_KEY: z.string().min(1),
 
   // Billing — Polar
-  POLAR_ACCESS_TOKEN: z.string().min(1),
+  // Optional while pricing is disabled in prod. Required once the Polar
+  // subscription flow is live — the billing routes will fail loudly if
+  // they're hit without a token.
+  POLAR_ACCESS_TOKEN: z.string().optional(),
   POLAR_WEBHOOK_SECRET: z.string().min(1).optional(),
   POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
   POLAR_ORGANIZATION_ID: z.string().optional(),
@@ -77,10 +79,36 @@ const envSchema = z.object({
   // Cron secret for scheduled cleanup jobs
   CRON_SECRET: z.string().optional(),
 
+  // Telegram MTProto (from my.telegram.org/apps). Optional — publisher
+  // warns and no-ops when absent so dev without Telegram set up still boots.
+  TELEGRAM_API_ID: z.string().optional(),
+  TELEGRAM_API_HASH: z.string().optional(),
+
   // Early-access allowlist for the broadcast/email add-on. Comma-separated
   // emails. Placeholder until the Polar email SKU ships — any address on
   // this list gets broadcast entitlement regardless of Basic/Muse plan.
   BROADCASTS_ALLOWLIST: z.string().optional(),
+
+  // Invite-only allowlist for Muse while pricing is off. Comma-separated
+  // emails. Any address here gets museEnabled=true without a Polar
+  // subscription. Remove or leave empty once the basic_muse SKU is live.
+  MUSE_ALLOWLIST: z.string().optional(),
+
+  // Observability — all optional. App boots without them; logging falls
+  // back to stdout/pretty and Sentry no-ops when DSN is absent.
+  SENTRY_DSN: z.string().optional(),
+  NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  SENTRY_ORG: z.string().optional(),
+  SENTRY_PROJECT: z.string().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+
+  // Axiom — log aggregation via next-axiom SDK. Both must be set for
+  // logs to ship; without them next-axiom silently no-ops.
+  NEXT_PUBLIC_AXIOM_DATASET: z.string().optional(),
+  NEXT_PUBLIC_AXIOM_TOKEN: z.string().optional(),
+  NEXT_PUBLIC_AXIOM_LOG_LEVEL: z
+    .enum(["debug", "info", "warn", "error"])
+    .optional(),
 });
 
 // Validate process.env
