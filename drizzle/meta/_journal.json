@@ -127,6 +127,20 @@
       "when": 1776461010496,
       "tag": "0017_graceful_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776559103553,
+      "tag": "0018_sad_lady_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776560933241,
+      "tag": "0019_great_saracen",
+      "breakpoints": true
     }
   ]
 }
