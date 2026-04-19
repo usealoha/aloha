@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Bell, PenSquare } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import { NavLinks } from "./nav-links";
 import { AvatarMenu } from "./avatar-menu";
+import { NotificationsBell } from "./notifications-bell";
 import type { CurrentUser } from "@/lib/current-user";
 
 export function AppTopBar({ user }: { user: CurrentUser }) {
@@ -29,14 +30,7 @@ export function AppTopBar({ user }: { user: CurrentUser }) {
           >
             <PenSquare className="w-3.5 h-3.5" />
           </Link>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative h-9 w-9 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors"
-          >
-            <Bell className="w-[17px] h-[17px]" />
-            <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
-          </button>
+          <NotificationsBell />
           <AvatarMenu
             name={user.name}
             email={user.email}

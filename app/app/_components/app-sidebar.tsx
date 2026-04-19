@@ -1,23 +1,14 @@
 "use client";
 
 import type { CurrentUser } from "@/lib/current-user";
-import {
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  PenSquare,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AvatarMenu } from "./avatar-menu";
 import { NavLinks } from "./nav-links";
+import { NotificationsBell } from "./notifications-bell";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const STORAGE_KEY = "aloha:sidebar:expanded";
 
@@ -47,24 +38,6 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
   };
 
   const collapsed = !expanded;
-
-  const composeLink = (
-    <Link
-      href="/app/composer"
-      aria-label="Compose"
-      className={cn(
-        "flex items-center h-10 rounded-full bg-ink text-background hover:bg-primary transition-colors",
-        collapsed
-          ? "w-10 mx-auto justify-center"
-          : "w-full gap-3 px-3",
-      )}
-    >
-      <PenSquare className="w-[18px] h-[18px] shrink-0" />
-      {collapsed ? null : (
-        <span className="text-[13.5px] font-medium">Compose</span>
-      )}
-    </Link>
-  );
 
   return (
     <TooltipProvider delay={120}>
@@ -106,19 +79,6 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
           </Link>
         </div>
 
-        <div className="pb-4 px-3">
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger render={composeLink} />
-              <TooltipContent side="right" sideOffset={12}>
-                Compose
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            composeLink
-          )}
-        </div>
-
         <nav className="flex-1 overflow-y-auto px-3">
           <NavLinks variant="sidebar" collapsed={collapsed} />
         </nav>
@@ -138,34 +98,8 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
               placement="top"
               expandedLabel={!collapsed}
             />
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <button
-                      type="button"
-                      aria-label="Notifications"
-                      className="relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors"
-                    >
-                      <Bell className="w-[17px] h-[17px]" />
-                      <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    </button>
-                  }
-                />
-                <TooltipContent side="right" sideOffset={12}>
-                  Notifications
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                type="button"
-                aria-label="Notifications"
-                className="relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors"
-              >
-                <Bell className="w-[17px] h-[17px]" />
-                <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
-              </button>
-            )}
+            <NotificationsBell />
+
           </div>
         </div>
       </aside>
