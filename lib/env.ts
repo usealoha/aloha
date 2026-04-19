@@ -44,6 +44,10 @@ const envSchema = z.object({
   // Email
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().default("Aloha <hey@usealoha.app>"),
+  // Resend webhooks are signed via Svix. Grab the secret from Resend's
+  // dashboard → Webhooks; starts with `whsec_`. Optional so dev without
+  // webhooks set up doesn't fail to boot.
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
 
   // AI
   GEMINI_API_KEY: z.string().min(1),
@@ -72,6 +76,11 @@ const envSchema = z.object({
 
   // Cron secret for scheduled cleanup jobs
   CRON_SECRET: z.string().optional(),
+
+  // Early-access allowlist for the broadcast/email add-on. Comma-separated
+  // emails. Placeholder until the Polar email SKU ships — any address on
+  // this list gets broadcast entitlement regardless of Basic/Muse plan.
+  BROADCASTS_ALLOWLIST: z.string().optional(),
 });
 
 // Validate process.env
