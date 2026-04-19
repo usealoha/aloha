@@ -68,7 +68,7 @@ export function NavLinks({
               aria-label={collapsed ? i.label : undefined}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group relative flex items-center h-10 rounded-xl text-[14px] font-medium transition-colors",
+                "group flex items-center h-10 rounded-xl text-[14px] font-medium transition-colors",
                 collapsed
                   ? "w-10 mx-auto justify-center"
                   : "gap-3 px-3",
@@ -77,12 +77,6 @@ export function NavLinks({
                   : "text-ink/70 hover:text-ink hover:bg-muted/60",
               )}
             >
-              {isActive && !collapsed ? (
-                <span
-                  aria-hidden
-                  className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
-                />
-              ) : null}
               <Icon
                 className={cn(
                   "w-[18px] h-[18px] shrink-0 transition-colors",
