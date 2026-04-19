@@ -27,6 +27,23 @@ export type ChannelOverride = {
   media?: PostMedia[];
 };
 
+// Structured draft metadata emitted by Muse generation. `content` stays the
+// canonical body used by publishers; draftMeta is additive scaffolding the
+// composer can surface (alt hooks, CTA options, media hint, why-this-works).
+// Every field optional — older posts and manual drafts simply have no meta.
+export type DraftMeta = {
+  hook?: string;
+  keyPoints?: string[];
+  cta?: string;
+  hashtags?: string[];
+  mediaSuggestion?: string;
+  altHooks?: string[];
+  rationale?: string;
+  formatGuidance?: string;
+  format?: string;
+  sourceIdeaId?: string;
+};
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name"),
@@ -171,6 +188,11 @@ export const posts = pgTable("posts", {
     .$type<Record<string, ChannelOverride>>()
     .default({})
     .notNull(),
+  // Optional structured scaffolding from Muse (hook, key points, CTA, alt
+  // hooks, hashtags, media suggestion, rationale). Canonical body lives in
+  // `content`; this is additive, the composer reads it to surface a sidebar
+  // with alt hooks and rationale. Null for manual drafts.
+  draftMeta: jsonb("draftMeta").$type<DraftMeta>(),
   status: text("status", {
     enum: ["draft", "scheduled", "published", "failed", "deleted"],
   })
