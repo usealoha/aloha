@@ -3,16 +3,17 @@ import {
 	createPlanAction,
 	regeneratePlanDayAction,
 } from "@/app/actions/plan";
-import { ChannelChip, ChannelToggle } from "@/components/channel-chip";
+import { ChannelToggle } from "@/components/channel-chip";
 import { DatePicker } from "@/components/ui/date-picker";
 import { CreateDraftsSubmit } from "./_components/create-drafts-submit";
 import { DraftPlanSubmit } from "./_components/draft-plan-submit";
+import { IdeaCard } from "./_components/idea-card";
+import { WeekToolbar } from "./_components/week-toolbar";
 import { db } from "@/db";
 import { accounts } from "@/db/schema";
 import { loadPlan, type PlanIdea } from "@/lib/ai/plan";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { getCurrentUser } from "@/lib/current-user";
-import { cn } from "@/lib/utils";
 import { and, eq, notInArray } from "drizzle-orm";
 import {
 	ArrowLeft,
@@ -96,8 +97,8 @@ function PlanForm({
 				</h1>
 				<p className="mt-3 text-[14px] text-ink/65 leading-[1.55] max-w-2xl">
 					Tell Muse what you&apos;re going after. It drafts a schedule of ideas
-					— day, channel, angle, format — that you review and accept into your
-					calendar. Nothing commits without your click.
+					— each with its hook, beats, CTA, and hashtags — that you review and
+					accept into your calendar. Nothing commits without your click.
 				</p>
 			</div>
 
@@ -223,17 +224,37 @@ function PlanReview({
 	plan: NonNullable<Awaited<ReturnType<typeof loadPlan>>>;
 	acceptedFlash: boolean;
 }) {
-	// Group by day for visual grouping.
+	// Group by ISO week so the canvas shows the rhythm of the plan instead of
+	// a long flat list. Within a week, group by day so the regen-day button
+	// still has a surface to attach to.
+	type DayGroup = { date: string; ideas: PlanIdea[] };
+	type WeekGroup = { key: string; label: string; days: DayGroup[] };
+
 	const byDate = new Map<string, PlanIdea[]>();
 	for (const idea of plan.ideas) {
 		const list = byDate.get(idea.date) ?? [];
 		list.push(idea);
 		byDate.set(idea.date, list);
 	}
+
 	const dates = Array.from(byDate.keys()).sort();
+	const weekMap = new Map<string, WeekGroup>();
+	for (const date of dates) {
+		const d = new Date(`${date}T12:00:00Z`);
+		const monday = startOfIsoWeek(d);
+		const sunday = new Date(monday);
+		sunday.setUTCDate(monday.getUTCDate() + 6);
+		const key = monday.toISOString().slice(0, 10);
+		const label = `${fmtShort(monday)} – ${fmtShort(sunday)}`;
+		const existing = weekMap.get(key) ?? { key, label, days: [] };
+		existing.days.push({ date, ideas: byDate.get(date) ?? [] });
+		weekMap.set(key, existing);
+	}
+	const weeks = Array.from(weekMap.values());
 
 	const accepted = plan.ideas.filter((i) => i.accepted).length;
 	const pending = plan.ideas.length - accepted;
+	const channelsUsed = Array.from(new Set(plan.ideas.map((i) => i.channel)));
 
 	return (
 		<div className="space-y-8">
@@ -248,27 +269,38 @@ function PlanReview({
 				<h1 className="mt-4 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-ink">
 					{plan.goal}
 				</h1>
-				<p className="mt-3 text-[13.5px] text-ink/65 leading-[1.55]">
-					{plan.ideas.length} ideas over{" "}
-					{new Intl.DateTimeFormat("en-US", {
-						month: "short",
-						day: "numeric",
-					}).format(plan.rangeStart)}{" "}
-					→{" "}
-					{new Intl.DateTimeFormat("en-US", {
-						month: "short",
-						day: "numeric",
-					}).format(plan.rangeEnd)}
-					{" · "}
-					{accepted > 0 ? `${accepted} accepted · ` : ""}
-					{pending} pending
-				</p>
+				<div className="mt-4 flex items-center flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink/65">
+					<span>
+						<strong className="text-ink font-medium">{plan.ideas.length}</strong>{" "}
+						ideas
+					</span>
+					<span className="text-ink/30">·</span>
+					<span>
+						{fmtShort(plan.rangeStart)} → {fmtShort(plan.rangeEnd)}
+					</span>
+					<span className="text-ink/30">·</span>
+					<span>
+						{channelsUsed.length} channel{channelsUsed.length === 1 ? "" : "s"}
+					</span>
+					<span className="text-ink/30">·</span>
+					<span>
+						{accepted > 0 ? (
+							<>
+								<strong className="text-ink font-medium">{accepted}</strong>{" "}
+								drafted
+								<span className="mx-1 text-ink/30">·</span>
+							</>
+						) : null}
+						<strong className="text-ink font-medium">{pending}</strong> pending
+					</span>
+				</div>
 			</div>
 
 			{acceptedFlash && accepted > 0 ? (
 				<div className="rounded-2xl border border-primary/40 bg-primary-soft/50 px-4 py-3 flex items-center gap-2 text-[13px] text-ink">
 					<Check className="w-4 h-4 text-primary" />
-					Drafts created. Tune them in the composer, or see them on the
+					Drafts created with hook, beats, and CTA. Tune them in the composer,
+					or see them on the
 					<Link href="/app/calendar" className="underline ml-1">
 						calendar
 					</Link>
@@ -276,10 +308,9 @@ function PlanReview({
 				</div>
 			) : null}
 
-			{/* The accept form is declared up top with an id; checkboxes + the
-          submit button reference it via the `form` attribute. This lets the
-          regen-day forms live as DOM siblings (nested forms would be
-          invalid HTML). */}
+			{/* Accept form lives above; checkboxes + submit reference it by
+          `form` attribute so regen-day forms can live as DOM siblings
+          (nested forms would be invalid HTML). */}
 			<form
 				id="plan-accept-form"
 				action={acceptPlanIdeasAction}
@@ -288,38 +319,75 @@ function PlanReview({
 				<input type="hidden" name="planId" value={plan.id} />
 			</form>
 
-			<div className="space-y-6">
-				{dates.map((date) => {
-					const dayIdeas = byDate.get(date) ?? [];
-					const pendingOnDay = dayIdeas.filter((i) => !i.accepted).length;
+			<div className="space-y-10">
+				{weeks.map((week) => {
+					const weekPending = week.days.reduce(
+						(acc, d) => acc + d.ideas.filter((i) => !i.accepted).length,
+						0,
+					);
 					return (
-						<section key={date} className="space-y-2">
-							<header className="flex items-center justify-between gap-2">
-								<div className="flex items-center gap-2 text-[11.5px] uppercase tracking-[0.18em] text-ink/55">
-									<CalendarIcon className="w-3 h-3" />
-									{new Intl.DateTimeFormat("en-US", {
-										weekday: "short",
-										month: "short",
-										day: "numeric",
-									}).format(new Date(`${date}T12:00:00Z`))}
+						<section
+							key={week.key}
+							data-week={week.key}
+							className="space-y-3"
+						>
+							<header className="flex items-center justify-between gap-3 pb-2 border-b border-border">
+								<div>
+									<h2 className="text-[14px] font-medium text-ink">
+										Week of {week.label}
+									</h2>
+									<p className="text-[11.5px] text-ink/55">
+										{weekPending} pending ·{" "}
+										{week.days.reduce(
+											(acc, d) => acc + d.ideas.filter((i) => i.accepted).length,
+											0,
+										)}{" "}
+										drafted
+									</p>
 								</div>
-								{pendingOnDay > 0 ? (
-									<RegenDayButton planId={plan.id} date={date} />
-								) : null}
+								{weekPending > 0 ? <WeekToolbar weekKey={week.key} /> : null}
 							</header>
-							<ul className="space-y-2">
-								{dayIdeas.map((idea) => (
-									<IdeaRow key={idea.id} idea={idea} />
-								))}
-							</ul>
+
+							<div className="space-y-5">
+								{week.days.map((day) => {
+									const pendingOnDay = day.ideas.filter(
+										(i) => !i.accepted,
+									).length;
+									return (
+										<div key={day.date} className="space-y-2">
+											<div className="flex items-center justify-between gap-2">
+												<div className="flex items-center gap-2 text-[11.5px] uppercase tracking-[0.18em] text-ink/55">
+													<CalendarIcon className="w-3 h-3" />
+													{fmtDay(day.date)}
+												</div>
+												{pendingOnDay > 0 ? (
+													<RegenDayButton
+														planId={plan.id}
+														date={day.date}
+													/>
+												) : null}
+											</div>
+											<ul className="space-y-2">
+												{day.ideas.map((idea) => (
+													<IdeaCard
+														key={idea.id}
+														idea={idea}
+														formId="plan-accept-form"
+													/>
+												))}
+											</ul>
+										</div>
+									);
+								})}
+							</div>
 						</section>
 					);
 				})}
 
 				<div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
 					<p className="text-[12.5px] text-ink/55">
-						Tick the ideas you want. Each becomes a draft post scheduled for
-						noon on its day — tune the time in the composer.
+						Ticked ideas become drafts scheduled for noon on their day, with
+						the hook, beats, and CTA ready to tune in the composer.
 					</p>
 					<CreateDraftsSubmit formId="plan-accept-form" />
 				</div>
@@ -328,57 +396,29 @@ function PlanReview({
 	);
 }
 
-function IdeaRow({ idea }: { idea: PlanIdea }) {
-	const accepted = Boolean(idea.accepted);
-	return (
-		<li
-			className={cn(
-				"rounded-2xl border p-4 flex items-start gap-3",
-				accepted
-					? "border-primary/40 bg-primary-soft/30"
-					: "border-border-strong bg-background-elev",
-			)}
-		>
-			<input
-				type="checkbox"
-				name="ideaIds"
-				value={idea.id}
-				form="plan-accept-form"
-				disabled={accepted}
-				defaultChecked={!accepted}
-				className="mt-1 accent-ink"
-			/>
-			<div className="flex-1 min-w-0">
-				<div className="flex items-center gap-2 flex-wrap text-[11px] uppercase tracking-[0.16em] text-ink/55">
-					<ChannelChip channel={idea.channel} />
-					<span aria-hidden>·</span>
-					<span>{idea.format}</span>
-					{accepted ? (
-						<span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background tracking-wide">
-							<Check className="w-3 h-3" />
-							Drafted
-						</span>
-					) : null}
-				</div>
-				<p className="mt-1.5 text-[14.5px] text-ink font-medium leading-[1.3]">
-					{idea.title}
-				</p>
-				{idea.angle ? (
-					<p className="mt-1 text-[13px] text-ink/70 leading-[1.55]">
-						{idea.angle}
-					</p>
-				) : null}
-				{accepted && idea.acceptedPostId ? (
-					<Link
-						href={`/app/composer?post=${idea.acceptedPostId}`}
-						className="mt-2 inline-flex items-center gap-1 text-[12px] text-ink/60 hover:text-ink transition-colors"
-					>
-						Open draft
-					</Link>
-				) : null}
-			</div>
-		</li>
-	);
+function startOfIsoWeek(d: Date): Date {
+	// ISO week starts Monday. `getUTCDay`: 0 = Sun, 1 = Mon ... 6 = Sat.
+	const day = d.getUTCDay();
+	const diff = (day + 6) % 7; // days since Monday
+	const monday = new Date(d);
+	monday.setUTCDate(d.getUTCDate() - diff);
+	monday.setUTCHours(0, 0, 0, 0);
+	return monday;
+}
+
+function fmtShort(d: Date): string {
+	return new Intl.DateTimeFormat("en-US", {
+		month: "short",
+		day: "numeric",
+	}).format(d);
+}
+
+function fmtDay(isoDate: string): string {
+	return new Intl.DateTimeFormat("en-US", {
+		weekday: "short",
+		month: "short",
+		day: "numeric",
+	}).format(new Date(`${isoDate}T12:00:00Z`));
 }
 
 function RegenDayButton({ planId, date }: { planId: string; date: string }) {
