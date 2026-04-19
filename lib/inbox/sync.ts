@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/db";
 import { inboxMessages, inboxSyncCursors } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -8,10 +9,11 @@ import { fetchInstagramInbox } from "./instagram";
 import { fetchThreadsInbox } from "./threads";
 import { fetchMastodonNotifications } from "./mastodon";
 import { fetchPinterestInbox } from "./pinterest";
+import { fetchTelegramMessages } from "./telegram";
 import type { NormalizedMessage } from "./types";
 import { createNotification } from "@/lib/notifications";
 
-type Platform = "bluesky" | "twitter" | "facebook" | "instagram" | "threads" | "mastodon" | "pinterest";
+type Platform = "bluesky" | "twitter" | "facebook" | "instagram" | "threads" | "mastodon" | "pinterest" | "telegram";
 
 const FETCHERS: Partial<
   Record<
@@ -26,6 +28,7 @@ const FETCHERS: Partial<
   threads: fetchThreadsInbox,
   mastodon: fetchMastodonNotifications,
   pinterest: fetchPinterestInbox,
+  telegram: fetchTelegramMessages,
 };
 
 export async function syncInbox(
@@ -53,6 +56,10 @@ export async function syncInbox(
     messages = result.messages;
     newCursor = result.newCursor;
   } catch (err) {
+    Sentry.captureException(err, {
+      tags: { source: "inbox.sync", platform },
+      extra: { userId },
+    });
     const message = err instanceof Error ? err.message : String(err);
     await createNotification({
       userId,

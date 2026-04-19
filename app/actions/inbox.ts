@@ -2,11 +2,11 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { inboxMessages, blueskyCredentials, accounts } from "@/db/schema";
+import { inboxMessages, blueskyCredentials, accounts, mastodonCredentials, telegramCredentials } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { syncInbox } from "@/lib/inbox/sync";
-import { replyOnBluesky, replyOnX } from "@/lib/inbox/reply";
+import { replyOnBluesky, replyOnX, replyOnMastodon, replyOnTelegram } from "@/lib/inbox/reply";
 
 export async function refreshInbox() {
   const session = await auth();
@@ -36,6 +36,28 @@ export async function refreshInbox() {
 
   if (twitter) {
     const result = await syncInbox(userId, "twitter");
+    total += result.synced;
+  }
+
+  const [mastodon] = await db
+    .select({ id: mastodonCredentials.id })
+    .from(mastodonCredentials)
+    .where(eq(mastodonCredentials.userId, userId))
+    .limit(1);
+
+  if (mastodon) {
+    const result = await syncInbox(userId, "mastodon");
+    total += result.synced;
+  }
+
+  const [telegram] = await db
+    .select({ id: telegramCredentials.id })
+    .from(telegramCredentials)
+    .where(eq(telegramCredentials.userId, userId))
+    .limit(1);
+
+  if (telegram) {
+    const result = await syncInbox(userId, "telegram");
     total += result.synced;
   }
 
@@ -109,6 +131,14 @@ export async function sendReply(messageId: string, content: string) {
     );
   } else if (message.platform === "twitter") {
     await replyOnX(session.user.id, message.remoteId, content);
+  } else if (message.platform === "mastodon") {
+    await replyOnMastodon(session.user.id, message.remoteId, content);
+  } else if (message.platform === "telegram") {
+    const platformData = message.platformData as Record<string, unknown>;
+    const chatId = platformData.chatId as string;
+    const threadId = message.threadId;
+    if (!chatId && !threadId) throw new Error("Missing chat ID for reply");
+    await replyOnTelegram(session.user.id, chatId || threadId || "", message.remoteId, content);
   }
 
   revalidatePath("/app/inbox");

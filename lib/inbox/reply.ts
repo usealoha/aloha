@@ -3,6 +3,8 @@ import {
   createSession,
 } from "@/lib/publishers/bluesky";
 import { getFreshToken, forceRefresh } from "@/lib/publishers/tokens";
+import { getMastodonCredentials } from "@/lib/publishers/mastodon";
+import { getTelegramSession } from "@/lib/publishers/telegram";
 
 type ReplyResult = {
   remoteId: string;
@@ -83,4 +85,82 @@ export async function replyOnX(
     remoteId: tweetId,
     remoteUrl: `https://x.com/i/web/status/${tweetId}`,
   };
+}
+
+export async function replyOnMastodon(
+  userId: string,
+  inReplyToId: string,
+  text: string,
+): Promise<ReplyResult> {
+  const credentials = await getMastodonCredentials(userId);
+
+  const res = await fetch(`${credentials.instanceUrl}/api/v1/statuses`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${credentials.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: text,
+      in_reply_to_id: inReplyToId,
+      visibility: "public",
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Mastodon reply failed (${res.status}): ${detail.slice(0, 300)}`);
+  }
+
+  const json = (await res.json()) as { id: string; url: string };
+  if (!json.id) throw new Error("Mastodon reply returned no status id");
+
+  return {
+    remoteId: json.id,
+    remoteUrl: json.url,
+  };
+}
+
+export async function replyOnTelegram(
+  userId: string,
+  chatId: string,
+  replyToMessageId: string,
+  text: string,
+): Promise<ReplyResult> {
+  const session = await getTelegramSession(userId);
+  if (!session) {
+    throw new Error("Telegram not connected");
+  }
+
+  const { client } = session;
+
+  try {
+    // Resolve the chat entity
+    let entity;
+    if (chatId.startsWith("@")) {
+      entity = await client.getEntity(chatId);
+    } else {
+      const numericId = BigInt(chatId);
+      entity = await client.getEntity(numericId);
+    }
+
+    // Send reply
+    const result = await client.sendMessage(entity, {
+      message: text,
+      replyTo: parseInt(replyToMessageId, 10),
+    });
+
+    const messageId = result.id as number;
+
+    // Build URL (we don't have username easily accessible here, so use generic format)
+    const remoteUrl = `https://t.me/c/${chatId.replace(/^-100/, "")}/${messageId}`;
+
+    return {
+      remoteId: String(messageId),
+      remoteUrl,
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new Error(`Telegram reply failed: ${errorMessage.slice(0, 300)}`);
+  }
 }

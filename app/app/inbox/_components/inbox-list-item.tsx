@@ -18,6 +18,7 @@ type Props = {
 const PLATFORM_LABELS: Record<string, string> = {
   bluesky: "Bluesky",
   twitter: "X",
+  mastodon: "Mastodon",
 };
 
 export function InboxListItem({
