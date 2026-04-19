@@ -70,7 +70,7 @@ export default async function AudiencePage() {
 					</p>
 					<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
 						Audience,
-						<span className="text-primary font-light"> the quiet kind.</span>
+						<span className="text-primary"> the quiet kind.</span>
 					</h1>
 					<p className="mt-3 text-[14px] text-ink/65 max-w-xl leading-[1.55]">
 						Your public page, the links you share from it, and the people who

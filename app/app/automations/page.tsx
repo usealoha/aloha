@@ -5,17 +5,14 @@ import { cn } from "@/lib/utils";
 import { desc, eq } from "drizzle-orm";
 import { Pause, Play, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { DeleteAutomationButton } from "./_components/delete-confirm";
 import { FlowDiagram } from "./_components/flow-diagram";
 import {
 	TEMPLATES,
 	TEMPLATE_LIST,
 	type AutomationKind,
 } from "./_lib/templates";
-import {
-	createAutomation,
-	toggleAutomation,
-} from "./actions";
-import { DeleteAutomationButton } from "./_components/delete-confirm";
+import { createAutomation, toggleAutomation } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +52,7 @@ export default async function AutomationsPage({
 					</p>
 					<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
 						Logic Matrix,
-						<span className="text-primary font-light"> at ease.</span>
+						<span className="text-primary"> at ease.</span>
 					</h1>
 					<p className="mt-3 text-[14px] text-ink/65 max-w-xl leading-[1.55]">
 						Small, specific jobs that run in the background so you don&apos;t
