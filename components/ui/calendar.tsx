@@ -52,19 +52,26 @@ function Calendar({
           "relative flex flex-col gap-4 md:flex-row",
           defaultClassNames.months
         ),
-        month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
+        month: cn(
+          "relative flex w-full flex-col gap-4",
+          defaultClassNames.month
+        ),
         nav: cn(
           "absolute inset-0 flex items-center justify-between px-1",
           defaultClassNames.nav
         ),
+        // With navLayout="around", RDP renders these buttons as siblings of
+        // MonthCaption inside <Month>. Without absolute positioning they
+        // stack vertically above/below the caption. Pin them to the caption
+        // row so they flank the month/year dropdowns.
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
+          "absolute left-1 top-0 z-10 size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
+          "absolute right-1 top-0 z-10 size-9 p-0 select-none aria-disabled:opacity-50 rounded-full hover:bg-muted/50 active:bg-muted/70 transition-colors",
           defaultClassNames.button_next
         ),
         month_caption: cn(

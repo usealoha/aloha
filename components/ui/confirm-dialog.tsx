@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,15 @@ export function ConfirmDialog({
   cancelText = "Cancel",
   variant = "destructive",
 }: ConfirmDialogProps) {
-  if (!isOpen) return null;
+  // Render into document.body so transformed / overflow-hidden ancestors in
+  // the trigger's subtree can't clip or confine the overlay. Mounted flag
+  // guards SSR — `document` isn't available until hydration.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  return (
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg">
         <div className="flex items-start gap-4">
@@ -62,7 +69,8 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
