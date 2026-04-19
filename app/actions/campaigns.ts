@@ -7,16 +7,25 @@ import { posts } from "@/db/schema";
 import { CostCapExceededError } from "@/lib/ai/cost-cap";
 import {
   CAMPAIGN_KINDS,
-  type CampaignKind,
+  composeBeatBody,
+  formatGuidanceFor,
   generateCampaign,
+  isCadenceKind,
   loadCampaign,
   markBeatAccepted,
   regenerateCampaignBeat,
+  type CampaignKind,
 } from "@/lib/ai/campaign";
 import { getCurrentUser } from "@/lib/current-user";
 
 const isKind = (v: unknown): v is CampaignKind =>
   typeof v === "string" && (CAMPAIGN_KINDS as readonly string[]).includes(v);
+
+const parseStringList = (raw: string): string[] =>
+  raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 export async function createCampaignAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -40,6 +49,16 @@ export async function createCampaignAction(formData: FormData) {
   const rangeStart = new Date(`${rangeStartStr}T00:00:00Z`);
   const rangeEnd = new Date(`${rangeEndStr}T23:59:59Z`);
 
+  // Themes + postsPerWeek only matter for cadence kinds. For arc kinds we
+  // pass empty/null so the campaign row stays consistent with its shape.
+  const cadence = isCadenceKind(kindRaw);
+  const themes = cadence
+    ? parseStringList(String(formData.get("themes") ?? ""))
+    : [];
+  const postsPerWeek = cadence
+    ? Math.max(1, Math.min(14, Number(formData.get("postsPerWeek") ?? 5)))
+    : null;
+
   let campaignId: string;
   try {
     const campaign = await generateCampaign({
@@ -48,6 +67,8 @@ export async function createCampaignAction(formData: FormData) {
       goal,
       kind: kindRaw,
       channels,
+      themes,
+      postsPerWeek,
       rangeStart,
       rangeEnd,
     });
@@ -63,7 +84,10 @@ export async function createCampaignAction(formData: FormData) {
 
 // Accepts one or more beats: one draft post per beat, campaignId stamped
 // on the post for provenance + calendar tinting, scheduled for noon UTC on
-// the beat's date. User tunes the time in composer.
+// the beat's date. Cadence beats carry rich scaffolding (hook, keyPoints,
+// cta, hashtags, mediaSuggestion, rationale) into `draftMeta` so the
+// composer sidebar lights up the same way it does for Muse-drafted posts.
+// User tunes the time in composer.
 export async function acceptCampaignBeatsAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
@@ -85,7 +109,21 @@ export async function acceptCampaignBeatsAction(formData: FormData) {
     if (beat.accepted) continue;
 
     const scheduledAt = new Date(`${beat.date}T12:00:00Z`);
-    const content = beat.title + (beat.angle ? `\n\n${beat.angle}` : "");
+    const content = composeBeatBody(beat);
+    const draftMeta = {
+      ...(beat.hook ? { hook: beat.hook } : {}),
+      ...(beat.keyPoints && beat.keyPoints.length > 0
+        ? { keyPoints: beat.keyPoints }
+        : {}),
+      ...(beat.cta ? { cta: beat.cta } : {}),
+      ...(beat.hashtags && beat.hashtags.length > 0
+        ? { hashtags: beat.hashtags }
+        : {}),
+      ...(beat.mediaSuggestion ? { mediaSuggestion: beat.mediaSuggestion } : {}),
+      ...(beat.rationale ? { rationale: beat.rationale } : {}),
+      format: beat.format,
+      formatGuidance: formatGuidanceFor(beat.format, beat.channel),
+    };
     const [post] = await db
       .insert(posts)
       .values({
@@ -95,6 +133,7 @@ export async function acceptCampaignBeatsAction(formData: FormData) {
         status: "draft",
         scheduledAt,
         campaignId: campaign.id,
+        draftMeta: Object.keys(draftMeta).length > 0 ? draftMeta : null,
       })
       .returning({ id: posts.id });
     await markBeatAccepted(campaignId, beat.id, post.id);

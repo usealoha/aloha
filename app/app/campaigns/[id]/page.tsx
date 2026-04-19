@@ -271,6 +271,49 @@ function BeatRow({
             {beat.angle}
           </p>
         ) : null}
+        {beat.hook ? (
+          <p className="mt-3 rounded-xl bg-muted/40 border border-border px-3 py-2 text-[13px] text-ink leading-[1.5]">
+            <span className="block text-[10.5px] uppercase tracking-[0.18em] text-ink/50 mb-1">
+              Hook
+            </span>
+            {beat.hook}
+          </p>
+        ) : null}
+        {beat.keyPoints && beat.keyPoints.length > 0 ? (
+          <div className="mt-2">
+            <p className="text-[10.5px] uppercase tracking-[0.18em] text-ink/50 mb-1">
+              Beats
+            </p>
+            <ol className="space-y-1 list-decimal pl-5 text-[13px] text-ink/80 leading-[1.5]">
+              {beat.keyPoints.map((pt, i) => (
+                <li key={i}>{pt}</li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+        {beat.cta ? (
+          <p className="mt-2 text-[13px] text-ink/80">
+            <span className="text-[10.5px] uppercase tracking-[0.18em] text-ink/50 mr-1.5">
+              CTA
+            </span>
+            {beat.cta}
+          </p>
+        ) : null}
+        {beat.hashtags && beat.hashtags.length > 0 ? (
+          <p className="mt-2 text-[12.5px] text-ink/60 break-words">
+            {beat.hashtags.join(" ")}
+          </p>
+        ) : null}
+        {beat.mediaSuggestion ? (
+          <p className="mt-2 text-[12px] text-ink/55 italic leading-[1.5]">
+            Media: {beat.mediaSuggestion}
+          </p>
+        ) : null}
+        {beat.rationale ? (
+          <p className="mt-2 text-[12px] text-ink/55 leading-[1.5]">
+            {beat.rationale}
+          </p>
+        ) : null}
         {accepted && beat.acceptedPostId ? (
           <Link
             href={`/app/composer?post=${beat.acceptedPostId}`}

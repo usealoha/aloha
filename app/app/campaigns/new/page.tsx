@@ -1,4 +1,5 @@
 import { createCampaignAction } from "@/app/actions/campaigns";
+import { CampaignKindPicker } from "./_components/kind-picker";
 import { ChannelToggle } from "@/components/channel-chip";
 import { DatePicker } from "@/components/ui/date-picker";
 import { db } from "@/db";
@@ -10,7 +11,6 @@ import {
 	ideas,
 	platformInsights,
 } from "@/db/schema";
-import { CAMPAIGN_KINDS } from "@/lib/ai/campaign";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
@@ -27,33 +27,6 @@ import {
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const KIND_DETAIL: Record<string, { label: string; blurb: string }> = {
-	launch: {
-		label: "Launch",
-		blurb: "Teaser → announce → social proof → urgency → recap.",
-	},
-	webinar: {
-		label: "Webinar",
-		blurb: "Teaser → announce → reminders → recap + follow-up.",
-	},
-	sale: {
-		label: "Sale",
-		blurb: "Teaser → announce → social proof → urgency → last call → recap.",
-	},
-	drip: {
-		label: "Drip",
-		blurb: "Evergreen cadence over a longer range, rotating phases.",
-	},
-	evergreen: {
-		label: "Evergreen",
-		blurb: "Steady announce + social proof + teaser, no urgency.",
-	},
-	custom: {
-		label: "Custom",
-		blurb: "Let Muse mix phases based on the goal.",
-	},
-};
 
 export default async function NewCampaignPage() {
 	const user = (await getCurrentUser())!;
@@ -166,12 +139,7 @@ export default async function NewCampaignPage() {
 							/>
 						</Field>
 
-						<Field
-							label="Campaign kind"
-							hint="Picks the phase arc Muse builds toward."
-						>
-							<KindPicker />
-						</Field>
+						<CampaignKindPicker />
 
 						<Field label="Channels">
 							<ChannelPicker channels={channels} />
@@ -233,35 +201,6 @@ function Field({
 			) : null}
 			{children}
 		</label>
-	);
-}
-
-function KindPicker() {
-	return (
-		<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-			{CAMPAIGN_KINDS.map((k, i) => {
-				const detail = KIND_DETAIL[k];
-				return (
-					<label
-						key={k}
-						className="block border border-border rounded-2xl p-3.5 cursor-pointer bg-background hover:border-ink transition-colors has-[:checked]:bg-peach-100/60 has-[:checked]:border-ink"
-					>
-						<input
-							type="radio"
-							name="kind"
-							value={k}
-							defaultChecked={i === 0}
-							required
-							className="sr-only"
-						/>
-						<p className="text-[13.5px] text-ink font-medium">{detail.label}</p>
-						<p className="mt-0.5 text-[12px] text-ink/60 leading-[1.5]">
-							{detail.blurb}
-						</p>
-					</label>
-				);
-			})}
-		</div>
 	);
 }
 
