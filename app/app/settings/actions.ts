@@ -325,6 +325,22 @@ export async function updateChannelPublishMode(formData: FormData) {
   revalidatePath("/app/settings/channels");
 }
 
+export async function updateNotificationPreferences(formData: FormData) {
+  const userId = await requireUserId();
+
+  await db
+    .update(users)
+    .set({
+      notificationsEnabled: formData.get("notificationsEnabled") === "on",
+      notifyPostOutcomes: formData.get("notifyPostOutcomes") === "on",
+      notifyInboxSyncIssues: formData.get("notifyInboxSyncIssues") === "on",
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  redirect("/app/settings/notifications?saved=1");
+}
+
 // Notify user when a platform becomes available for connection.
 // Stores their interest so we can email them when approval lands.
 export async function notifyWhenAvailable(formData: FormData) {

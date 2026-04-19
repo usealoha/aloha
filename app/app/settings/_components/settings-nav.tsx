@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, Plug, Sparkles, UserRound } from "lucide-react";
+import { Bell, CreditCard, Plug, Sparkles, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -23,6 +23,12 @@ const ITEMS = [
     label: "Muse",
     caption: "Voice training",
     Icon: Sparkles,
+  },
+  {
+    href: "/app/settings/notifications",
+    label: "Notifications",
+    caption: "What pings you",
+    Icon: Bell,
   },
   {
     href: "/app/settings/billing",
