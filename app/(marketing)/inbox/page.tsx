@@ -204,7 +204,7 @@ export default function InboxPage() {
 					className="bg-background py-24 lg:py-32 pb-32 lg:pb-40 wavy"
 				>
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-5">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
 								Triage, not a fire hose
 							</p>
@@ -237,11 +237,13 @@ export default function InboxPage() {
 							</ul>
 						</div>
 
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-7">
 							<ScreenshotPlaceholder
 								id="triage"
 								label="Unified inbox — every channel's comments and DMs in one list."
-								notes="Needed: /app/inbox screenshot. Two-pane layout — thread list on the left with channel chips, open thread + reply form on the right. 5:3 crop."
+								notes=""
+								src="/aloha-inbox.webp"
+								alt="Aloha Inbox — two-pane layout with threads from Instagram, LinkedIn, X, and Threads on the left and an open thread with a reply form on the right."
 								aspect="aspect-[5/3]"
 								tone="bg-peach-100"
 							/>

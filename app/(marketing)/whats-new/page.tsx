@@ -30,6 +30,8 @@ type Release = {
 	featured?: boolean;
 	screenshotLabel?: string;
 	screenshotNotes?: string;
+	screenshotSrc?: string;
+	screenshotAlt?: string;
 };
 
 const RELEASES: Release[] = [
@@ -56,8 +58,10 @@ const RELEASES: Release[] = [
 		],
 		featured: true,
 		screenshotLabel: "Matrix canvas showing the new starter templates panel.",
-		screenshotNotes:
-			"Needed: /app/automations screenshot with the template picker open on the right. Six template cards visible, each with a 'clone' chip. 16:9 crop.",
+		screenshotNotes: "",
+		screenshotSrc: "/aloha-matrix.webp",
+		screenshotAlt:
+			"Aloha Logic Matrix — automations list with starter templates in the sidebar and the selected matrix canvas showing trigger, condition, and action nodes.",
 	},
 	{
 		version: "1.13",
@@ -280,13 +284,15 @@ export default function WhatsNewPage() {
 								</div>
 
 								<div className="col-span-12 lg:col-span-7">
-									{featured.screenshotLabel && featured.screenshotNotes && (
+									{featured.screenshotLabel && (
 										<ScreenshotPlaceholder
 											id={`release-${featured.version}`}
 											label={featured.screenshotLabel}
-											notes={featured.screenshotNotes}
+											notes={featured.screenshotNotes ?? ""}
 											aspect="aspect-[16/10]"
 											tone="bg-background-elev"
+											src={featured.screenshotSrc}
+											alt={featured.screenshotAlt}
 										/>
 									)}
 								</div>

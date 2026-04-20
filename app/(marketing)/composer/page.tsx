@@ -229,16 +229,18 @@ export default function ComposerPage() {
 					className="py-24 pb-32 lg:pb-40 bg-background lg:py-32 wavy"
 				>
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-						<div className="col-span-12 lg:col-span-5 order-2 lg:order-1">
+						<div className="col-span-12 lg:col-span-7 order-2 lg:order-1">
 							<ScreenshotPlaceholder
 								label="Muse — the voice model reads your best posts and copies the patterns."
-								notes="Needed: /app/settings/muse screenshot. Shows the trained-on count, sample posts with toggles, and the tone sliders. 5:4 crop, cream bg preserved."
+								notes=""
 								aspect="aspect-[5/4]"
 								tone="bg-peach-100"
+								src="/aloha-muse.webp"
+								alt="Aloha Muse settings — trained-on count, sample posts with use/ignore toggles, and tone sliders for formality, detail, and wit."
 							/>
 						</div>
 
-						<div className="col-span-12 lg:col-span-6 lg:col-start-7 order-1 lg:order-2">
+						<div className="col-span-12 lg:col-span-5 order-1 lg:order-2">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4 inline-flex items-center gap-2">
 								<Sparkle className="w-3 h-3 text-primary" />
 								Meet Muse

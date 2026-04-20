@@ -220,7 +220,7 @@ export default function LogicMatrixPage() {
 					className="py-24 lg:py-32 pb-32 lg:pb-40 bg-background wavy"
 				>
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-5">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
 								Visual canvas
 							</p>
@@ -253,13 +253,14 @@ export default function LogicMatrixPage() {
 							</ul>
 						</div>
 
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-7">
 							<ScreenshotPlaceholder
 								id="matrix-canvas"
 								label="Reactflow canvas with three chained matrices and a paused branch."
-								notes="Needed: screenshot of /app/automations canvas view. Include three nodes minimum, one dashed/paused edge, a mini-map in the corner, and at least one 'approve first' chip visible on an action node. 16:10 crop."
+								notes=""
 								aspect="aspect-[16/10]"
-								tone="bg-primary-soft"
+								src="/aloha-automations-edit.webp"
+								alt="Aloha Logic Matrix builder — Reactflow canvas showing trigger, condition, and action nodes wired across channels with a human-approve chip."
 							/>
 						</div>
 					</div>

@@ -272,30 +272,34 @@ export default function PressPage() {
 						<ScreenshotPlaceholder
 							id="press-composer"
 							label="Composer — draft with voice match and per-channel rewrites."
-							notes="Needed: /app/composer screenshot. 16:10 crop. Show the draft editor with voice-match badge visible and three channel rewrites in the right rail. Used in press as primary product hero image."
+							notes=""
 							aspect="aspect-[16/10]"
-							tone="bg-peach-100"
+							src="/aloha-composer.webp"
+							alt="Aloha Composer — a draft with Muse voice-match score and native rewrites for LinkedIn, X, and Instagram."
 						/>
 						<ScreenshotPlaceholder
 							id="press-calendar"
 							label="Calendar — week view with chip overlays."
-							notes="Needed: /app/calendar screenshot. 16:10 crop. Week view mid-week, multiple channel chips visible across 7 columns, floating 'best-time' indicator."
+							notes=""
 							aspect="aspect-[16/10]"
-							tone="bg-primary-soft"
+							src="/aloha-calendar.webp"
+							alt="Aloha Calendar week view with scheduled posts across seven days, channel chips, and status indicators."
 						/>
 						<ScreenshotPlaceholder
 							id="press-matrix"
 							label="Logic Matrix — cross-channel automation canvas."
-							notes="Needed: /app/automations screenshot. 16:10 crop. Reactflow canvas with 4-5 nodes and one human-approve chip visible."
+							notes=""
 							aspect="aspect-[16/10]"
-							tone="bg-peach-200"
+							src="/aloha-automations-edit.webp"
+							alt="Aloha Logic Matrix builder — cross-channel Reactflow canvas with trigger, condition, and action nodes plus a human-approve chip."
 						/>
 						<ScreenshotPlaceholder
 							id="press-inbox"
 							label="Inbox — unified comments and DMs across channels."
-							notes="Needed: /app/inbox screenshot. 16:10 crop. Show three threads from IG / LinkedIn / X with tone chips and the 'reply first' priority highlight."
+							notes=""
 							aspect="aspect-[16/10]"
-							tone="bg-peach-300"
+							src="/aloha-inbox.webp"
+							alt="Aloha Inbox — unified comments, DMs, and mentions across Instagram, LinkedIn, X, and Threads in one list."
 						/>
 					</div>
 				</div>

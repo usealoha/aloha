@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
 					className="py-24 lg:py-32 pb-32 lg:pb-40 bg-background wavy"
 				>
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-5">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
 								Useful insights
 							</p>
@@ -211,11 +211,13 @@ export default function AnalyticsPage() {
 							</ul>
 						</div>
 
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-7">
 							<ScreenshotPlaceholder
 								id="insights"
 								label="Dashboard — reach, engagement, and the cards that surface what to do next."
-								notes="Needed: /app/dashboard screenshot. Show reach + engagement cards with weekly deltas, the channels card, and the knowledge card visible. 5:3 crop."
+								notes=""
+								src="/aloha-dashboard.webp"
+								alt="Aloha Dashboard — stats row, scheduled posts list, and sidebar cards for ideas, channels, knowledge, reach, feeds, and engagement."
 								aspect="aspect-[5/3]"
 								tone="bg-peach-100"
 							/>

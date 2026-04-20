@@ -218,7 +218,7 @@ export default function CalendarPage() {
 			<section id="drag" className="bg-primary-soft">
 				<div className="wavy bg-background py-24 pb-32 lg:pb-40 lg:py-32 ">
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-5">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
 								Drag to reschedule
 							</p>
@@ -251,13 +251,14 @@ export default function CalendarPage() {
 							</ul>
 						</div>
 
-						<div className="col-span-12 lg:col-span-6">
+						<div className="col-span-12 lg:col-span-7">
 							<ScreenshotPlaceholder
 								id="drag-reschedule"
 								label="A post being dragged from Thursday evening to Friday morning."
-								notes="Needed: screenshot of Calendar > Week view mid-drag. Show the post's ghost at source, a live preview at target, and the subtle snap-to-best-time indicator. 5:3 crop. Cream bg preserved."
+								notes=""
 								aspect="aspect-[5/3]"
-								tone="bg-peach-100"
+								src="/aloha-calendar.webp"
+								alt="Aloha Calendar week view with twelve scheduled posts across seven columns, channel chips, and status indicators."
 							/>
 						</div>
 					</div>
