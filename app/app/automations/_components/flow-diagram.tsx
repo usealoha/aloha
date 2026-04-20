@@ -1,4 +1,4 @@
-import { Clock, GitBranch } from "lucide-react";
+import { ArrowDown, Clock, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StoredFlowStep } from "@/db/schema";
 import type { AutomationKind, ConfigField } from "../_lib/templates";
@@ -98,7 +98,7 @@ function StepBlock({
 
   return (
     <div className="relative">
-      {!isFirst ? <Rail /> : null}
+      {!isFirst ? <Connector /> : null}
       <NodeCard step={step} fields={fields} renderIcon={renderIcon} />
 
       {step.type === "condition" ? (
@@ -110,8 +110,6 @@ function StepBlock({
           depth={depth + 1}
         />
       ) : null}
-
-      {isLast ? null : <Rail />}
     </div>
   );
 }
@@ -291,16 +289,30 @@ function DelayPill({
   );
 }
 
-function Rail() {
+function Connector() {
   return (
-    <div className="flex justify-center py-2" aria-hidden>
-      <svg width="10" height="28" viewBox="0 0 10 28">
+    <div
+      className="flex flex-col items-center py-1 text-ink/30"
+      aria-hidden
+    >
+      <svg width="10" height="22" viewBox="0 0 10 22">
         <path
-          d="M5 0 L5 28"
+          d="M5 0 L5 22"
           stroke="currentColor"
           strokeWidth="1.5"
           strokeDasharray="3 3"
-          className="text-ink/25"
+          fill="none"
+        />
+      </svg>
+      <span className="w-7 h-7 rounded-full border border-border bg-background grid place-items-center text-ink/55">
+        <ArrowDown className="w-3.5 h-3.5" />
+      </span>
+      <svg width="10" height="22" viewBox="0 0 10 22">
+        <path
+          d="M5 0 L5 22"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray="3 3"
           fill="none"
         />
       </svg>

@@ -45,9 +45,6 @@ export default async function EditAutomationPage({
     <Builder
       mode="edit"
       kind={kind}
-      templateName={template.name}
-      templateSummary={template.summary}
-      nodes={template.nodes}
       initialName={row.name}
       initialStepValues={initialStepValues}
       action={updateAutomationFromBuilder}

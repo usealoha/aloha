@@ -36,9 +36,6 @@ export default async function NewAutomationPage({
     <Builder
       mode="create"
       kind={kindParam}
-      templateName={template.name}
-      templateSummary={template.summary}
-      nodes={template.nodes}
       initialName={template.name}
       initialStepValues={initialStepValues}
       action={createAutomationFromBuilder}

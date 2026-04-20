@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, Calendar, Save, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type {
-  AutomationKind,
-  ConfigField,
-  FlowNode,
+import {
+  TEMPLATES,
+  type AutomationKind,
+  type ConfigField,
+  type FlowNode,
 } from "../_lib/templates";
 
 export type BuilderStepValues = Record<string, Record<string, unknown>>;
@@ -25,9 +26,6 @@ const DAY_OPTIONS = [
 export function Builder({
   mode,
   kind,
-  templateName,
-  templateSummary,
-  nodes,
   initialName,
   initialStepValues,
   action,
@@ -35,14 +33,15 @@ export function Builder({
 }: {
   mode: "create" | "edit";
   kind: AutomationKind;
-  templateName: string;
-  templateSummary: string;
-  nodes: FlowNode[];
   initialName: string;
   initialStepValues: BuilderStepValues;
   action: (formData: FormData) => void | Promise<void>;
   automationId?: string;
 }) {
+  const template = TEMPLATES[kind];
+  const templateName = template.name;
+  const templateSummary = template.summary;
+  const nodes = template.nodes;
   const [name, setName] = useState(initialName);
   const [stepValues, setStepValues] =
     useState<BuilderStepValues>(initialStepValues);
