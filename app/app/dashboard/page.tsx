@@ -15,6 +15,7 @@ import {
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { PLATFORM_GATING } from "@/lib/channel-state";
 import { getCurrentUser } from "@/lib/current-user";
+import { getReachLast7Days } from "@/lib/reach-cache";
 import { and, count, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import {
 	ArrowUpRight,
@@ -23,6 +24,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import {
 	ActiveCampaignCard,
 	ChannelsCard,
@@ -34,6 +36,7 @@ import {
 	ReachCard,
 	SectionHeader,
 } from "./_components";
+import type { CurrentUser } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +51,62 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
+	// Header renders synchronously from the session (no DB). The rest of
+	// the dashboard streams in via Suspense so the shell paints fast.
 	const user = (await getCurrentUser())!;
 	const tz = user.timezone ?? "UTC";
+	const firstName = (user.name ?? user.email).split(/\s|@/)[0];
+	const greeting = greet(new Date(), tz);
 
+	return (
+		<div className="space-y-14">
+			<header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+				<div>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						{user.workspaceName ?? "Your workspace"} ·{" "}
+						{formatToday(new Date(), tz)}
+					</p>
+					<h1 className="mt-3 font-display text-[44px] lg:text-[56px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
+						{greeting}, <span className="text-primary">{firstName}</span>
+						<span className="text-ink/25">.</span>
+					</h1>
+					<p className="mt-3 text-[15px] text-ink/65 max-w-xl leading-[1.55]">
+						Here&apos;s what&apos;s on your calendar and what&apos;s landed
+						since Monday.
+					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<Link
+						href="/app/calendar"
+						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
+					>
+						<CalendarDays className="w-4 h-4" />
+						Open calendar
+					</Link>
+					<Link
+						href="/app/composer"
+						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+					>
+						<PenSquare className="w-4 h-4" />
+						Compose
+					</Link>
+				</div>
+			</header>
+
+			<Suspense fallback={<DashboardSkeleton />}>
+				<DashboardContent user={user} tz={tz} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function DashboardContent({
+	user,
+	tz,
+}: {
+	user: CurrentUser;
+	tz: string;
+}) {
 	const startOfWeek = (() => {
 		// Monday-start week. Anchored to UTC for the SQL filter; tz-display is
 		// separate from period bucketing here.
@@ -63,138 +119,22 @@ export default async function DashboardPage() {
 
 	// ── Real metrics ────────────────────────────────────────────────────
 	const now = new Date();
-	const [counts] = await db
-		.select({
-			drafts: sql<number>`count(*) filter (where ${posts.status} = 'draft')`,
-			scheduled: sql<number>`count(*) filter (where ${posts.status} = 'scheduled' and ${posts.scheduledAt} >= ${now.toISOString()})`,
-			publishedThisWeek: sql<number>`count(*) filter (where ${posts.status} = 'published' and ${posts.publishedAt} >= ${startOfWeek.toISOString()})`,
-		})
-		.from(posts)
-		.where(eq(posts.userId, user.id));
-
-	const [channelsCount] = await db
-		.select({
-			value: sql<number>`count(distinct ${accounts.provider})`,
-		})
-		.from(accounts)
-		.where(
-			and(
-				eq(accounts.userId, user.id),
-				notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-			),
-		);
-
-	const [hasBlueskyCount] = await db
-		.select({ value: count() })
-		.from(blueskyCredentials)
-		.where(eq(blueskyCredentials.userId, user.id));
-
-	const connectedChannels =
-		Number(channelsCount.value ?? 0) + Number(hasBlueskyCount.value ?? 0);
-
-	const upcoming = await db
-		.select({
-			id: posts.id,
-			content: posts.content,
-			platforms: posts.platforms,
-			scheduledAt: posts.scheduledAt,
-		})
-		.from(posts)
-		.where(
-			and(
-				eq(posts.userId, user.id),
-				eq(posts.status, "scheduled"),
-				gte(posts.scheduledAt, new Date()),
-			),
-		)
-		.orderBy(posts.scheduledAt)
-		.limit(6);
-
-	const recentPublished = await db
-		.select({
-			id: posts.id,
-			content: posts.content,
-			platforms: posts.platforms,
-			publishedAt: posts.publishedAt,
-		})
-		.from(posts)
-		.where(and(eq(posts.userId, user.id), eq(posts.status, "published")))
-		.orderBy(desc(posts.publishedAt))
-		.limit(3);
-
-	const [{ value: totalAccounts }] = await db
-		.select({ value: count() })
-		.from(accounts)
-		.where(
-			and(
-				eq(accounts.userId, user.id),
-				notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-			),
-		);
-
-	const [hasBluesky] = await db
-		.select({ value: sql<number>`1` })
-		.from(blueskyCredentials)
-		.where(eq(blueskyCredentials.userId, user.id))
-		.limit(1);
-
-	const channelProviders = await db
-		.selectDistinct({ provider: accounts.provider })
-		.from(accounts)
-		.where(
-			and(
-				eq(accounts.userId, user.id),
-				notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-			),
-		);
-
-	const allProviders = [
-		...channelProviders.map((c) => c.provider),
-		...(hasBluesky ? ["bluesky" as const] : []),
-	];
-
-	// Reach over the last 7 days, per platform, from the nightly read-back
-	// cache. Only platforms that have returned data show up; gated channels
-	// (Meta / TikTok / YouTube until approval) are surfaced separately so
-	// the card is honest about what's missing vs. what's zero.
 	const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-	const reachRows = await db
-		.select({
-			platform: platformInsights.platform,
-			impressions: sql<string>`COALESCE(SUM(NULLIF(${platformInsights.metrics}->>'impressions', '')::bigint), 0)`,
-			posts: sql<number>`COUNT(*)`,
-		})
-		.from(platformInsights)
-		.where(
-			and(
-				eq(platformInsights.userId, user.id),
-				gte(platformInsights.platformPostedAt, sevenDaysAgo),
-			),
-		)
-		.groupBy(platformInsights.platform);
 
-	const reachByPlatform = new Map(
-		reachRows
-			.map((r) => ({
-				platform: r.platform,
-				impressions: Number(r.impressions ?? 0),
-				posts: Number(r.posts ?? 0),
-			}))
-			.map((r) => [r.platform, r]),
-	);
-	const totalImpressions = reachRows.reduce(
-		(sum, r) => sum + Number(r.impressions ?? 0),
-		0,
-	);
-	const gatedConnected = allProviders.filter(
-		(p) => PLATFORM_GATING[p] === "pending_approval",
-	);
-	const readbackConnected = allProviders.filter(
-		(p) => p === "twitter" || p === "linkedin",
-	);
-
-	// ── Phase 3 surfaces ────────────────────────────────────────────────
+	// Fire every dashboard query concurrently. None of these depend on
+	// each other; postgres-js pipelines them over a single connection so
+	// the total wall-clock time is bounded by the slowest query, not the
+	// sum. All downstream aggregations run off the resolved arrays.
 	const [
+		countsRows,
+		channelsCountRows,
+		hasBlueskyCountRows,
+		upcoming,
+		recentPublished,
+		totalAccountsRows,
+		hasBlueskyRows,
+		channelProviders,
+		reachRows,
 		activeCampaign,
 		ideaCounts,
 		freshIdeas,
@@ -204,6 +144,96 @@ export default async function DashboardPage() {
 		notionRows,
 		notionDocCount,
 	] = await Promise.all([
+		db
+			.select({
+				drafts: sql<number>`count(*) filter (where ${posts.status} = 'draft')`,
+				scheduled: sql<number>`count(*) filter (where ${posts.status} = 'scheduled' and ${posts.scheduledAt} >= ${now.toISOString()})`,
+				publishedThisWeek: sql<number>`count(*) filter (where ${posts.status} = 'published' and ${posts.publishedAt} >= ${startOfWeek.toISOString()})`,
+			})
+			.from(posts)
+			.where(eq(posts.userId, user.id)),
+
+		db
+			.select({
+				value: sql<number>`count(distinct ${accounts.provider})`,
+			})
+			.from(accounts)
+			.where(
+				and(
+					eq(accounts.userId, user.id),
+					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
+				),
+			),
+
+		db
+			.select({ value: count() })
+			.from(blueskyCredentials)
+			.where(eq(blueskyCredentials.userId, user.id)),
+
+		db
+			.select({
+				id: posts.id,
+				content: posts.content,
+				platforms: posts.platforms,
+				scheduledAt: posts.scheduledAt,
+			})
+			.from(posts)
+			.where(
+				and(
+					eq(posts.userId, user.id),
+					eq(posts.status, "scheduled"),
+					gte(posts.scheduledAt, now),
+				),
+			)
+			.orderBy(posts.scheduledAt)
+			.limit(6),
+
+		db
+			.select({
+				id: posts.id,
+				content: posts.content,
+				platforms: posts.platforms,
+				publishedAt: posts.publishedAt,
+			})
+			.from(posts)
+			.where(and(eq(posts.userId, user.id), eq(posts.status, "published")))
+			.orderBy(desc(posts.publishedAt))
+			.limit(3),
+
+		db
+			.select({ value: count() })
+			.from(accounts)
+			.where(
+				and(
+					eq(accounts.userId, user.id),
+					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
+				),
+			),
+
+		db
+			.select({ value: sql<number>`1` })
+			.from(blueskyCredentials)
+			.where(eq(blueskyCredentials.userId, user.id))
+			.limit(1),
+
+		db
+			.selectDistinct({ provider: accounts.provider })
+			.from(accounts)
+			.where(
+				and(
+					eq(accounts.userId, user.id),
+					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
+				),
+			),
+
+		// Reach over the last 7 days, per platform, from the nightly
+		// read-back cache. Only platforms that have returned data show up;
+		// gated channels (Meta / TikTok / YouTube until approval) are
+		// surfaced separately so the card is honest about what's missing
+		// vs. what's zero. Cached with a 1h TTL + tag invalidation on
+		// each readback cron run.
+		getReachLast7Days(user.id),
+
 		// Most recent non-archived campaign — list its beat progress so
 		// the user can pick up a campaign mid-run from the dashboard.
 		db
@@ -297,6 +327,40 @@ export default async function DashboardPage() {
 			),
 	]);
 
+	const counts = countsRows[0];
+	const channelsCount = channelsCountRows[0];
+	const hasBlueskyCount = hasBlueskyCountRows[0];
+	const totalAccounts = totalAccountsRows[0].value;
+	const hasBluesky = hasBlueskyRows[0];
+
+	const connectedChannels =
+		Number(channelsCount.value ?? 0) + Number(hasBlueskyCount.value ?? 0);
+
+	const allProviders = [
+		...channelProviders.map((c) => c.provider),
+		...(hasBluesky ? ["bluesky" as const] : []),
+	];
+
+	const reachByPlatform = new Map(
+		reachRows
+			.map((r) => ({
+				platform: r.platform,
+				impressions: Number(r.impressions ?? 0),
+				posts: Number(r.posts ?? 0),
+			}))
+			.map((r) => [r.platform, r]),
+	);
+	const totalImpressions = reachRows.reduce(
+		(sum, r) => sum + Number(r.impressions ?? 0),
+		0,
+	);
+	const gatedConnected = allProviders.filter(
+		(p) => PLATFORM_GATING[p] === "pending_approval",
+	);
+	const readbackConnected = allProviders.filter(
+		(p) => p === "twitter" || p === "linkedin",
+	);
+
 	const activeCampaignRow = activeCampaign[0] ?? null;
 	const campaignBeats = activeCampaignRow
 		? (activeCampaignRow.beats as Array<{ accepted?: boolean }>)
@@ -313,8 +377,6 @@ export default async function DashboardPage() {
 	const notionDocs = Number(notionDocCount[0]?.total ?? 0);
 
 	// ── View ────────────────────────────────────────────────────────────
-	const firstName = (user.name ?? user.email).split(/\s|@/)[0];
-	const greeting = greet(new Date(), tz);
 	const stats = [
 		{
 			label: "Drafts",
@@ -348,41 +410,7 @@ export default async function DashboardPage() {
 	];
 
 	return (
-		<div className="space-y-14">
-			{/* Greeting */}
-			<header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						{user.workspaceName ?? "Your workspace"} ·{" "}
-						{formatToday(new Date(), tz)}
-					</p>
-					<h1 className="mt-3 font-display text-[44px] lg:text-[56px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
-						{greeting}, <span className="text-primary">{firstName}</span>
-						<span className="text-ink/25">.</span>
-					</h1>
-					<p className="mt-3 text-[15px] text-ink/65 max-w-xl leading-[1.55]">
-						Here&apos;s what&apos;s on your calendar and what&apos;s landed
-						since Monday.
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					<Link
-						href="/app/calendar"
-						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
-					>
-						<CalendarDays className="w-4 h-4" />
-						Open calendar
-					</Link>
-					<Link
-						href="/app/composer"
-						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
-					>
-						<PenSquare className="w-4 h-4" />
-						Compose
-					</Link>
-				</div>
-			</header>
-
+		<>
 			{/* Stats */}
 			<section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 				{stats.map((s) => (
@@ -542,7 +570,30 @@ export default async function DashboardPage() {
 					<EngagementCard unread={unreadInboxCount} total={totalInboxCount} />
 				</aside>
 			</section>
-		</div>
+		</>
+	);
+}
+
+function DashboardSkeleton() {
+	return (
+		<>
+			<section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+				{[0, 1, 2, 3].map((i) => (
+					<div
+						key={i}
+						className="rounded-2xl border border-border bg-background-elev p-5 h-[116px] animate-pulse"
+					/>
+				))}
+			</section>
+			<section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+				<div className="lg:col-span-8 rounded-2xl border border-border bg-background-elev h-[320px] animate-pulse" />
+				<aside className="lg:col-span-4 space-y-6">
+					<div className="rounded-2xl border border-border bg-background-elev h-[140px] animate-pulse" />
+					<div className="rounded-2xl border border-border bg-background-elev h-[140px] animate-pulse" />
+					<div className="rounded-2xl border border-border bg-background-elev h-[140px] animate-pulse" />
+				</aside>
+			</section>
+		</>
 	);
 }
 
