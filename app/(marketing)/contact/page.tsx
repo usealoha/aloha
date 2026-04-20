@@ -4,14 +4,12 @@ import {
 	ArrowRight,
 	ArrowUpRight,
 	Clock,
-	DollarSign,
-	Handshake,
 	Headphones,
+	Lock,
 	Mail,
 	MapPin,
 	Newspaper,
 	ShieldCheck,
-	Sparkle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -26,40 +24,29 @@ export const metadata = makeMetadata({
 const ROUTES = [
 	{
 		icon: Headphones,
-		title: "Support",
+		title: "Everything else",
 		email: "hello@usealoha.app",
 		sla: "Within a business day",
-		body: "Account issues, feature help, something broken. A real person reads every email — the support inbox isn't triaged by a bot.",
+		body: "Support, sales, migration help, partnerships, brand assets, billing. One inbox, read by a human, routed internally. Mention the topic in the subject line.",
 		tone: "bg-peach-100",
-	},
-	{
-		icon: DollarSign,
-		title: "Sales & procurement",
-		email: "sales@usealoha.app",
-		sla: "Within 4 business hours",
-		body: "Pricing negotiations for teams of 10+, annual contracts, procurement questionnaires, invoicing terms.",
-		tone: "bg-primary-soft",
-	},
-	{
-		icon: Sparkle,
-		title: "Migration",
-		email: "migrate@usealoha.app",
-		sla: "Within 4 business hours",
-		body: "Moving from Buffer, Hootsuite, Later, Sprout, Typefully or Kit. We walk the first import with you, no meetings required.",
-		tone: "bg-peach-200",
-		link: {
-			href: routes.compare.migrationGuide,
-			label: "Read the guide first",
-		},
 	},
 	{
 		icon: ShieldCheck,
 		title: "Security",
 		email: "security@usealoha.app",
 		sla: "Within 72 hours",
-		body: "Vulnerability reports and security questions. We don't hold SOC 2 or ISO 27001 today — the trust center explains what we do instead.",
+		body: "Vulnerability reports, abuse, security questions. We don't hold SOC 2 or ISO 27001 today — the trust center explains what we do instead.",
 		tone: "bg-background-elev border-2 border-border",
 		link: { href: routes.trust, label: "Trust center" },
+	},
+	{
+		icon: Lock,
+		title: "Privacy",
+		email: "privacy@usealoha.app",
+		sla: "Within 5 business days",
+		body: "Data access, deletion, export, DPA requests, GDPR/CCPA questions. Kept separate so requests are tracked and auditable.",
+		tone: "bg-primary-soft",
+		link: { href: routes.legal.privacy, label: "Privacy policy" },
 	},
 	{
 		icon: Newspaper,
@@ -69,15 +56,6 @@ const ROUTES = [
 		body: "Stories, interviews, quotes. Logos and brand assets are in the press kit.",
 		tone: "bg-peach-300",
 		link: { href: routes.company.press, label: "Press kit" },
-	},
-	{
-		icon: Handshake,
-		title: "Partnerships",
-		email: "partners@usealoha.app",
-		sla: "Within 2 business days",
-		body: "Integrations, co-marketing, agency partner programme.",
-		tone: "bg-peach-100",
-		link: { href: routes.connect.partners, label: "Partner programme" },
 	},
 ];
 
@@ -158,7 +136,7 @@ export default function ContactPage() {
 								Pick an inbox
 							</p>
 							<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-								Six doors.
+								Four doors.
 								<span className="text-primary"> One behind each.</span>
 							</h2>
 						</div>
@@ -230,16 +208,14 @@ export default function ContactPage() {
 							three times as long to reach a reply.
 						</p>
 						<p>
-							We broke it into six routes, each landing in a domain-expert's
-							inbox. Support gets the product owner on call that week. Sales
-							gets the only person who can actually negotiate a contract.
-							Security gets the engineer who wrote our incident response plan.
-							No forwarding. No &ldquo;we've escalated your ticket.&rdquo;
+							We split it where the split actually matters — security and privacy
+							need auditable inboxes, press runs on a different rhythm. Everything
+							else (support, sales, migration, partnerships, brand, billing) goes
+							to one human inbox. One team, four doors, no forwarding chain.
 						</p>
 						<p>
-							The tradeoff is that you have to read six cards to pick one.
-							That's worth it. Reading three sentences saves both of us
-							forty-eight hours.
+							The tradeoff is that we ask you to name the topic in the subject
+							line. That's a fair ask. It saves both of us forty-eight hours.
 						</p>
 					</div>
 				</div>
@@ -295,7 +271,8 @@ export default function ContactPage() {
 						</div>
 
 						<p className="mt-8 text-[13px] text-ink/55 max-w-xl">
-							For legal notices: Aloha Social Systems, c/o the Bengaluru address above.
+							For legal notices: <a href="mailto:legal@usealoha.app" className="pencil-link">legal@usealoha.app</a>, or
+							post to Aloha Social Systems, c/o the Bengaluru address above.
 							Registered in India.
 						</p>
 					</div>
