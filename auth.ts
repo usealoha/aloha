@@ -366,9 +366,13 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
         }
       }
 
-      if (trigger === "update" && token.sub) {
-        // Refetch fresh fields from DB. Cheaper than trusting client-supplied
-        // `session` payload and keeps a single source of truth.
+      // Refresh path. Runs when:
+      //  - `trigger === "update"` (server action called unstable_update), or
+      //  - the token predates the fields we now stash in the JWT (migration
+      //    for users whose session cookie was issued before this deploy —
+      //    they'd otherwise look "not onboarded" and get bounced).
+      const needsBackfill = token.sub && !("onboardedAt" in token);
+      if ((trigger === "update" && token.sub) || needsBackfill) {
         const [row] = await db
           .select({
             name: users.name,
@@ -379,7 +383,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
             onboardedAt: users.onboardedAt,
           })
           .from(users)
-          .where(eq(users.id, token.sub))
+          .where(eq(users.id, token.sub!))
           .limit(1);
         if (row) {
           token.name = row.name;
