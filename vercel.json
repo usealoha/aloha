@@ -1,4 +1,5 @@
 {
+	"$schema": "https://openapi.vercel.sh/vercel.json",
 	"crons": [
 		{
 			"path": "/api/cron/cleanup-deleted-posts?key=${CRON_SECRET}",
@@ -8,5 +9,8 @@
 			"path": "/api/cron/automations?key=${CRON_SECRET}",
 			"schedule": "* * * * *"
 		}
-	]
+	],
+	"git": {
+		"deploymentEnabled": false
+	}
 }
