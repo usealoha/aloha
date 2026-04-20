@@ -46,15 +46,11 @@ export function loadOgFonts() {
 }
 
 // Brand icon as an inline data URL so satori doesn't need network fetches
-// (embedding works in every runtime and prerender path).
+// (embedding works in every runtime and prerender path). Colocated with the
+// fonts — `public/` isn't bundled into Vercel serverless functions, but
+// Next's tracer includes files read relative to this module.
 const ICON_DATA_URL = (() => {
-  const iconPath = join(
-    dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "public",
-    "aloha.png",
-  );
-  const buf = readFileSync(iconPath);
+  const buf = readFileSync(join(FONT_DIR, "aloha.png"));
   return `data:image/png;base64,${buf.toString("base64")}`;
 })();
 
