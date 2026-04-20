@@ -8,6 +8,7 @@ type Props = {
   aspect?: string;
   tone?: string;
   id?: string;
+  comingSoon?: boolean;
 };
 
 export function ScreenshotPlaceholder({
@@ -16,6 +17,7 @@ export function ScreenshotPlaceholder({
   aspect = "aspect-[5/3]",
   tone = "bg-peach-100",
   id,
+  comingSoon = false,
 }: Props) {
   const grainId = `grain-${id ?? Math.random().toString(36).slice(2, 8)}`;
   return (
@@ -39,8 +41,14 @@ export function ScreenshotPlaceholder({
       <span aria-hidden className="absolute bottom-4 right-4 w-4 h-4 border-r-2 border-b-2 border-ink/30" />
 
       <div className="absolute inset-0 p-8 flex flex-col">
-        <span className="self-start text-[9px] font-mono uppercase tracking-[0.22em] text-ink/50 bg-background-elev/80 px-2 py-1 rounded-full">
-          Screenshot · placeholder
+        <span
+          className={`self-start text-[9px] font-mono uppercase tracking-[0.22em] px-2 py-1 rounded-full ${
+            comingSoon
+              ? "text-ink bg-primary-soft border border-primary/40"
+              : "text-ink/50 bg-background-elev/80"
+          }`}
+        >
+          {comingSoon ? "Coming soon" : "Screenshot · placeholder"}
         </span>
         <div className="mt-auto">
           <p className="font-display text-[22px] lg:text-[26px] leading-[1.15] tracking-[-0.01em] text-ink max-w-md">

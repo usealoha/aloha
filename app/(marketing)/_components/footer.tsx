@@ -69,13 +69,12 @@ export function MarketingFooter() {
 				</div>
 
 				<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 py-10 border-b border-border">
-					<ul className="flex items-center flex-wrap gap-1">
+					<ul aria-hidden className="flex items-center flex-wrap gap-1">
 						{SOCIAL_ICONS.map((s) => (
 							<li key={s.n}>
-								<a
-									href="#"
-									aria-label={s.n}
-									className="w-10 h-10 grid place-items-center rounded-full border border-border-strong text-ink hover:bg-ink hover:text-background-elev hover:border-ink transition-colors"
+								<span
+									className="w-10 h-10 grid place-items-center rounded-full border border-border-strong text-ink/70"
+									title={`${s.n} (coming soon)`}
 								>
 									<svg
 										viewBox="0 0 24 24"
@@ -84,17 +83,16 @@ export function MarketingFooter() {
 									>
 										{s.custom ?? <path d={s.path} />}
 									</svg>
-								</a>
+								</span>
 							</li>
 						))}
 						<li>
-							<a
-								href="#"
-								aria-label="RSS"
-								className="w-10 h-10 grid place-items-center rounded-full border border-border-strong text-ink hover:bg-ink hover:text-background-elev hover:border-ink transition-colors"
+							<span
+								className="w-10 h-10 grid place-items-center rounded-full border border-border-strong text-ink/70"
+								title="RSS (coming soon)"
 							>
 								<Rss className="w-4 h-4" />
-							</a>
+							</span>
 						</li>
 					</ul>
 					<div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
@@ -109,7 +107,10 @@ export function MarketingFooter() {
 								<circle cx="12" cy="12" r="9.5" />
 								<path d="M3 12h18M12 2.5c3 3 3 16 0 19M12 2.5c-3 3-3 16 0 19" />
 							</svg>
-							<select className="bg-transparent border-0 font-medium outline-none cursor-pointer">
+							<select
+								aria-label="Language"
+								className="bg-transparent border-0 font-medium outline-none cursor-pointer"
+							>
 								<option>English (US)</option>
 								<option>English (UK)</option>
 								<option>Français</option>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import {
+  BarChart3,
   CalendarDays,
   FileText,
   Images,
@@ -32,6 +33,7 @@ type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
+  { label: "Analytics", href: "/app/analytics", icon: BarChart3 },
   { label: "Posts", href: "/app/posts", icon: FileText },
   { label: "Calendar", href: "/app/calendar", icon: CalendarDays },
   { label: "Composer", href: "/app/composer", icon: PenSquare },
