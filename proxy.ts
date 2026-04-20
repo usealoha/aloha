@@ -1,17 +1,14 @@
-import { auth } from "./auth";
-import { NextRequest, NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { NextResponse } from "next/server";
+import authConfig from "./auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
-  const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-  const isProtectedRoute = nextUrl.pathname.startsWith("/app");
-  const isAuthRoute = ["/auth/signin"].includes(nextUrl.pathname);
-
-  if (isApiAuthRoute) {
-    return NextResponse.next();
-  }
+  const isAuthRoute = nextUrl.pathname === "/auth/signin";
 
   if (isAuthRoute) {
     if (isLoggedIn) {
@@ -20,7 +17,8 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  if (!isLoggedIn && isProtectedRoute) {
+  // /app/* — only protected surface beyond the auth routes.
+  if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/auth/signin", nextUrl));
   }
 
@@ -28,5 +26,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/app/:path*", "/auth/signin"],
 };
