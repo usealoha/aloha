@@ -1,4 +1,4 @@
-import { RELEASES, type ChangeTag } from "@/lib/releases";
+import { RELEASES, type ChangeTag, type Release } from "@/lib/releases";
 import { routes } from "@/lib/routes";
 import { makeMetadata } from "@/lib/seo";
 import {
@@ -8,6 +8,7 @@ import {
 	Rss,
 	Sparkle,
 	Wrench,
+	type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { ScreenshotPlaceholder } from "../_components/screenshot-placeholder";
@@ -19,208 +20,350 @@ export const metadata = makeMetadata({
 	path: routes.product.whatsNew,
 });
 
-
-const TAG_STYLES: Record<ChangeTag, { bg: string; icon: typeof Sparkle }> = {
-	new: { bg: "bg-primary-soft text-primary", icon: Sparkle },
-	improved: { bg: "bg-peach-200 text-ink", icon: Wrench },
-	fixed: { bg: "bg-muted text-ink/75", icon: Bug },
+const TAG_META: Record<
+	ChangeTag,
+	{ label: string; icon: LucideIcon; dot: string; text: string }
+> = {
+	new: {
+		label: "New",
+		icon: Sparkle,
+		dot: "bg-primary",
+		text: "text-primary",
+	},
+	improved: {
+		label: "Improved",
+		icon: Wrench,
+		dot: "bg-ink",
+		text: "text-ink",
+	},
+	fixed: {
+		label: "Fixed",
+		icon: Bug,
+		dot: "bg-ink/50",
+		text: "text-ink/70",
+	},
 };
 
+const TAG_ORDER: ChangeTag[] = ["new", "improved", "fixed"];
+
+function groupChanges(release: Release) {
+	const groups: Record<ChangeTag, string[]> = {
+		new: [],
+		improved: [],
+		fixed: [],
+	};
+	for (const c of release.changes) groups[c.tag].push(c.t);
+	return groups;
+}
+
 export default function WhatsNewPage() {
-	const [featured, ...rest] = RELEASES;
+	const [latest, ...rest] = RELEASES;
+	const latestGroups = groupChanges(latest);
 
 	return (
 		<>
 			{/* ─── HERO ────────────────────────────────────────────────────── */}
-			<header className="relative overflow-hidden bg-peach-200 pb-20 lg:pb-24">
+			<header className="relative overflow-hidden bg-peach-200 pb-16 lg:pb-20">
 				<span
 					aria-hidden
-					className="absolute top-[24%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none"
+					className="absolute top-[18%] left-[5%] font-display text-[28px] text-ink/25 rotate-[-8deg] select-none"
 				>
 					✳
 				</span>
 				<span
 					aria-hidden
-					className="absolute top-[70%] right-[8%] font-display text-[22px] text-primary/55 rotate-14 select-none"
+					className="absolute top-[68%] right-[10%] font-display text-[22px] text-primary/55 rotate-14 select-none"
 				>
 					+
+				</span>
+				<span
+					aria-hidden
+					className="absolute top-[34%] right-[6%] font-display text-[36px] text-ink/15 rotate-18 select-none"
+				>
+					※
 				</span>
 			</header>
 
 			<section className="bg-peach-200 wavy">
-				<div className="relative max-w-[1100px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28 pb-32! lg:pb-40!">
+				<div className="relative max-w-[1100px] mx-auto px-6 lg:px-10 pt-20 lg:pt-28 pb-20 lg:pb-28">
 					<div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
 						<div>
-							<div className="inline-flex items-center gap-2 mb-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
+							<div className="inline-flex items-center gap-3 mb-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
+								<span className="w-6 h-px bg-ink/40" />
 								Changelog
 							</div>
 							<h1 className="font-display font-normal text-ink leading-[0.98] tracking-[-0.03em] text-[56px] sm:text-[68px] lg:text-[88px]">
-								What's new.
+								What's shipped,
 								<br />
-								<span className="text-primary font-light">In order.</span>
+								<span className="text-primary font-light">in order.</span>
 							</h1>
 							<p className="mt-8 max-w-xl text-[16px] lg:text-[17px] leading-[1.55] text-ink/70">
-								Every shipped feature, improvement, and fix — dated honestly,
-								written in English. Release notes without the marketing voice.
+								Every release, dated honestly and written in English. No
+								"exciting news," no "we're thrilled to announce." Just what
+								changed, and why you'd care.
 							</p>
 						</div>
-						<div className="flex items-center gap-4 shrink-0">
+						<div className="flex items-center gap-3 shrink-0">
 							<a
-								href="/rss.xml"
+								href="/feed.xml"
 								className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-background-elev border border-border-strong text-[13px] font-medium hover:bg-muted transition-colors"
 							>
 								<Rss className="w-4 h-4" />
-								RSS
+								Atom feed
 							</a>
 							<Link
-								href={routes.connect.newsletter}
+								href={routes.product.roadmap}
 								className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
 							>
-								Monthly wrap
-								<ArrowRight className="w-3.5 h-3.5" />
+								What's next
+								<ArrowUpRight className="w-3.5 h-3.5" />
 							</Link>
+						</div>
+					</div>
+
+					{/* release count strip */}
+					<div className="mt-14 lg:mt-20 flex items-end justify-between border-t border-ink/15 pt-6">
+						<div className="flex items-baseline gap-3">
+							<span className="font-display text-[44px] lg:text-[56px] leading-none tracking-[-0.02em] text-ink">
+								{RELEASES.length}
+							</span>
+							<span className="text-[12px] font-mono uppercase tracking-[0.22em] text-ink/55">
+								releases
+							</span>
+						</div>
+						<div className="text-right">
+							<span className="block text-[11px] font-mono uppercase tracking-[0.22em] text-ink/55">
+								Latest
+							</span>
+							<span className="mt-1 block text-[14px] font-display text-ink">
+								v{latest.version} · {latest.dateLabel}
+							</span>
 						</div>
 					</div>
 				</div>
 			</section>
 
-			{/* ─── FEATURED RELEASE ────────────────────────────────────────── */}
-			<section className="bg-ink relative">
-				<div
-					aria-hidden
-					className="absolute inset-0 top-2! opacity-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
-				/>
-				<section className="py-10 lg:py-14 bg-background">
-					<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-						<article className="rounded-3xl bg-primary-soft border border-primary/15 overflow-hidden">
-							<div className="p-8 lg:p-12 grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12">
+			{/* ─── LATEST RELEASE ──────────────────────────────────────────── */}
+			<section className="bg-background py-20 lg:py-28">
+				<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
+					<div className="flex items-baseline justify-between mb-10">
+						<h2 className="font-display text-[28px] lg:text-[36px] leading-[1.05] tracking-[-0.015em] text-ink">
+							Latest
+						</h2>
+						<span className="text-[11px] font-mono uppercase tracking-[0.22em] text-ink/55">
+							v{latest.version}
+						</span>
+					</div>
+
+					<article className="rounded-3xl bg-primary-soft border border-primary/15 overflow-hidden">
+						{latest.screenshotSrc && latest.screenshotLabel ? (
+							<div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 p-8 lg:p-12">
 								<div className="col-span-12 lg:col-span-5">
-									<div className="inline-flex items-center gap-2 text-[10.5px] font-mono uppercase tracking-[0.22em] text-primary">
-										<Sparkle className="w-3 h-3" />
-										Latest · v{featured.version}
-									</div>
 									<time
-										dateTime={featured.date}
-										className="mt-3 block text-[12.5px] font-mono text-ink/60"
+										dateTime={latest.date}
+										className="block text-[11.5px] font-mono uppercase tracking-[0.22em] text-primary"
 									>
-										{featured.dateLabel}
+										{latest.dateLabel}
 									</time>
-									<h2 className="mt-5 font-display text-[32px] lg:text-[40px] leading-[1.05] tracking-[-0.015em] text-ink">
-										{featured.title}
-									</h2>
+									<h3 className="mt-4 font-display text-[32px] lg:text-[40px] leading-[1.05] tracking-[-0.015em] text-ink">
+										{latest.title}
+									</h3>
 									<p className="mt-5 text-[15px] leading-[1.6] text-ink/75 max-w-md">
-										{featured.lead}
+										{latest.lead}
 									</p>
 
-									<ul className="mt-7 space-y-3">
-										{featured.changes.map((c, i) => {
-											const { bg, icon: Icon } = TAG_STYLES[c.tag];
+									<div className="mt-8 space-y-6">
+										{TAG_ORDER.map((tag) => {
+											const items = latestGroups[tag];
+											if (items.length === 0) return null;
+											const meta = TAG_META[tag];
+											const Icon = meta.icon;
 											return (
-												<li key={i} className="flex items-start gap-3">
-													<span
-														className={`inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${bg} px-2 py-0.5 rounded-full shrink-0 mt-[3px]`}
+												<div key={tag}>
+													<div
+														className={`flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] ${meta.text}`}
 													>
-														<Icon className="w-2.5 h-2.5" />
-														{c.tag}
-													</span>
-													<p className="text-[14px] text-ink/85 leading-normal">
-														{c.t}
-													</p>
-												</li>
+														<Icon className="w-3 h-3" />
+														{meta.label}
+													</div>
+													<ul className="mt-3 space-y-2.5">
+														{items.map((t, i) => (
+															<li
+																key={i}
+																className="flex items-start gap-3 text-[14px] text-ink/85 leading-[1.55]"
+															>
+																<span
+																	aria-hidden
+																	className={`mt-[7px] w-1.5 h-1.5 rounded-full ${meta.dot} shrink-0`}
+																/>
+																<span>{t}</span>
+															</li>
+														))}
+													</ul>
+												</div>
 											);
 										})}
-									</ul>
+									</div>
 								</div>
 
 								<div className="col-span-12 lg:col-span-7">
-									{featured.screenshotLabel && (
-										<ScreenshotPlaceholder
-											id={`release-${featured.version}`}
-											label={featured.screenshotLabel}
-											notes={featured.screenshotNotes ?? ""}
-											aspect="aspect-[16/10]"
-											tone="bg-background-elev"
-											src={featured.screenshotSrc}
-											alt={featured.screenshotAlt}
-										/>
-									)}
+									<ScreenshotPlaceholder
+										id={`release-${latest.version}`}
+										label={latest.screenshotLabel}
+										notes={latest.screenshotNotes ?? ""}
+										aspect="aspect-[16/10]"
+										tone="bg-background-elev"
+										src={latest.screenshotSrc}
+										alt={latest.screenshotAlt}
+									/>
 								</div>
 							</div>
-						</article>
-					</div>
-				</section>
-				{/* ─── RELEASE FEED ────────────────────────────────────────────── */}
-				<section className="py-12 lg:py-20 pb-32 lg:pb-40 bg-background wavy">
-					<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
-						<div className="relative">
-							{/* spine line */}
-							<span
-								aria-hidden
-								className="absolute left-0 lg:left-[140px] top-4 bottom-4 w-px bg-border-strong/60"
-							/>
+						) : (
+							<div className="p-8 lg:p-12">
+								<div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 pb-8 mb-10 border-b border-primary/20">
+									<div className="max-w-2xl">
+										<time
+											dateTime={latest.date}
+											className="block text-[11.5px] font-mono uppercase tracking-[0.22em] text-primary"
+										>
+											{latest.dateLabel}
+										</time>
+										<h3 className="mt-4 font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em] text-ink">
+											{latest.title}
+										</h3>
+									</div>
+									<p className="text-[15px] leading-[1.6] text-ink/75 max-w-sm lg:text-right">
+										{latest.lead}
+									</p>
+								</div>
 
-							<ol className="space-y-14 lg:space-y-16">
-								{rest.map((r) => (
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+									{TAG_ORDER.map((tag) => {
+										const items = latestGroups[tag];
+										if (items.length === 0) return null;
+										const meta = TAG_META[tag];
+										const Icon = meta.icon;
+										return (
+											<div key={tag}>
+												<div
+													className={`flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] ${meta.text}`}
+												>
+													<Icon className="w-3 h-3" />
+													{meta.label}
+													<span className="ml-auto text-ink/40 font-mono">
+														{String(items.length).padStart(2, "0")}
+													</span>
+												</div>
+												<ul className="mt-4 space-y-3">
+													{items.map((t, i) => (
+														<li
+															key={i}
+															className="flex items-start gap-3 text-[14px] text-ink/85 leading-[1.55]"
+														>
+															<span
+																aria-hidden
+																className={`mt-[7px] w-1.5 h-1.5 rounded-full ${meta.dot} shrink-0`}
+															/>
+															<span>{t}</span>
+														</li>
+													))}
+												</ul>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
+					</article>
+				</div>
+			</section>
+
+			{/* ─── EARLIER RELEASES ────────────────────────────────────────── */}
+			<section className="bg-ink relative">
+				<div
+					aria-hidden
+					className="absolute inset-0 top-2.5! opacity-20 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
+				/>
+				<section className="bg-background wavy pb-32 lg:pb-40">
+					<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
+						<div className="flex items-baseline justify-between mb-10 lg:mb-14">
+							<h2 className="font-display text-[28px] lg:text-[36px] leading-[1.05] tracking-[-0.015em] text-ink">
+								Earlier
+							</h2>
+							<span className="text-[11px] font-mono uppercase tracking-[0.22em] text-ink/55">
+								{rest.length} releases
+							</span>
+						</div>
+
+						<ol className="space-y-8 lg:space-y-10">
+							{rest.map((r) => {
+								const groups = groupChanges(r);
+								return (
 									<li
 										key={r.version}
-										className="relative grid grid-cols-12 gap-x-0 gap-y-4 lg:gap-8"
+										className="rounded-3xl bg-background-elev border border-border-strong/60 p-7 lg:p-10"
 									>
-										{/* date spine (left) */}
-										<div className="col-span-12 lg:col-span-2 relative pl-6 lg:pl-0">
-											<span
-												aria-hidden
-												className="absolute left-[-3px] lg:left-[137px] top-2 w-2 h-2 rounded-full bg-ink"
-											/>
-											<time
-												dateTime={r.date}
-												className="block text-[11px] font-mono uppercase tracking-[0.2em] text-ink/55"
-											>
-												{r.dateLabel}
-											</time>
-											<span className="mt-1 inline-block text-[12.5px] font-display text-ink">
-												v{r.version}
-											</span>
-										</div>
+										<div className="grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-10">
+											<div className="col-span-12 lg:col-span-3">
+												<div className="flex items-center gap-3 lg:flex-col lg:items-start lg:gap-2">
+													<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-peach-200 text-[10.5px] font-mono uppercase tracking-[0.2em] text-ink/70">
+														v{r.version}
+													</span>
+													<time
+														dateTime={r.date}
+														className="text-[11.5px] font-mono uppercase tracking-[0.22em] text-ink/55"
+													>
+														{r.dateLabel}
+													</time>
+												</div>
+											</div>
 
-										{/* content */}
-										<div className="col-span-12 lg:col-span-10 pl-6 lg:pl-10">
-											<h3 className="font-display text-[24px] lg:text-[28px] leading-[1.15] tracking-[-0.01em] text-ink">
-												{r.title}
-											</h3>
-											<p className="mt-3 text-[14.5px] leading-[1.6] text-ink/75 max-w-2xl">
-												{r.lead}
-											</p>
+											<div className="col-span-12 lg:col-span-9">
+												<h3 className="font-display text-[22px] lg:text-[26px] leading-[1.15] tracking-[-0.01em] text-ink">
+													{r.title}
+												</h3>
+												<p className="mt-3 text-[14.5px] leading-[1.6] text-ink/75 max-w-2xl">
+													{r.lead}
+												</p>
 
-											<ul className="mt-5 space-y-2.5">
-												{r.changes.map((c, i) => {
-													const { bg, icon: Icon } = TAG_STYLES[c.tag];
-													return (
-														<li key={i} className="flex items-start gap-3">
-															<span
-																className={`inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${bg} px-2 py-0.5 rounded-full shrink-0 mt-[3px]`}
-															>
-																<Icon className="w-2.5 h-2.5" />
-																{c.tag}
-															</span>
-															<p className="text-[13.5px] text-ink/85 leading-[1.55]">
-																{c.t}
-															</p>
-														</li>
-													);
-												})}
-											</ul>
+												<div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+													{TAG_ORDER.map((tag) => {
+														const items = groups[tag];
+														if (items.length === 0) return null;
+														const meta = TAG_META[tag];
+														const Icon = meta.icon;
+														return (
+															<div key={tag}>
+																<div
+																	className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${meta.text}`}
+																>
+																	<Icon className="w-3 h-3" />
+																	{meta.label}
+																</div>
+																<ul className="mt-3 space-y-2">
+																	{items.map((t, i) => (
+																		<li
+																			key={i}
+																			className="flex items-start gap-2.5 text-[13.5px] text-ink/80 leading-[1.55]"
+																		>
+																			<span
+																				aria-hidden
+																				className={`mt-[7px] w-1 h-1 rounded-full ${meta.dot} shrink-0`}
+																			/>
+																			<span>{t}</span>
+																		</li>
+																	))}
+																</ul>
+															</div>
+														);
+													})}
+												</div>
+											</div>
 										</div>
 									</li>
-								))}
-							</ol>
-
-							<div className="mt-14 pl-6 lg:pl-[140px]">
-								<button className="pencil-link text-[14px] font-medium text-ink inline-flex items-center gap-2">
-									Load older releases
-									<ArrowRight className="w-3.5 h-3.5" />
-								</button>
-							</div>
-						</div>
+								);
+							})}
+						</ol>
 					</div>
 				</section>
 			</section>
@@ -229,30 +372,28 @@ export default function WhatsNewPage() {
 			<section className="relative py-24 lg:py-28 bg-ink wavy text-background-elev">
 				<div
 					aria-hidden
-					className="absolute inset-0 top-2! opacity-10 -z-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
+					className="absolute inset-0 top-2! opacity-20 -z-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
 				/>
 				<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
 					<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-center">
 						<div className="col-span-12 lg:col-span-7">
 							<h2 className="font-display text-[32px] lg:text-[44px] leading-[1.05] tracking-[-0.015em]">
-								We ship every two weeks.
+								This is the honest list.
 								<br />
-								<span className="text-peach-300">
-									You don't have to read every one.
-								</span>
+								<span className="text-peach-300">Here's what's next.</span>
 							</h2>
 							<p className="mt-5 max-w-lg text-[15px] text-ink/70 leading-[1.6]">
-								Prefer a monthly wrap in your inbox instead? We send a plain-
-								English summary on the first of every month. No marketing fluff,
-								no "exciting news."
+								The roadmap is our working list of planned work. Dates are
+								intentions, not promises — and what's on it shifts when real
+								usage tells us something new.
 							</p>
 						</div>
 						<div className="col-span-12 lg:col-span-5 flex flex-col gap-3 lg:items-end">
 							<Link
-								href={routes.connect.newsletter}
+								href={routes.product.roadmap}
 								className="inline-flex items-center gap-2 h-12 px-6 rounded-full text-background text-[14px] font-medium bg-primary transition-colors"
 							>
-								Get the monthly wrap
+								See the roadmap
 								<ArrowRight className="w-4 h-4" />
 							</Link>
 							<Link
