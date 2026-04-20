@@ -3,11 +3,12 @@ import { automations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 import { desc, eq } from "drizzle-orm";
-import { Pause, Pencil, Play, Plus, Sparkles, Zap } from "lucide-react";
+import { Pencil, Plus, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { DeleteAutomationButton } from "./_components/delete-confirm";
 import { FlowDiagram } from "./_components/flow-diagram";
 import { RunsPanel, type RunView } from "./_components/runs-panel";
+import { ToggleAutomationButton } from "./_components/toggle-button";
 import {
 	TEMPLATES,
 	TEMPLATE_LIST,
@@ -310,22 +311,7 @@ function SelectedHeader({
 				) : null}
 				<form action={toggleAutomation}>
 					<input type="hidden" name="id" value={id} />
-					<button
-						type="submit"
-						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13px] font-medium text-ink hover:border-ink transition-colors"
-					>
-						{status === "active" ? (
-							<>
-								<Pause className="w-3.5 h-3.5" />
-								Pause
-							</>
-						) : (
-							<>
-								<Play className="w-3.5 h-3.5" />
-								Activate
-							</>
-						)}
-					</button>
+					<ToggleAutomationButton status={status} />
 				</form>
 				<DeleteAutomationButton automationId={id} name={name} />
 			</div>

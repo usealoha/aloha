@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Calendar, Save, Sparkles } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import { ArrowLeft, Calendar, Loader2, Save, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   TEMPLATES,
@@ -133,25 +134,38 @@ export function Builder({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
-          >
-            {mode === "edit" ? (
-              <>
-                <Save className="w-3.5 h-3.5" />
-                Save changes
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Create routine
-              </>
-            )}
-          </button>
+          <SubmitButton mode={mode} />
         </div>
       </footer>
     </form>
+  );
+}
+
+function SubmitButton({ mode }: { mode: "create" | "edit" }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-60 disabled:hover:bg-ink transition-colors"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          {mode === "edit" ? "Saving…" : "Creating…"}
+        </>
+      ) : mode === "edit" ? (
+        <>
+          <Save className="w-3.5 h-3.5" />
+          Save changes
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-3.5 h-3.5" />
+          Create routine
+        </>
+      )}
+    </button>
   );
 }
 
