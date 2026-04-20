@@ -4,7 +4,6 @@ import {
 	ArrowRight,
 	ArrowUpRight,
 	Building,
-	Check,
 	Handshake,
 	Puzzle,
 	Sparkle,
@@ -12,106 +11,31 @@ import {
 } from "lucide-react";
 
 export const metadata = makeMetadata({
-	title: "Partners — agencies, integrations, and solution builders",
+	title: "Partners — early conversations, not a programme yet",
 	description:
-		"Aloha's partner programme. Three tiers for agencies, app integrations and solution partners. Co-marketing, revenue share, and a named point of contact.",
+		"Aloha is in 0.x beta. There's no formal partner programme yet — but we want to talk to agencies, tool builders, and consultants now, before we design one.",
 	path: routes.connect.partners,
 	image: `${SITE_URL}/opengraph-image`,
 });
 
-const TIERS = [
+const SHAPES = [
 	{
-		title: "Agency partner",
+		title: "Agencies",
 		icon: Building,
-		for: "Agencies managing 5+ clients",
-		perks: [
-			"Dedicated Agency plan pricing",
-			"Named account manager",
-			"White-label client reports, branded per-client",
-			"Quarterly co-marketing moment (blog, podcast, or newsletter slot)",
-			"Early access to multi-workspace features",
-		],
-		cta: "Apply as an agency",
-		tone: "bg-peach-200",
+		for: "Running social for multiple clients",
+		body: "We don't have agency pricing, multi-workspace, or white-label reports yet. We'd like to build them with a handful of agencies who'll actually use them. If that's you, tell us how you work and what would make Aloha viable for your client book.",
 	},
 	{
-		title: "Integration partner",
+		title: "Integrations",
 		icon: Puzzle,
-		for: "Tools that complement Aloha",
-		perks: [
-			"Listing on our integrations directory, cross-listed on your side",
-			"Technical sandbox with a platform engineer on call",
-			"Joint launch announcement when the integration ships",
-			"Priority bug fixes on both sides",
-			"Revenue share on paid workflows through the integration",
-		],
-		cta: "Apply to integrate",
-		tone: "bg-primary-soft",
+		for: "Tools that could fit alongside Aloha",
+		body: "There's no public API yet. Integration priorities today are driven by what customers ask for most, and we'd rather have a conversation than a directory listing. If your tool overlaps with publishing, inbox, analytics, or capture — reach out.",
 	},
 	{
-		title: "Solution partner",
+		title: "Consultants",
 		icon: Users,
-		for: "Consultants who implement Aloha for clients",
-		perks: [
-			"Verified solution-partner badge on your profile",
-			"Training path: 4-hour workshop + certification",
-			"Early invites to every release, 30 days before general availability",
-			"Referral fee for brought-in customers",
-			"Quarterly community meet-ups (virtual + once-a-year in person)",
-		],
-		cta: "Apply as a solution partner",
-		tone: "bg-peach-100",
-	},
-];
-
-const DIRECTORY = [
-	{
-		n: "Field & Kin",
-		kind: "Agency · 12 brands",
-		bio: "Brooklyn studio for DTC brands and creator startups.",
-		tone: "bg-peach-100",
-	},
-	{
-		n: "Harbor Supply",
-		kind: "Agency · 8 brands",
-		bio: "Bengaluru collective specialising in nonprofits and mission-led brands.",
-		tone: "bg-peach-200",
-	},
-	{
-		n: "Notion",
-		kind: "Integration",
-		bio: "Pipe weekly digests, analytics exports, and approvals into your Notion workspace.",
-		tone: "bg-primary-soft",
-	},
-	{
-		n: "Linear",
-		kind: "Integration",
-		bio: "Inbox-to-issue routing for product feedback threads.",
-		tone: "bg-background-elev border-2 border-border",
-	},
-	{
-		n: "Figma",
-		kind: "Integration",
-		bio: "Pull approved visuals straight into a Composer draft from your design system.",
-		tone: "bg-peach-100",
-	},
-	{
-		n: "Beehiiv",
-		kind: "Integration",
-		bio: "Sync subscribers between your newsletter and Aloha capture forms.",
-		tone: "bg-peach-300",
-	},
-	{
-		n: "Clara & Co.",
-		kind: "Solution · consultants",
-		bio: "Two-person consultancy specialising in Logic Matrix migrations.",
-		tone: "bg-primary-soft",
-	},
-	{
-		n: "North Handle",
-		kind: "Solution · consultants",
-		bio: "Sydney-based, team-plan implementation for B2B content orgs.",
-		tone: "bg-peach-200",
+		for: "Implementing social tooling for clients",
+		body: "No formal solution-partner track, no certification, no referral structure — not yet. We'd like to meet people doing this work so those things get designed around reality, not assumptions. Introduce yourself and tell us what you'd want from us.",
 	},
 ];
 
@@ -139,35 +63,36 @@ export default function PartnersPage() {
 					<div className="grid grid-cols-12 gap-x-0 gap-y-8 lg:gap-12 items-end">
 						<div className="col-span-12 lg:col-span-8">
 							<div className="inline-flex items-center gap-2 mb-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/60">
-								Partner programme
+								Partners · early days
 							</div>
 							<h1 className="font-display font-normal text-ink leading-[0.95] tracking-[-0.03em] text-[56px] sm:text-[72px] lg:text-[92px]">
-								Three ways
+								No programme yet.
 								<br />
 								<span className="text-primary font-light">
-									to build with us.
+									Just a door that's open.
 								</span>
 							</h1>
 							<p className="mt-8 max-w-2xl text-[17px] lg:text-[18px] leading-[1.6] text-ink/75">
-								Agencies running Aloha for multiple clients. Tools that fit into
-								the Aloha surface. Consultants who implement for customers.
-								Three tiers, each with named-point-of-contact support — not a
-								web form into the void.
+								Aloha is in 0.x beta. We haven't designed a partner programme,
+								signed integration partners, or built a directory — and we'd
+								rather say that plainly than ship a brochure. If you're an
+								agency, a tool, or a consultant who sees an overlap, write to
+								us. We'll reply as a person.
 							</p>
 						</div>
 						<div className="col-span-12 flex flex-col items-end lg:col-span-4">
 							<a
-								href="#apply"
+								href="mailto:hello@usealoha.app"
 								className="inline-flex items-center gap-2 h-14 px-7 rounded-full bg-ink text-background text-[15px] font-medium hover:bg-primary transition-colors self-end"
 							>
 								<Handshake className="w-4 h-4" />
-								Apply
+								Start a conversation
 							</a>
 							<a
-								href="mailto:partners@usealoha.app"
+								href="mailto:hello@usealoha.app"
 								className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium text-ink pencil-link"
 							>
-								partners@usealoha.app
+								hello@usealoha.app
 								<ArrowUpRight className="w-4 h-4" />
 							</a>
 						</div>
@@ -175,52 +100,42 @@ export default function PartnersPage() {
 				</div>
 			</section>
 
-			{/* ─── THREE TIERS ─────────────────────────────────────────────── */}
+			{/* ─── THREE SHAPES ────────────────────────────────────────────── */}
 			<section className="bg-background-elev">
 				<section className="py-24 lg:py-32 pb-32 lg:pb-40 wavy bg-background">
 					<div className="max-w-[1180px] mx-auto px-6 lg:px-10">
 						<div className="mb-14">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-								The three tiers
+								Who we want to hear from
 							</p>
 							<h2 className="font-display text-[36px] lg:text-[52px] leading-[1.02] tracking-[-0.02em]">
-								Pick the shape
+								Three kinds of people,
 								<br />
-								<span className="text-primary">of your work.</span>
+								<span className="text-primary">one inbox.</span>
 							</h2>
 						</div>
 
 						<div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
-							{TIERS.map((t) => (
+							{SHAPES.map((s) => (
 								<article
-									key={t.title}
-									className={`p-8 lg:p-9 rounded-3xl ${t.tone} flex flex-col`}
+									key={s.title}
+									className="p-8 lg:p-9 rounded-3xl bg-peach-100 flex flex-col"
 								>
-									<t.icon className="w-6 h-6 text-ink" />
+									<s.icon className="w-6 h-6 text-ink" />
 									<p className="mt-6 text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/55">
-										{t.for}
+										{s.for}
 									</p>
 									<h3 className="mt-2 font-display text-[28px] leading-[1.15] tracking-[-0.01em]">
-										{t.title}
+										{s.title}
 									</h3>
-
-									<ul className="mt-6 space-y-2.5 text-[13.5px] text-ink/85 flex-1">
-										{t.perks.map((p) => (
-											<li key={p} className="flex items-start gap-2.5">
-												<Check
-													className="w-3.5 h-3.5 mt-[3px] text-primary shrink-0"
-													strokeWidth={2.5}
-												/>
-												{p}
-											</li>
-										))}
-									</ul>
-
+									<p className="mt-5 text-[14px] text-ink/80 leading-[1.6] flex-1">
+										{s.body}
+									</p>
 									<a
-										href="#apply"
+										href="mailto:hello@usealoha.app"
 										className="mt-7 pencil-link text-[13.5px] font-medium text-ink inline-flex items-center gap-2 self-start"
 									>
-										{t.cta}
+										Write to us
 										<ArrowUpRight className="w-3.5 h-3.5" />
 									</a>
 								</article>
@@ -230,52 +145,52 @@ export default function PartnersPage() {
 				</section>
 			</section>
 
-			{/* ─── DIRECTORY ──────────────────────────────────────────────── */}
+			{/* ─── WHERE WE ARE ────────────────────────────────────────────── */}
 			<section className="py-20 lg:py-24 bg-background-elev wavy">
-				<div className="max-w-[1180px] mx-auto px-6 lg:px-10 pb-8 lg:pb-12">
-					<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 mb-12 items-end">
-						<div className="col-span-12 lg:col-span-7">
-							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-								Partner directory
-							</p>
-							<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-								People and tools
-								<br />
-								<span className="text-primary">already in the ring.</span>
-							</h2>
-						</div>
-						<p className="col-span-12 lg:col-span-5 text-[15.5px] text-ink/70 leading-[1.55]">
-							The current directory — agencies, integrations, and solution
-							consultants we've vetted. Filter coming soon; for now it's a short
-							scroll.
+				<div className="max-w-[1180px] mx-auto px-6 lg:px-10 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-start">
+					<div className="col-span-12 lg:col-span-5">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
+							Where we actually are
 						</p>
+						<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
+							Small team,
+							<br />
+							<span className="text-primary">shipping in public.</span>
+						</h2>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
-						{DIRECTORY.map((d) => (
-							<article
-								key={d.n}
-								className={`p-6 rounded-3xl ${d.tone} flex flex-col min-h-[180px]`}
+					<ul className="col-span-12 lg:col-span-7 space-y-6 text-[15.5px] leading-[1.7] text-ink/85">
+						{[
+							{
+								h: "0.x beta, pricing not live yet",
+								p: "Aloha is free to use right now while we settle tiers on Polar. Anything we'd offer a partner on pricing needs pricing to exist first.",
+							},
+							{
+								h: "No public API, no integration SDK",
+								p: "We publish to the channels we've shipped — Meta, Medium, and Snapchat are on the roadmap, not in production. An integration partnership today is a conversation, not a technical pipeline.",
+							},
+							{
+								h: "No agency features yet",
+								p: "Multi-workspace, client-facing reports, and role-based access are things we'd build with agencies, not ahead of them. Talking early helps us get them right.",
+							},
+							{
+								h: "One person replies to partners@",
+								p: "No forms routed into the void. Expect a real reply, possibly a slow one, from someone on the team.",
+							},
+						].map((x) => (
+							<li
+								key={x.h}
+								className="pl-6 border-l-2 border-border-strong/60"
 							>
-								<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-ink/55 mb-4">
-									{d.kind}
+								<p className="font-display text-[20px] leading-[1.2] tracking-[-0.005em] text-ink">
+									{x.h}
 								</p>
-								<h3 className="font-display text-[22px] leading-[1.15] tracking-[-0.005em]">
-									{d.n}
-								</h3>
-								<p className="mt-3 text-[13px] text-ink/70 leading-[1.55]">
-									{d.bio}
+								<p className="mt-2 text-[14.5px] text-ink/70 leading-[1.6]">
+									{x.p}
 								</p>
-								<a
-									href="#"
-									className="mt-auto pt-4 self-start pencil-link text-[12.5px] font-medium text-ink inline-flex items-center gap-1.5"
-								>
-									View profile
-									<ArrowUpRight className="w-3 h-3" />
-								</a>
-							</article>
+							</li>
 						))}
-					</div>
+					</ul>
 				</div>
 			</section>
 
@@ -288,10 +203,10 @@ export default function PartnersPage() {
 								What we look for
 							</p>
 							<h2 className="font-display text-[36px] lg:text-[48px] leading-[1.02] tracking-[-0.02em]">
-								Taste, reliability,
+								Taste, patience,
 								<br />
 								<span className="text-primary">
-									and the patience to ship well.
+									and honesty about fit.
 								</span>
 							</h2>
 						</div>
@@ -299,20 +214,16 @@ export default function PartnersPage() {
 						<ul className="col-span-12 lg:col-span-7 space-y-6 text-[15.5px] leading-[1.7] text-ink/85">
 							{[
 								{
-									h: "A track record with customers similar to ours",
-									p: "Creators and small teams. If you've only served Fortune 500s, we're probably not your fit — and vice versa.",
+									h: "You work with creators and small teams",
+									p: "That's who Aloha is built for. If your book is enterprise-only, we're probably not a fit today — and it's kinder to say so.",
 								},
 								{
-									h: "Good defaults, honest copy",
-									p: "We look at your own product and your own marketing. Loud growth tactics are a signal we're not aligned.",
+									h: "You're comfortable with early-stage",
+									p: "Things will change. Features will move. A partner today is someone who wants to shape what gets built, not someone who needs it finished.",
 								},
 								{
 									h: "Named contact on both sides",
 									p: "Partnerships are human. We want a person, not a ticket queue. You'll get the same from us.",
-								},
-								{
-									h: "Willingness to deprecate together",
-									p: "Integrations change. We commit to telling you 60 days before any breaking change; we expect the same.",
 								},
 							].map((x) => (
 								<li
@@ -332,106 +243,39 @@ export default function PartnersPage() {
 				</section>
 			</section>
 
-			{/* ─── APPLY ──────────────────────────────────────────────────── */}
+			{/* ─── WRITE TO US ─────────────────────────────────────────────── */}
 			<section className="bg-ink relative">
 				<div
 					aria-hidden
 					className="absolute inset-0 opacity-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
 				/>
 				<section
-					id="apply"
+					id="write"
 					className="py-24 lg:py-32 pb-32 lg:pb-40 wavy bg-background-elev"
 				>
-					<div className="max-w-[1000px] mx-auto px-6 lg:px-10">
-						<div className="mb-10 text-center">
-							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
-								Apply
-							</p>
-							<h2 className="font-display text-[36px] lg:text-[52px] leading-[1.02] tracking-[-0.02em]">
-								Tell us who you are.
-								<br />
-								<span className="text-primary">A real human replies.</span>
-							</h2>
+					<div className="max-w-[820px] mx-auto px-6 lg:px-10 text-center">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-4">
+							Write to us
+						</p>
+						<h2 className="font-display text-[36px] lg:text-[52px] leading-[1.02] tracking-[-0.02em]">
+							No form. No funnel.
+							<br />
+							<span className="text-primary">Just an email address.</span>
+						</h2>
+						<p className="mt-8 text-[16px] lg:text-[17px] text-ink/75 leading-[1.6]">
+							Tell us who you are, what you do, and what an Aloha
+							partnership might look like from your side. Links beat pitch
+							decks. A paragraph is plenty.
+						</p>
+						<div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+							<a
+								href="mailto:hello@usealoha.app"
+								className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-ink text-background font-medium text-[14px] hover:bg-primary transition-colors"
+							>
+								hello@usealoha.app
+								<ArrowRight className="w-4 h-4" />
+							</a>
 						</div>
-
-						<form
-							action="#"
-							method="post"
-							className="p-8 lg:p-10 rounded-3xl bg-background border border-border space-y-6"
-						>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-								<div>
-									<label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
-										Your company
-									</label>
-									<input
-										type="text"
-										required
-										className="w-full h-12 px-4 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-									/>
-								</div>
-								<div>
-									<label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
-										Contact email
-									</label>
-									<input
-										type="email"
-										required
-										className="w-full h-12 px-4 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-									/>
-								</div>
-								<div>
-									<label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
-										Partner type
-									</label>
-									<select
-										required
-										className="w-full h-12 px-4 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-									>
-										<option>Agency</option>
-										<option>Integration</option>
-										<option>Solution partner</option>
-									</select>
-								</div>
-								<div>
-									<label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
-										Website
-									</label>
-									<input
-										type="url"
-										required
-										placeholder="https://..."
-										className="w-full h-12 px-4 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-									/>
-								</div>
-							</div>
-
-							<div>
-								<label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-2">
-									What you'd build, run, or ship together
-								</label>
-								<textarea
-									required
-									rows={4}
-									placeholder="A paragraph. Specifics beat pitch decks."
-									className="w-full px-4 py-3 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary resize-none"
-								/>
-							</div>
-
-							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-								<p className="text-[12px] text-ink/60">
-									Reviewed within three business days. We read every
-									application.
-								</p>
-								<button
-									type="submit"
-									className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-ink text-background font-medium text-[14px] hover:bg-primary transition-colors"
-								>
-									Send application
-									<ArrowRight className="w-4 h-4" />
-								</button>
-							</div>
-						</form>
 					</div>
 				</section>
 			</section>
@@ -448,12 +292,14 @@ export default function PartnersPage() {
 							<h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-none tracking-[-0.02em]">
 								Running an agency or tool?
 								<br />
-								<span className="text-peach-300">Let's talk.</span>
+								<span className="text-peach-300">
+									Let's talk, early.
+								</span>
 							</h2>
 						</div>
 						<div className="col-span-12 lg:col-span-4 flex flex-col gap-4 lg:items-end">
 							<a
-								href="mailto:partners@usealoha.app"
+								href="mailto:hello@usealoha.app"
 								className="inline-flex items-center gap-2 h-14 px-7 rounded-full text-background font-medium text-[15px] bg-primary transition-colors"
 							>
 								<Sparkle className="w-4 h-4" />
