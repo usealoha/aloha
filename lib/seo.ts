@@ -127,13 +127,18 @@ export function organizationJsonLd() {
       },
       {
         "@type": "ContactPoint",
-        email: "sales@usealoha.app",
-        contactType: "sales",
+        email: "security@usealoha.app",
+        contactType: "security",
       },
       {
         "@type": "ContactPoint",
-        email: "security@usealoha.app",
-        contactType: "security",
+        email: "privacy@usealoha.app",
+        contactType: "privacy",
+      },
+      {
+        "@type": "ContactPoint",
+        email: "legal@usealoha.app",
+        contactType: "legal",
       },
     ],
   };
