@@ -1,44 +1,23 @@
 import { db } from "@/db";
 import { campaigns, posts } from "@/db/schema";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
-import type { EffectiveState } from "@/lib/channel-state-format";
-import { stateOr, stateStyles } from "@/lib/channel-state-format";
 import { getCurrentUser } from "@/lib/current-user";
-import { cn } from "@/lib/utils";
 import { and, eq, gte, lt } from "drizzle-orm";
 import {
-	AlertCircle,
-	CalendarPlus,
-	CheckCircle2,
-	ChevronLeft,
-	ChevronRight,
-	Clock,
-	Sparkles,
-	Wand2,
-} from "lucide-react";
-import Link from "next/link";
-import { GridScroll } from "./grid-scroll";
-import { ViewSelect } from "./view-select";
+	buildWeekDays,
+	CalendarView,
+	type CalendarPostRow,
+	type CalendarViewMode,
+	dateKey,
+	tzDateKey,
+} from "./_components/calendar-view";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-type ViewMode = "month" | "week" | "day";
-type PostRow = {
-	id: string;
-	content: string;
-	platforms: string[];
-	status: string;
-	scheduledAt: Date | null;
-	publishedAt: Date | null;
-	campaignId: string | null;
-};
 
 const first = (v: string | string[] | undefined) =>
 	Array.isArray(v) ? v[0] : v;
-
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const HOUR_HEIGHT = 96;
 
 export default async function CalendarPage({
 	searchParams,
@@ -53,13 +32,12 @@ export default async function CalendarPage({
 	const anchor = parseAnchor(first(params.date), tz);
 	const anchorKey = dateKey(anchor);
 
-	const {
-		from: rangeFrom,
-		to: rangeTo,
-		keys: rangeKeys,
-	} = computeRange(view, anchor, tz);
+	const { from: rangeFrom, to: rangeTo, keys: rangeKeys } = computeRange(
+		view,
+		anchor,
+		tz,
+	);
 
-	// UTC overshoot, then bucket by tz-local date.
 	const fetchFrom = new Date(rangeFrom);
 	fetchFrom.setUTCDate(fetchFrom.getUTCDate() - 2);
 	const fetchTo = new Date(rangeTo);
@@ -83,7 +61,7 @@ export default async function CalendarPage({
 					gte(posts.scheduledAt, fetchFrom),
 					lt(posts.scheduledAt, fetchTo),
 				),
-			) as Promise<PostRow[]>,
+			) as Promise<CalendarPostRow[]>,
 		getEffectiveStatesForUser(user.id),
 		db
 			.select({
@@ -94,16 +72,12 @@ export default async function CalendarPage({
 			.where(eq(campaigns.userId, user.id)),
 	]);
 
-	// Build a stable, per-user ordering of campaigns so each gets a
-	// consistent color across the calendar. Hash-based would work too, but
-	// ordered index keeps the palette tight (and predictable if the user
-	// only has a few running campaigns).
 	const campaignIndex = new Map<string, { name: string; colorIdx: number }>();
 	userCampaigns.forEach((c, i) => {
 		campaignIndex.set(c.id, { name: c.name, colorIdx: i });
 	});
 
-	const buckets = new Map<string, PostRow[]>();
+	const buckets = new Map<string, CalendarPostRow[]>();
 	for (const r of rows) {
 		const anchorTs = r.scheduledAt ?? r.publishedAt;
 		if (!anchorTs) continue;
@@ -125,498 +99,34 @@ export default async function CalendarPage({
 	}).length;
 
 	const header = buildHeader(view, anchor, tz);
-	const sub = buildSubLabel(view, postsInView);
+	const subLabel = buildSubLabel(view, postsInView);
 
 	return (
-		<div className="space-y-10">
-			{/* Header */}
-			<header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						{user.workspaceName ?? "Your workspace"} · {tz}
-					</p>
-					<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
-						{header.main} <span className="text-primary">{header.accent}</span>
-					</h1>
-					<p className="mt-3 text-[14px] text-ink/65">{sub}</p>
-				</div>
-
-				<div className="flex items-center gap-2 flex-wrap">
-					<div className="inline-flex items-center rounded-full border border-border-strong bg-background-elev overflow-hidden">
-						<NavArrow view={view} anchor={prevAnchor} aria={`Previous ${view}`}>
-							<ChevronLeft className="w-4 h-4" />
-						</NavArrow>
-						<Link
-							href={`/app/calendar?view=${view}`}
-							className="h-10 px-4 inline-flex items-center text-[13px] font-medium text-ink hover:bg-muted/60 border-x border-border transition-colors"
-						>
-							Today
-						</Link>
-						<NavArrow view={view} anchor={nextAnchor} aria={`Next ${view}`}>
-							<ChevronRight className="w-4 h-4" />
-						</NavArrow>
-					</div>
-
-					<ViewSelect value={view} anchorKey={anchorKey} />
-
-					<Link
-						href="/app/campaigns/new"
-						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink hover:border-ink transition-colors"
-					>
-						<Wand2 className="w-4 h-4 text-primary" />
-						New campaign
-					</Link>
-
-					<Link
-						href="/app/composer"
-						className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-primary transition-colors"
-					>
-						<CalendarPlus className="w-4 h-4" />
-						New post
-					</Link>
-				</div>
-			</header>
-
-			{/* View */}
-			{view === "month" ? (
-				<MonthView
-					anchor={anchor}
-					tz={tz}
-					buckets={buckets}
-					todayKey={todayKey}
-					channelStates={channelStates}
-					campaignIndex={campaignIndex}
-				/>
-			) : (
-				<TimeGridView
-					days={
-						view === "week"
-							? buildWeekDays(anchor, tz)
-							: buildDayList(anchor, tz)
-					}
-					tz={tz}
-					buckets={buckets}
-					todayKey={todayKey}
-					compact={view === "week"}
-					channelStates={channelStates}
-					campaignIndex={campaignIndex}
-				/>
-			)}
-
-			{/* Legend */}
-			<section className="flex flex-wrap items-center gap-x-8 gap-y-3 text-[12.5px] text-ink/65">
-				<LegendSwatch kind="scheduled" label="Scheduled" />
-				<LegendSwatch kind="published" label="Published" />
-				<LegendSwatch kind="failed" label="Failed" />
-				<LegendSwatch kind="draft" label="Draft" />
-				<span className="inline-flex items-center gap-2 ml-auto">
-					<Sparkles className="w-3.5 h-3.5 text-primary" />
-					All times shown in {tz}.
-				</span>
-			</section>
-		</div>
-	);
-}
-
-// ── Month view ─────────────────────────────────────────────────────────
-
-type CampaignIndex = Map<string, { name: string; colorIdx: number }>;
-
-function MonthView({
-	anchor,
-	tz,
-	buckets,
-	todayKey,
-	channelStates,
-	campaignIndex,
-}: {
-	anchor: Date;
-	tz: string;
-	channelStates: Record<string, EffectiveState>;
-	campaignIndex: CampaignIndex;
-	buckets: Map<string, PostRow[]>;
-	todayKey: string;
-}) {
-	const [yStr, mStr] = tzDateKey(anchor, tz).split("-");
-	const year = Number(yStr);
-	const month = Number(mStr);
-	const cells = buildGridCells(year, month, tz);
-
-	return (
-		<section className="rounded-3xl border border-border bg-background-elev overflow-hidden">
-			<div className="grid grid-cols-7 border-b border-border">
-				{WEEKDAY_LABELS.map((d, i) => (
-					<div
-						key={d}
-						className={cn(
-							"px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55",
-							i < WEEKDAY_LABELS.length - 1 && "border-r border-border",
-							i >= 5 && "bg-peach-100/40",
-						)}
-					>
-						{d}
-					</div>
-				))}
-			</div>
-
-			<div className="grid grid-cols-7 auto-rows-[minmax(124px,1fr)]">
-				{cells.map((cell, idx) => {
-					const dayPosts = buckets.get(cell.key) ?? [];
-					const isToday = cell.key === todayKey;
-					const isWeekend = idx % 7 >= 5;
-					const rightmost = idx % 7 === 6;
-					const bottomRow = idx >= cells.length - 7;
-					return (
-						<div
-							key={cell.key}
-							className={cn(
-								"relative p-2.5 flex flex-col gap-1.5",
-								!rightmost && "border-r border-border",
-								!bottomRow && "border-b border-border",
-								!cell.inMonth && "bg-muted/30",
-								isWeekend && cell.inMonth && "bg-peach-100/30",
-							)}
-						>
-							<div className="flex items-center justify-between">
-								<span
-									className={cn(
-										"inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full text-[12px] tabular-nums",
-										isToday
-											? "bg-primary text-background font-semibold"
-											: cell.inMonth
-												? "text-ink/80"
-												: "text-ink/30",
-									)}
-								>
-									{cell.day}
-								</span>
-								{dayPosts.length > 0 ? (
-									<Link
-										href={`/app/composer?day=${cell.key}`}
-										className="text-[11px] text-ink/40 hover:text-ink transition-colors"
-										aria-label={`Add post on ${cell.key}`}
-									>
-										+
-									</Link>
-								) : null}
-							</div>
-
-							<ul className="space-y-1 flex-1">
-								{dayPosts.slice(0, 3).map((p) => (
-									<li key={p.id}>
-										<Link
-											href={`/app/composer?post=${p.id}`}
-											className={cn(
-												"group block px-2 py-1.5 rounded-lg border text-[11.5px] leading-[1.35]",
-												postChipClasses(p.status),
-											)}
-										>
-											<div className="flex items-center gap-1 text-ink/60 mb-0.5">
-												<StatusIcon status={p.status} />
-												<span className="tabular-nums">
-													{formatTime(p.scheduledAt ?? p.publishedAt!, tz)}
-												</span>
-											</div>
-											<p className="line-clamp-2 text-ink group-hover:text-ink/90">
-												{p.content}
-											</p>
-											<CampaignPill
-												campaignId={p.campaignId}
-												campaignIndex={campaignIndex}
-											/>
-											<PlatformBadges
-												platforms={p.platforms}
-												channelStates={channelStates}
-											/>
-										</Link>
-									</li>
-								))}
-								{dayPosts.length > 3 ? (
-									<li className="px-2 text-[11px] text-ink/55">
-										+{dayPosts.length - 3} more
-									</li>
-								) : null}
-							</ul>
-						</div>
-					);
-				})}
-			</div>
-		</section>
-	);
-}
-
-// ── Week & Day views (shared time grid) ────────────────────────────────
-
-type GridDay = { date: Date; key: string; day: number };
-
-function TimeGridView({
-	days,
-	tz,
-	buckets,
-	todayKey,
-	compact,
-	channelStates,
-	campaignIndex,
-}: {
-	days: GridDay[];
-	channelStates: Record<string, EffectiveState>;
-	campaignIndex: CampaignIndex;
-	tz: string;
-	buckets: Map<string, PostRow[]>;
-	todayKey: string;
-	compact: boolean;
-}) {
-	const hours = Array.from({ length: 24 }, (_, i) => i);
-	const gridCols = `72px repeat(${days.length}, minmax(0, 1fr))`;
-
-	return (
-		<section className="rounded-3xl border border-border bg-background-elev overflow-hidden">
-			{/* Day headers (fixed above scroll area) */}
-			<div
-				className="grid border-b border-border"
-				style={{ gridTemplateColumns: gridCols }}
-			>
-				<div className="border-r border-border" />
-				{days.map((d, i) => {
-					const isToday = d.key === todayKey;
-					const weekdayShort = new Intl.DateTimeFormat("en-US", {
-						weekday: "short",
-						timeZone: tz,
-					}).format(d.date);
-					const weekdayLong = new Intl.DateTimeFormat("en-US", {
-						weekday: "long",
-						timeZone: tz,
-					}).format(d.date);
-					const monthShort = new Intl.DateTimeFormat("en-US", {
-						month: "short",
-						timeZone: tz,
-					}).format(d.date);
-					return (
-						<div
-							key={d.key}
-							className={cn(
-								"px-4 py-3 flex items-center gap-2",
-								i < days.length - 1 && "border-r border-border",
-								isToday && !compact && "bg-peach-100/30",
-							)}
-						>
-							{compact ? (
-								<>
-									<span
-										className={cn(
-											"text-[11px] font-semibold uppercase tracking-[0.2em]",
-											isToday ? "text-primary" : "text-ink/55",
-										)}
-									>
-										{weekdayShort}
-									</span>
-									<span
-										className={cn(
-											"inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full text-[12px] tabular-nums",
-											isToday
-												? "bg-primary text-background font-semibold"
-												: "text-ink/80",
-										)}
-									>
-										{d.day}
-									</span>
-								</>
-							) : (
-								<div>
-									<div
-										className={cn(
-											"text-[11px] font-semibold uppercase tracking-[0.2em]",
-											isToday ? "text-primary" : "text-ink/55",
-										)}
-									>
-										{weekdayLong}
-									</div>
-									<div className="text-[15px] tabular-nums text-ink/80 mt-0.5">
-										{monthShort} {d.day}
-									</div>
-								</div>
-							)}
-						</div>
-					);
-				})}
-			</div>
-
-			{/* Scrollable time grid */}
-			<GridScroll initialHour={7} hourHeight={HOUR_HEIGHT}>
-				<div
-					className="grid relative"
-					style={{
-						gridTemplateColumns: gridCols,
-						gridTemplateRows: `repeat(24, ${HOUR_HEIGHT}px)`,
-					}}
-				>
-					{/* Hour labels */}
-					{hours.map((h) => (
-						<div
-							key={`label-${h}`}
-							className={cn(
-								"border-r border-border text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink/45 pt-1.5 pl-2",
-								h < 23 && "border-b border-border",
-							)}
-							style={{ gridColumn: 1, gridRow: h + 1 }}
-						>
-							{formatHourLabel(h)}
-						</div>
-					))}
-
-					{/* Day/hour cells */}
-					{days.map((d, colIdx) => {
-						const isToday = d.key === todayKey;
-						return hours.map((h) => (
-							<div
-								key={`cell-${d.key}-${h}`}
-								className={cn(
-									colIdx < days.length - 1 && "border-r border-border",
-									h < 23 && "border-b border-border",
-									isToday && "bg-peach-100/25",
-								)}
-								style={{ gridColumn: colIdx + 2, gridRow: h + 1 }}
-							/>
-						));
-					})}
-
-					{/* Posts as absolutely-positioned chips */}
-					{days.map((d, colIdx) => {
-						const dayPosts = buckets.get(d.key) ?? [];
-						return dayPosts.map((p) => {
-							const when = p.scheduledAt ?? p.publishedAt;
-							if (!when) return null;
-							const { hour, minute } = tzHourMinute(when, tz);
-							const top = hour * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT;
-							return (
-								<div
-									key={p.id}
-									className="absolute px-1.5 pt-0.5"
-									style={{
-										top: `${top}px`,
-										left: `calc(72px + (100% - 72px) * ${colIdx} / ${days.length})`,
-										width: `calc((100% - 72px) / ${days.length})`,
-									}}
-								>
-									<Link
-										href={`/app/composer?post=${p.id}`}
-										className={cn(
-											"group block px-2 py-1.5 rounded-lg border text-[11.5px] leading-[1.35] shadow-sm",
-											postChipClasses(p.status),
-										)}
-									>
-										<div className="flex items-center gap-1 text-ink/60 mb-0.5">
-											<StatusIcon status={p.status} />
-											<span className="tabular-nums">
-												{formatTime(when, tz)}
-											</span>
-										</div>
-										<p
-											className={cn(
-												"text-ink group-hover:text-ink/90",
-												compact ? "line-clamp-2" : "line-clamp-4",
-											)}
-										>
-											{p.content}
-										</p>
-										<CampaignPill
-											campaignId={p.campaignId}
-											campaignIndex={campaignIndex}
-										/>
-										<PlatformBadges
-											platforms={p.platforms}
-											channelStates={channelStates}
-										/>
-									</Link>
-								</div>
-							);
-						});
-					})}
-				</div>
-			</GridScroll>
-		</section>
-	);
-}
-
-// ── Nav / Switcher ─────────────────────────────────────────────────────
-
-function NavArrow({
-	view,
-	anchor,
-	aria,
-	children,
-}: {
-	view: ViewMode;
-	anchor: Date;
-	aria: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<Link
-			href={`/app/calendar?view=${view}&date=${dateKey(anchor)}`}
-			aria-label={aria}
-			className="h-10 w-10 grid place-items-center text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors"
-		>
-			{children}
-		</Link>
-	);
-}
-
-// ── Small shared UI ────────────────────────────────────────────────────
-
-function StatusIcon({ status }: { status: string }) {
-	const className = "w-3 h-3";
-	if (status === "published") return <CheckCircle2 className={className} />;
-	if (status === "failed") return <AlertCircle className={className} />;
-	if (status === "draft") return <Sparkles className={className} />;
-	return <Clock className={className} />;
-}
-
-function postChipClasses(status: string) {
-	if (status === "published") {
-		return "bg-peach-100 border-peach-300 hover:border-peach-400";
-	}
-	if (status === "failed") {
-		return "bg-background border-primary/30 text-primary-deep hover:border-primary";
-	}
-	if (status === "draft") {
-		return "bg-muted/60 border-dashed border-border-strong hover:border-ink";
-	}
-	return "bg-background border-border-strong hover:border-ink";
-}
-
-function LegendSwatch({
-	kind,
-	label,
-}: {
-	kind: "scheduled" | "published" | "failed" | "draft";
-	label: string;
-}) {
-	const swatch =
-		kind === "published"
-			? "bg-peach-100 border-peach-300"
-			: kind === "failed"
-				? "bg-background border-primary/40"
-				: kind === "draft"
-					? "bg-muted/60 border-dashed border-border-strong"
-					: "bg-background border-border-strong";
-	return (
-		<span className="inline-flex items-center gap-2">
-			<span className={cn("w-3.5 h-3.5 rounded-md border", swatch)} />
-			{label}
-		</span>
+		<CalendarView
+			view={view}
+			tz={tz}
+			workspaceName={user.workspaceName}
+			header={header}
+			subLabel={subLabel}
+			anchor={anchor}
+			anchorKey={anchorKey}
+			prevAnchor={prevAnchor}
+			nextAnchor={nextAnchor}
+			buckets={buckets}
+			todayKey={todayKey}
+			channelStates={channelStates}
+			campaignIndex={campaignIndex}
+		/>
 	);
 }
 
 // ── View & header helpers ──────────────────────────────────────────────
 
-function parseView(v: string | undefined): ViewMode {
+function parseView(v: string | undefined): CalendarViewMode {
 	if (v === "week" || v === "day") return v;
 	return "month";
 }
 
-// Anchor is a Date at UTC noon of the intended calendar day, so UTC
-// date components equal the tz calendar day for every IANA tz.
 function parseAnchor(input: string | undefined, tz: string): Date {
 	if (input && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
 		const [y, m, d] = input.split("-").map(Number);
@@ -626,14 +136,7 @@ function parseAnchor(input: string | undefined, tz: string): Date {
 	return new Date(Date.UTC(y, m - 1, d, 12));
 }
 
-function dateKey(d: Date): string {
-	const y = d.getUTCFullYear();
-	const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-	const day = String(d.getUTCDate()).padStart(2, "0");
-	return `${y}-${m}-${day}`;
-}
-
-function shiftAnchor(view: ViewMode, anchor: Date, delta: 1 | -1): Date {
+function shiftAnchor(view: CalendarViewMode, anchor: Date, delta: 1 | -1): Date {
 	if (view === "month") {
 		const y = anchor.getUTCFullYear();
 		const m = anchor.getUTCMonth();
@@ -646,7 +149,7 @@ function shiftAnchor(view: ViewMode, anchor: Date, delta: 1 | -1): Date {
 }
 
 function computeRange(
-	view: ViewMode,
+	view: CalendarViewMode,
 	anchor: Date,
 	tz: string,
 ): { from: Date; to: Date; keys: string[] } {
@@ -657,9 +160,7 @@ function computeRange(
 		const keys: string[] = [];
 		const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
 		for (let d = 1; d <= last; d++) {
-			keys.push(
-				`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
-			);
+			keys.push(`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
 		}
 		return { from, to, keys };
 	}
@@ -670,7 +171,6 @@ function computeRange(
 		to.setUTCDate(to.getUTCDate() + 1);
 		return { from, to, keys: days.map((d) => d.key) };
 	}
-	// day
 	const from = new Date(anchor);
 	from.setUTCHours(0, 0, 0, 0);
 	const to = new Date(from);
@@ -679,7 +179,7 @@ function computeRange(
 }
 
 function buildHeader(
-	view: ViewMode,
+	view: CalendarViewMode,
 	anchor: Date,
 	tz: string,
 ): { main: string; accent: string } {
@@ -731,10 +231,9 @@ function buildHeader(
 	return { main: `${weekday}, ${monthDay}`, accent: year };
 }
 
-function buildSubLabel(view: ViewMode, count: number): string {
+function buildSubLabel(view: CalendarViewMode, count: number): string {
 	if (count === 0) {
-		if (view === "month")
-			return "A clear month. Queue a post to start filling it in.";
+		if (view === "month") return "A clear month. Queue a post to start filling it in.";
 		if (view === "week") return "Nothing on the books this week.";
 		return "Nothing scheduled for this day.";
 	}
@@ -742,201 +241,4 @@ function buildSubLabel(view: ViewMode, count: number): string {
 	if (view === "month") return `${count} post${plural} across the month.`;
 	if (view === "week") return `${count} post${plural} this week.`;
 	return `${count} post${plural} scheduled.`;
-}
-
-// ── Date helpers ───────────────────────────────────────────────────────
-
-function tzDateKey(d: Date, tz: string) {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		timeZone: tz,
-	}).formatToParts(d);
-	const y = parts.find((p) => p.type === "year")!.value;
-	const m = parts.find((p) => p.type === "month")!.value;
-	const day = parts.find((p) => p.type === "day")!.value;
-	return `${y}-${m}-${day}`;
-}
-
-function formatTime(d: Date, tz: string) {
-	return new Intl.DateTimeFormat("en-US", {
-		hour: "numeric",
-		minute: "2-digit",
-		timeZone: tz,
-	}).format(d);
-}
-
-function tzHourMinute(d: Date, tz: string): { hour: number; minute: number } {
-	const parts = new Intl.DateTimeFormat("en-GB", {
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-		timeZone: tz,
-	}).formatToParts(d);
-	const hour = Number(parts.find((p) => p.type === "hour")!.value);
-	const minute = Number(parts.find((p) => p.type === "minute")!.value);
-	return { hour: hour === 24 ? 0 : hour, minute };
-}
-
-function formatHourLabel(h: number): string {
-	const suffix = h < 12 ? "AM" : "PM";
-	const hour = h % 12 === 0 ? 12 : h % 12;
-	return `${hour} ${suffix}`;
-}
-
-function buildGridCells(year: number, month: number, tz: string) {
-	const firstUtc = new Date(Date.UTC(year, month - 1, 1, 12));
-	const firstKey = tzDateKey(firstUtc, tz);
-	const weekdayTz = tzWeekdayIndex(firstUtc, tz);
-	const start = new Date(firstUtc);
-	start.setUTCDate(start.getUTCDate() - weekdayTz);
-
-	const cells: { day: number; key: string; inMonth: boolean }[] = [];
-	for (let i = 0; i < 42; i++) {
-		const d = new Date(start);
-		d.setUTCDate(start.getUTCDate() + i);
-		const key = tzDateKey(d, tz);
-		const day = Number(key.slice(8, 10));
-		const inMonth =
-			key.slice(0, 7) === `${year}-${String(month).padStart(2, "0")}`;
-		cells.push({ day, key, inMonth });
-		if (i >= 34 && !cells.some((c) => c.key.slice(0, 7) > firstKey.slice(0, 7)))
-			continue;
-	}
-	return cells;
-}
-
-function buildWeekDays(anchor: Date, tz: string): GridDay[] {
-	const weekdayTz = tzWeekdayIndex(anchor, tz); // Mon=0..Sun=6
-	const start = new Date(anchor);
-	start.setUTCDate(start.getUTCDate() - weekdayTz);
-	const days: GridDay[] = [];
-	for (let i = 0; i < 7; i++) {
-		const d = new Date(start);
-		d.setUTCDate(start.getUTCDate() + i);
-		const key = tzDateKey(d, tz);
-		days.push({ date: d, key, day: Number(key.slice(8, 10)) });
-	}
-	return days;
-}
-
-function buildDayList(anchor: Date, tz: string): GridDay[] {
-	const key = tzDateKey(anchor, tz);
-	return [{ date: anchor, key, day: Number(key.slice(8, 10)) }];
-}
-
-function tzWeekdayIndex(d: Date, tz: string) {
-	const name = new Intl.DateTimeFormat("en-US", {
-		weekday: "short",
-		timeZone: tz,
-	}).format(d);
-	const map: Record<string, number> = {
-		Mon: 0,
-		Tue: 1,
-		Wed: 2,
-		Thu: 3,
-		Fri: 4,
-		Sat: 5,
-		Sun: 6,
-	};
-	return map[name] ?? 0;
-}
-
-// Small badge row: one colored dot per target channel, tinted by that
-// channel's effective state. Gives the user an at-a-glance read on what
-// will actually happen when the post goes out.
-function PlatformBadges({
-	platforms,
-	channelStates,
-}: {
-	platforms: string[];
-	channelStates: Record<string, EffectiveState>;
-}) {
-	if (platforms.length === 0) return null;
-	return (
-		<ul className="mt-1 flex items-center flex-wrap gap-1">
-			{platforms.map((p) => {
-				const state = stateOr(channelStates, p);
-				const style = stateStyles(state);
-				const label = PROVIDER_LABELS[p] ?? p;
-				return (
-					<li
-						key={p}
-						title={`${label} · ${style.label}`}
-						className={cn(
-							"inline-flex items-center h-4 px-1.5 rounded-full text-[9.5px] font-medium leading-none tracking-wide gap-1",
-							style.chipClass,
-						)}
-					>
-						<span
-							aria-hidden
-							className={cn(
-								"inline-block w-1.5 h-1.5 rounded-full",
-								style.dotClass,
-							)}
-						/>
-						{label}
-					</li>
-				);
-			})}
-		</ul>
-	);
-}
-
-const PROVIDER_LABELS: Record<string, string> = {
-	twitter: "X",
-	linkedin: "LinkedIn",
-	facebook: "Facebook",
-	instagram: "IG",
-	tiktok: "TikTok",
-	threads: "Threads",
-	bluesky: "Bluesky",
-	medium: "Medium",
-	reddit: "Reddit",
-	youtube: "YouTube",
-	pinterest: "Pinterest",
-	mastodon: "Mastodon",
-};
-
-// Muted-tone palette — each campaign gets a slot based on its position in
-// the user's ordered list. Keeps all-peach calendars from washing out and
-// still reads well on the peach background.
-const CAMPAIGN_PALETTE = [
-	"bg-primary-soft text-primary-deep border-primary/50",
-	"bg-peach-200 text-ink border-peach-300",
-	"bg-peach-300 text-ink border-peach-400",
-	"bg-peach-400 text-ink border-ink/30",
-	"bg-ink/10 text-ink border-ink/20",
-	"bg-ink text-background border-ink",
-] as const;
-
-function CampaignPill({
-	campaignId,
-	campaignIndex,
-}: {
-	campaignId: string | null;
-	campaignIndex: CampaignIndex;
-}) {
-	if (!campaignId) return null;
-	const meta = campaignIndex.get(campaignId);
-	if (!meta) return null;
-	const color = CAMPAIGN_PALETTE[meta.colorIdx % CAMPAIGN_PALETTE.length];
-	return (
-		<div className="mt-1">
-			<span
-				title={`Campaign · ${meta.name}`}
-				className={cn(
-					"inline-flex items-center h-4 px-1.5 rounded-full text-[9.5px] font-medium leading-none tracking-wide border gap-1 max-w-full",
-					color,
-				)}
-			>
-				<span
-					aria-hidden
-					className="inline-block w-1 h-1 rounded-full bg-current opacity-60"
-				/>
-				<span className="truncate">{meta.name}</span>
-			</span>
-		</div>
-	);
 }
