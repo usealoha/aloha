@@ -87,10 +87,12 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
         <div className="py-3 px-3 border-t border-border">
           <div
             className={cn(
-              "flex gap-2",
-              collapsed ? "flex-col items-center" : "items-center justify-between",
+              "flex flex-col gap-2",
+              collapsed ? "items-center" : "items-stretch",
             )}
           >
+            <ThemeToggle />
+            <NotificationsBell />
             <AvatarMenu
               name={user.name}
               email={user.email}
@@ -99,8 +101,6 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
               placement="top"
               expandedLabel={!collapsed}
             />
-            <ThemeToggle />
-            <NotificationsBell />
           </div>
         </div>
       </aside>
