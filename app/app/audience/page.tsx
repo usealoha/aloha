@@ -13,6 +13,7 @@ import {
 	Tags,
 } from "lucide-react";
 import Link from "next/link";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { DeleteLinkButton } from "./_components/delete-confirm";
 
 export const dynamic = "force-dynamic";
@@ -179,12 +180,12 @@ export default async function AudiencePage() {
 								<p className="text-[12px] text-ink/55">
 									Changes publish immediately.
 								</p>
-								<button
-									type="submit"
+								<PendingSubmitButton
 									className="inline-flex items-center h-10 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-primary transition-colors"
+									pendingLabel="Saving…"
 								>
 									Save page
-								</button>
+								</PendingSubmitButton>
 							</div>
 						</form>
 					</div>
@@ -254,14 +255,14 @@ export default async function AudiencePage() {
 								required
 								className="h-10 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[13.5px] text-ink focus:outline-none focus:border-ink transition-colors"
 							/>
-							<button
-								type="submit"
+							<PendingSubmitButton
 								disabled={!page}
 								className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+								pendingLabel="Adding…"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								Add
-							</button>
+							</PendingSubmitButton>
 							{!page ? (
 								<p className="sm:col-span-3 text-[12px] text-ink/55">
 									Save your page above first, then add links.

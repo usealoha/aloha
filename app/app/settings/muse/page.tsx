@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/corpus";
 import { loadCurrentVoice } from "@/lib/ai/voice";
 import { getCurrentUser } from "@/lib/current-user";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { Slider } from "./_components/slider";
 import { SyncNotionButton } from "./_components/sync-button";
 import { DisconnectNotionButton } from "./_components/disconnect-confirm";
@@ -186,13 +187,13 @@ export default async function MuseSettingsPage({
           <p className="text-[12px] text-ink/55">
             Training takes a few seconds.
           </p>
-          <button
-            type="submit"
+          <PendingSubmitButton
             className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+            pendingLabel={voice ? "Retraining…" : "Training…"}
           >
             <Wand2 className="w-4 h-4" />
             {voice ? "Retrain voice" : "Train voice"}
-          </button>
+          </PendingSubmitButton>
         </div>
       </form>
     </div>

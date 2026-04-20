@@ -2,6 +2,7 @@
 
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { cancelMyPlan, resumeMyPlan } from "../actions";
 
 function formatDate(d: Date) {
@@ -49,13 +50,13 @@ export function DangerZone(props: Props) {
 					</p>
 				</div>
 				<form action={resumeMyPlan}>
-					<button
-						type="submit"
+					<PendingSubmitButton
 						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
+						pendingLabel="Resuming…"
 					>
 						<RotateCcw className="w-3.5 h-3.5" />
 						Resume plan
-					</button>
+					</PendingSubmitButton>
 				</form>
 			</div>
 		);
@@ -148,12 +149,12 @@ export function DangerZone(props: Props) {
 							>
 								Keep my plan
 							</button>
-							<button
-								type="submit"
-								className="inline-flex items-center h-10 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-destructive transition-colors"
+							<PendingSubmitButton
+								className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-destructive transition-colors"
+								pendingLabel="Canceling…"
 							>
 								Confirm cancellation
-							</button>
+							</PendingSubmitButton>
 						</div>
 					</form>
 				</div>

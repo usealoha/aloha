@@ -2,6 +2,7 @@ import { AlertCircle, CheckCircle2, Building2, Heart, Sparkles, User, Users } fr
 import { getCurrentUser } from "@/lib/current-user";
 import { updateProfile } from "../actions";
 import { TimezoneSelect } from "@/app/auth/onboarding/_components/timezone-select";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -155,12 +156,12 @@ export default async function ProfileSettingsPage({
             <AlertCircle className="w-3.5 h-3.5" />
             Changes save immediately and apply everywhere.
           </p>
-          <button
-            type="submit"
-            className="inline-flex items-center h-11 px-6 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+          <PendingSubmitButton
+            className="inline-flex items-center gap-1.5 h-11 px-6 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+            pendingLabel="Saving…"
           >
             Save changes
-          </button>
+          </PendingSubmitButton>
         </div>
       </form>
     </div>

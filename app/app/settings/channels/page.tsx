@@ -22,6 +22,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 import { connectChannel, updateChannelPublishMode, notifyWhenAvailable } from "../actions";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { DisconnectChannelButton } from "./_components/disconnect-confirm";
 import {
   LinkedInIcon,
@@ -474,13 +475,13 @@ export default async function ChannelsSettingsPage({
                 ) : isApprovalNeeded ? (
                   <form action={notifyWhenAvailable}>
                     <input type="hidden" name="provider" value={p.id} />
-                    <button
-                      type="submit"
+                    <PendingSubmitButton
                       className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-peach-300 bg-peach-100 text-[13px] text-ink font-medium hover:bg-peach-200 transition-colors"
+                      pendingLabel="Saving…"
                     >
                       <Bell className="w-3.5 h-3.5" />
                       Notify me
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 ) : isConnected ? (
                     <div className="flex items-center gap-1.5">

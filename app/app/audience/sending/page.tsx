@@ -11,6 +11,7 @@ import {
   updateSendingDomainTracking,
   verifySendingDomain,
 } from "@/app/actions/sending-domains";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { DeleteDomainButton } from "./_components/delete-domain";
 
 export const dynamic = "force-dynamic";
@@ -75,12 +76,12 @@ export default async function SendingDomainsPage() {
             required
             className="h-11 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
           />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center h-11 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-primary transition-colors"
+          <PendingSubmitButton
+            className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-primary transition-colors"
+            pendingLabel="Adding…"
           >
             Add domain
-          </button>
+          </PendingSubmitButton>
           <p className="sm:col-span-2 text-[12px] text-ink/55">
             Use a dedicated subdomain — keeps your root deliverability clean
             if something ever goes sideways.
@@ -168,12 +169,12 @@ export default async function SendingDomainsPage() {
                         />
                         Click tracking
                       </label>
-                      <button
-                        type="submit"
-                        className="ml-auto inline-flex items-center h-9 px-4 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:bg-peach-100/60 transition-colors"
+                      <PendingSubmitButton
+                        className="ml-auto inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:bg-peach-100/60 transition-colors"
+                        pendingLabel="Saving…"
                       >
                         Save
-                      </button>
+                      </PendingSubmitButton>
                     </div>
                   </form>
                 ) : null}
@@ -221,12 +222,12 @@ export default async function SendingDomainsPage() {
                     {d.status !== "verified" ? (
                       <form action={verifySendingDomain}>
                         <input type="hidden" name="id" value={d.id} />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center h-9 px-4 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:bg-peach-100/60 transition-colors"
+                        <PendingSubmitButton
+                          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border-strong text-[12.5px] font-medium text-ink hover:bg-peach-100/60 transition-colors"
+                          pendingLabel="Verifying…"
                         >
                           Verify
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     ) : null}
                     <DeleteDomainButton id={d.id} domain={d.domain} />
