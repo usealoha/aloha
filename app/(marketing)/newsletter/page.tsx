@@ -46,10 +46,10 @@ export default function NewsletterPage() {
 						<span className="text-primary font-light">coming soon.</span>
 					</h1>
 					<p className="mt-8 max-w-2xl text-[17px] lg:text-[18px] leading-[1.6] text-ink/75">
-						The Aloha newsletter launches shortly after the product does.
-						What shipped, what I didn't get to, and one short essay on the
-						quiet shape of good tools. Drop your email and the first issue
-						lands in your inbox.
+						The Aloha newsletter launches shortly after the product does. What
+						shipped, what I didn't get to, and one short essay on the quiet
+						shape of good tools. Drop your email and the first issue lands in
+						your inbox.
 					</p>
 
 					{/* subscribe form */}
@@ -159,7 +159,7 @@ export default function NewsletterPage() {
 					aria-hidden
 					className="absolute inset-0 opacity-10 bg-[radial-gradient(var(--peach-300)_1px,transparent_1px)] bg-size-[28px_28px]"
 				/>
-				<section className="py-24 lg:py-32 pb-32 lg:pb-40 wavy bg-background">
+				<section className="py-24 lg:py-32 pb-32 lg:pb-40 wavy bg-background-elev">
 					<div className="max-w-[1100px] mx-auto px-6 lg:px-10">
 						<div className="grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-16 items-center">
 							<div className="col-span-12 lg:col-span-7">
@@ -172,9 +172,9 @@ export default function NewsletterPage() {
 									<span className="text-primary">every Friday.</span>
 								</h2>
 								<p className="mt-6 text-[15.5px] text-ink/75 leading-[1.6] max-w-xl">
-									Aloha is an indie, one-person project out of Bengaluru.
-									The same person writing the code writes the newsletter —
-									so the posts and the product stay honest about each other.
+									Aloha is an indie, one-person project out of Bengaluru. The
+									same person writing the code writes the newsletter — so the
+									posts and the product stay honest about each other.
 								</p>
 
 								<Link
