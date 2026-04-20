@@ -357,7 +357,7 @@ await client.posts.create({
             {[
               { h: "Live API status", p: "All green right now? Check before paging.", href: routes.resources.status },
               { h: "Changelog", p: "Breaking changes get 60 days' notice.", href: routes.product.whatsNew },
-              { h: "Developer support", p: "Email developers@usealoha.app — a real engineer answers.", href: "mailto:developers@usealoha.app" },
+              { h: "Developer support", p: "Email hello@usealoha.app — a real engineer answers.", href: "mailto:hello@usealoha.app" },
             ].map((l) => (
               <a
                 key={l.href}

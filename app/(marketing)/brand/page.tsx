@@ -211,7 +211,7 @@ export default function BrandPage() {
 								Brand kit on /press
 							</Link>
 							<a
-								href="mailto:brand@usealoha.app"
+								href="mailto:hello@usealoha.app"
 								className="pencil-link inline-flex items-center gap-2 text-[14.5px] font-medium text-ink"
 							>
 								Unsure about something? Write us
@@ -733,10 +733,10 @@ export default function BrandPage() {
 								Download the kit
 							</Link>
 							<a
-								href="mailto:brand@usealoha.app"
+								href="mailto:hello@usealoha.app"
 								className="pencil-link inline-flex items-center gap-2 text-[14.5px] font-medium"
 							>
-								brand@usealoha.app
+								hello@usealoha.app
 								<ArrowUpRight className="w-4 h-4" />
 							</a>
 						</div>

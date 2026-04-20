@@ -86,8 +86,8 @@ export default function AccessibilityPage() {
 						<p>
 							If you hit a barrier — confusing focus order, missing labels,
 							contrast that fails in your environment, or anything else — email{" "}
-							<a href="mailto:accessibility@usealoha.app" className="pencil-link">
-								accessibility@usealoha.app
+							<a href="mailto:hello@usealoha.app" className="pencil-link">
+								hello@usealoha.app
 							</a>{" "}
 							with the page URL, your browser or assistive tech, and (if you can)
 							a short screen recording. We read every message and typically reply within two business days.
