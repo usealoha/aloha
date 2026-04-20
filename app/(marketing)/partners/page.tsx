@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import {
 	ArrowRight,
 	ArrowUpRight,
@@ -16,6 +16,7 @@ export const metadata = makeMetadata({
 	description:
 		"Aloha's partner programme. Three tiers for agencies, app integrations and solution partners. Co-marketing, revenue share, and a named point of contact.",
 	path: routes.connect.partners,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 const TIERS = [

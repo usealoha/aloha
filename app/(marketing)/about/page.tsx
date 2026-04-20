@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { StockPhotoPlaceholder } from "../_components/stock-photo-placeholder";
@@ -9,6 +9,7 @@ export const metadata = makeMetadata({
 	description:
 		"Aloha is a one-person indie project in Bengaluru building a calm social media OS. Here's the story so far.",
 	path: routes.company.about,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 const TIMELINE = [

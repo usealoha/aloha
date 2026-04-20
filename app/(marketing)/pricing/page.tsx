@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import { PricingComingSoon } from "./_components/pricing-coming-soon";
 
 // Pricing is disabled until the Polar SKUs go live. The full pricing page
@@ -12,6 +12,7 @@ export const metadata = makeMetadata({
 	description:
 		"Aloha is free right now — connect up to 3 channels and schedule posts. Paid tiers with more channels and Muse (AI trained on your voice) are coming. Join the wishlist for early access.",
 	path: routes.pricing,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 export default function PricingPage() {

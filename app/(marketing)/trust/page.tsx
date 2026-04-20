@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import {
 	ArrowRight,
 	ArrowUpRight,
@@ -18,6 +18,7 @@ export const metadata = makeMetadata({
 	description:
 		"Aloha's security posture, subprocessor list, and how to report a vulnerability — plainly written, no enterprise theatre.",
 	path: routes.trust,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 const SNAPSHOT = [

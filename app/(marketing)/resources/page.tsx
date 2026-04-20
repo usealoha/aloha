@@ -9,7 +9,7 @@ import {
   Activity,
   Sparkle,
 } from "lucide-react";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import { routes } from "@/lib/routes";
 
 export const metadata = makeMetadata({
@@ -17,6 +17,7 @@ export const metadata = makeMetadata({
   description:
     "The Aloha resources library. Templates, creator guides, help, API docs, status — all in one calm hub.",
   path: routes.resources.index,
+  image: `${SITE_URL}/opengraph-image`,
 });
 
 const COLLECTIONS = [

@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import {
 	ArrowRight,
 	ArrowUpRight,
@@ -20,6 +20,7 @@ export const metadata = makeMetadata({
 	description:
 		"Questions, issues, partnerships, press. Every role at Aloha has a dedicated inbox and an SLA. Pick the one that fits.",
 	path: routes.company.contact,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 const ROUTES = [

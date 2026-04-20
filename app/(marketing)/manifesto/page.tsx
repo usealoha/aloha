@@ -1,5 +1,5 @@
 import { routes } from "@/lib/routes";
-import { makeMetadata } from "@/lib/seo";
+import { makeMetadata, SITE_URL } from "@/lib/seo";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
@@ -8,6 +8,7 @@ export const metadata = makeMetadata({
 	description:
 		"A longer essay about the beliefs behind Aloha — why a quiet tool is a better tool, and what we're trying to protect.",
 	path: routes.company.manifesto,
+	image: `${SITE_URL}/opengraph-image`,
 });
 
 export default function ManifestoPage() {

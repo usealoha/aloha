@@ -9,7 +9,7 @@ import {
   FileText,
   Eraser,
 } from "lucide-react";
-import { absoluteUrl, makeMetadata } from "@/lib/seo";
+import { absoluteUrl, makeMetadata, SITE_URL } from "@/lib/seo";
 import { JsonLd } from "@/lib/json-ld";
 import { routes } from "@/lib/routes";
 import { TOOLS } from "@/lib/tools";
@@ -19,6 +19,7 @@ export const metadata = makeMetadata({
   description:
     "Aloha's free tools. Five tiny utilities you can use without an account: bio generator, best-time finder, hashtag decoder, post critic, caption scrubber.",
   path: "/tools",
+  image: `${SITE_URL}/opengraph-image`,
 });
 
 const TOOLS_ITEM_LIST = {
