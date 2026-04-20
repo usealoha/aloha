@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Lightbulb,
   Link2,
+  Pencil,
   PenSquare,
   Rss,
   Sparkles,
@@ -17,6 +18,7 @@ import { updateIdeaStatusAction } from "@/app/actions/ideas";
 import { DeleteIdeaButton } from "./_components/delete-confirm";
 import { IdeaDialog } from "./_components/idea-dialog";
 import { FilterTabs } from "@/components/ui/filter-tabs";
+import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 
@@ -316,30 +318,52 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
         ) : null}
 
         {!isArchived ? (
+          <IdeaDialog
+            idea={{
+              id: idea.id,
+              body: idea.body,
+              title: idea.title,
+              tags: idea.tags,
+              sourceUrl: idea.sourceUrl,
+              media: idea.media,
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Edit"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-ink/65 hover:text-ink transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </button>
+          </IdeaDialog>
+        ) : null}
+
+        {!isArchived ? (
           <form action={updateIdeaStatusAction}>
             <input type="hidden" name="id" value={idea.id} />
             <input type="hidden" name="status" value="archived" />
-            <button
-              type="submit"
+            <PendingSubmitButton
               aria-label="Archive"
               className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-ink/65 hover:text-ink transition-colors"
+              pendingLabel="Archiving…"
             >
               <Archive className="w-3.5 h-3.5" />
               Archive
-            </button>
+            </PendingSubmitButton>
           </form>
         ) : (
           <form action={updateIdeaStatusAction}>
             <input type="hidden" name="id" value={idea.id} />
             <input type="hidden" name="status" value="new" />
-            <button
-              type="submit"
+            <PendingSubmitButton
               aria-label="Restore"
               className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border-strong text-[12px] text-ink hover:border-ink transition-colors"
+              pendingLabel="Restoring…"
             >
               <ArchiveRestore className="w-3.5 h-3.5" />
               Restore
-            </button>
+            </PendingSubmitButton>
           </form>
         )}
 

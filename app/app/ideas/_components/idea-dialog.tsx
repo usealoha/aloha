@@ -9,29 +9,45 @@ import {
   X as XIcon,
 } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
-import { createIdeaAction } from "@/app/actions/ideas";
+import { createIdeaAction, updateIdeaAction } from "@/app/actions/ideas";
 import type { PostMedia } from "@/db/schema";
 
 const MAX_MEDIA = 4;
 
-export function IdeaDialog({ children }: { children?: React.ReactNode }) {
+export type IdeaDialogInitial = {
+  id: string;
+  body: string;
+  title: string | null;
+  tags: string[];
+  sourceUrl: string | null;
+  media: PostMedia[] | null;
+};
+
+export function IdeaDialog({
+  children,
+  idea,
+}: {
+  children?: React.ReactNode;
+  idea?: IdeaDialogInitial;
+}) {
+  const isEdit = !!idea;
   const [open, setOpen] = useState(false);
-  const [body, setBody] = useState("");
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
-  const [url, setUrl] = useState("");
-  const [media, setMedia] = useState<PostMedia[]>([]);
+  const [body, setBody] = useState(idea?.body ?? "");
+  const [title, setTitle] = useState(idea?.title ?? "");
+  const [tags, setTags] = useState(idea?.tags.join(", ") ?? "");
+  const [url, setUrl] = useState(idea?.sourceUrl ?? "");
+  const [media, setMedia] = useState<PostMedia[]>(idea?.media ?? []);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, startSaving] = useTransition();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const reset = () => {
-    setBody("");
-    setTitle("");
-    setTags("");
-    setUrl("");
-    setMedia([]);
+    setBody(idea?.body ?? "");
+    setTitle(idea?.title ?? "");
+    setTags(idea?.tags.join(", ") ?? "");
+    setUrl(idea?.sourceUrl ?? "");
+    setMedia(idea?.media ?? []);
     setError(null);
   };
 
@@ -81,9 +97,14 @@ export function IdeaDialog({ children }: { children?: React.ReactNode }) {
     fd.set("tags", tags);
     fd.set("url", url);
     if (media.length > 0) fd.set("media", JSON.stringify(media));
+    if (isEdit && idea) fd.set("id", idea.id);
     startSaving(async () => {
       try {
-        await createIdeaAction(fd);
+        if (isEdit) {
+          await updateIdeaAction(fd);
+        } else {
+          await createIdeaAction(fd);
+        }
         reset();
         setOpen(false);
       } catch (err) {
@@ -124,10 +145,12 @@ export function IdeaDialog({ children }: { children?: React.ReactNode }) {
             </span>
             <div className="flex-1">
               <Dialog.Title className="text-[15px] text-ink font-medium">
-                Capture an idea
+                {isEdit ? "Edit idea" : "Capture an idea"}
               </Dialog.Title>
               <Dialog.Description className="mt-0.5 text-[12.5px] text-ink/60 leading-[1.5]">
-                A hook, a story, a link, an observation — drop it in raw.
+                {isEdit
+                  ? "Refine the thought, tags, or attachments."
+                  : "A hook, a story, a link, an observation — drop it in raw."}
               </Dialog.Description>
             </div>
             <Dialog.Close
@@ -246,7 +269,7 @@ export function IdeaDialog({ children }: { children?: React.ReactNode }) {
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  Save idea
+                  {isEdit ? "Save changes" : "Save idea"}
                 </button>
               </div>
             </div>

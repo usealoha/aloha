@@ -80,6 +80,33 @@ export async function createIdeaAction(formData: FormData) {
   revalidatePath("/app/ideas");
 }
 
+export async function updateIdeaAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("id required");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) throw new Error("Idea body is required.");
+  const title = String(formData.get("title") ?? "").trim() || null;
+  const url = String(formData.get("url") ?? "").trim() || null;
+  const tags = parseTags(String(formData.get("tags") ?? ""));
+  const media = parseMedia(String(formData.get("media") ?? ""));
+
+  await db
+    .update(ideas)
+    .set({
+      title,
+      body,
+      sourceUrl: url,
+      tags,
+      media,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(ideas.id, id), eq(ideas.userId, user.id)));
+  revalidatePath("/app/ideas");
+}
+
 export async function updateIdeaStatusAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
