@@ -23,7 +23,6 @@ export const routes = {
 		logicMatrix: "/logic-matrix",
 		inbox: "/inbox",
 		linkInBio: "/link-in-bio",
-		mobile: "/mobile",
 		whatsNew: "/whats-new",
 	},
 
@@ -123,8 +122,6 @@ export const routes = {
 	misc: {
 		sitemap: "/sitemap",
 		accessibility: "/accessibility",
-		appStore: "#", // external, filled later
-		googlePlay: "#", // external, filled later
 	},
 } as const;
 
@@ -140,7 +137,6 @@ export const footerLinks = {
 				{ label: "Logic Matrix", href: routes.product.logicMatrix },
 				{ label: "Inbox", href: routes.product.inbox },
 				{ label: "Link-in-bio", href: routes.product.linkInBio },
-				{ label: "Mobile app", href: routes.product.mobile },
 				{ label: "What's new", href: routes.product.whatsNew },
 			],
 		},
