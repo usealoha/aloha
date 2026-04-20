@@ -2,8 +2,10 @@ import { getCurrentUser } from "@/lib/current-user";
 import { routes } from "@/lib/routes";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { AppSidebar } from "./_components/app-sidebar";
 import { AppTopBar } from "./_components/app-top-bar";
+import { NavProgress } from "./_components/nav-progress";
 import { ThemeProvider } from "./_components/theme-provider";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -17,6 +19,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<ThemeProvider>
+			<Suspense fallback={null}>
+				<NavProgress />
+			</Suspense>
 			<div className="min-h-screen flex bg-background text-foreground">
 				<AppSidebar user={user} />
 				<div className="flex-1 min-w-0 flex flex-col">
