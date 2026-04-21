@@ -929,6 +929,43 @@ export const channelNotifications = pgTable(
   ],
 );
 
+// Cached profile details for each connected channel. Populated on
+// connect/reconnect (OAuth signIn, manual connect actions) and refreshed
+// lazily. Platform-agnostic on purpose so the UI can render an avatar +
+// handle for any channel through one component. Missing fields just render
+// as null — we never block connection on a failed profile fetch.
+export const channelProfiles = pgTable(
+  "channel_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull(),
+    // Platform-native account id (e.g. twitter user id, bluesky did,
+    // mastodon account id). Stored so future refreshes can verify we're
+    // still looking at the same account.
+    providerAccountId: text("providerAccountId"),
+    displayName: text("displayName"),
+    handle: text("handle"),
+    avatarUrl: text("avatarUrl"),
+    profileUrl: text("profileUrl"),
+    bio: text("bio"),
+    followerCount: integer("followerCount"),
+    // Last-fetch timestamp so we can decide when to refresh without
+    // burning the platform API on every page load.
+    fetchedAt: timestamp("fetchedAt", { mode: "date" }).defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("channel_profiles_user_channel").on(
+      table.userId,
+      table.channel,
+    ),
+  ],
+);
+
 // Per-user × per-channel flag: is Muse turned on for this channel? Drives
 // both the entitlement check in the router and per-channel billing.
 export const museEnabledChannels = pgTable(
