@@ -1,4 +1,3 @@
-import { Eye } from "lucide-react";
 import Link from "next/link";
 import {
 	BlueskyIcon,
@@ -67,28 +66,23 @@ export function ReachCard({
 
 	return (
 		<article className="rounded-2xl border border-border bg-background-elev p-6">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						How far your posts went
-					</p>
-					<p className="mt-3 flex items-baseline gap-1.5">
-						<span className="font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
-							{hasAnyData ? formatCompact(totalImpressions) : "—"}
-						</span>
-						<span className="text-[13px] text-ink/60">
-							{hasAnyData ? "impressions" : ""}
-						</span>
-					</p>
-					<p className="mt-1 text-[12px] text-ink/55">
-						{hasAnyData
-							? `over the last 7 days · ${totalPosts} post${totalPosts === 1 ? "" : "s"}`
-							: "syncing nightly — check back tomorrow"}
-					</p>
-				</div>
-				<span className="w-10 h-10 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0">
-					<Eye className="w-4 h-4 text-ink" />
-				</span>
+			<div>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					How far your posts went
+				</p>
+				<p className="mt-3 flex items-baseline gap-1.5">
+					<span className="font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+						{hasAnyData ? formatCompact(totalImpressions) : "—"}
+					</span>
+					<span className="text-[13px] text-ink/60">
+						{hasAnyData ? "impressions" : ""}
+					</span>
+				</p>
+				<p className="mt-1 text-[12px] text-ink/55">
+					{hasAnyData
+						? `over the last 7 days · ${totalPosts} post${totalPosts === 1 ? "" : "s"}`
+						: "syncing nightly — check back tomorrow"}
+				</p>
 			</div>
 
 			{perPlatform.length > 0 ? (

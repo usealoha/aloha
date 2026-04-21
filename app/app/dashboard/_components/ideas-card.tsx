@@ -20,25 +20,17 @@ export function IdeasCard({
 }: IdeasCardProps) {
 	return (
 		<article className="rounded-2xl border border-border bg-background-elev p-6">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						Ideas
-					</p>
-					<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
-						{newCount > 0
-							? `${newCount} new`
-							: totalCount > 0
-								? "Caught up"
-								: "Empty swipe file"}
-					</p>
-				</div>
-				<Link
-					href="/app/ideas"
-					className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
-				>
-					All ideas
-				</Link>
+			<div>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					Ideas
+				</p>
+				<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+					{newCount > 0
+						? `${newCount} new`
+						: totalCount > 0
+							? "Caught up"
+							: "Empty swipe file"}
+				</p>
 			</div>
 			{fresh.length > 0 ? (
 				<ul className="mt-4 space-y-2">

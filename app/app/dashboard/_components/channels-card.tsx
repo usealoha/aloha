@@ -48,21 +48,13 @@ export function ChannelsCard({ providers }: ChannelsCardProps) {
 	const hasAny = providers.length > 0;
 	return (
 		<article className="rounded-2xl border border-border bg-background-elev p-6">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						Channels
-					</p>
-					<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
-						{hasAny ? `${providers.length} connected` : "No channels yet"}
-					</p>
-				</div>
-				<Link
-					href="/app/settings/channels"
-					className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
-				>
-					Manage
-				</Link>
+			<div>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					Channels
+				</p>
+				<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+					{hasAny ? `${providers.length} connected` : "No channels yet"}
+				</p>
 			</div>
 			{hasAny ? (
 				<ul className="mt-4 flex flex-wrap gap-1.5">

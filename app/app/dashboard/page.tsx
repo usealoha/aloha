@@ -18,7 +18,9 @@ import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getLogicalSubscription } from "@/lib/billing/service";
 import { PLATFORM_GATING } from "@/lib/channel-state";
+import { ChannelChip } from "@/components/channel-chip";
 import { getCurrentUser } from "@/lib/current-user";
+import { previewContent } from "@/lib/post-preview";
 import { getReachLast7Days } from "@/lib/reach-cache";
 import { and, count, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import {
@@ -194,6 +196,7 @@ async function DashboardContent({
 			.select({
 				id: posts.id,
 				content: posts.content,
+				channelContent: posts.channelContent,
 				platforms: posts.platforms,
 				scheduledAt: posts.scheduledAt,
 			})
@@ -212,6 +215,7 @@ async function DashboardContent({
 			.select({
 				id: posts.id,
 				content: posts.content,
+				channelContent: posts.channelContent,
 				platforms: posts.platforms,
 				publishedAt: posts.publishedAt,
 			})
@@ -528,16 +532,11 @@ async function DashboardContent({
 										</div>
 										<div className="flex-1 min-w-0">
 											<p className="text-[14.5px] text-ink leading-normal line-clamp-2">
-												{p.content}
+												{previewContent(p)}
 											</p>
 											<div className="mt-2 flex flex-wrap items-center gap-1.5">
 												{p.platforms.map((pl) => (
-													<span
-														key={pl}
-														className="inline-flex items-center h-6 px-2 rounded-full bg-peach-100 border border-border text-[11px] text-ink/75"
-													>
-														{PROVIDER_LABELS[pl] ?? pl}
-													</span>
+													<ChannelChip key={pl} channel={pl} />
 												))}
 											</div>
 										</div>
@@ -567,9 +566,16 @@ async function DashboardContent({
 												{p.publishedAt ? formatTime(p.publishedAt, tz) : ""}
 											</p>
 										</div>
-										<p className="flex-1 text-[14px] text-ink/80 leading-normal line-clamp-2">
-											{p.content}
-										</p>
+										<div className="flex-1 min-w-0">
+											<p className="text-[14px] text-ink/80 leading-normal line-clamp-2">
+												{previewContent(p)}
+											</p>
+											<div className="mt-2 flex flex-wrap items-center gap-1.5">
+												{p.platforms.map((pl) => (
+													<ChannelChip key={pl} channel={pl} />
+												))}
+											</div>
+										</div>
 									</li>
 								))}
 							</ul>

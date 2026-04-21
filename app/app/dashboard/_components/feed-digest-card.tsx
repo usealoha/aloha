@@ -62,22 +62,14 @@ export function FeedDigestCard({
 
 	return (
 		<article className="rounded-2xl border border-border bg-background-elev p-6">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-						Feeds
-					</p>
-					<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
-						{headline}
-					</p>
-					<p className="mt-0.5 text-[12px] text-ink/55">{subline}</p>
-				</div>
-				<Link
-					href="/app/feeds"
-					className="pencil-link text-[12.5px] text-ink/70 hover:text-ink"
-				>
-					Reader
-				</Link>
+			<div>
+				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+					Feeds
+				</p>
+				<p className="mt-1.5 font-display text-[20px] leading-[1.15] text-ink">
+					{headline}
+				</p>
+				<p className="mt-0.5 text-[12px] text-ink/55">{subline}</p>
 			</div>
 
 			{visibleSources.length > 0 ? (
@@ -158,6 +150,13 @@ export function FeedDigestCard({
 					</li>
 				))}
 			</ul>
+			<Link
+				href="/app/feeds"
+				className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+			>
+				<Rss className="w-3.5 h-3.5 mr-1.5" />
+				Open reader
+			</Link>
 		</article>
 	);
 }
