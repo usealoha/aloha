@@ -946,6 +946,38 @@ export const museEnabledChannels = pgTable(
   ],
 );
 
+// Invite-gated feature access. One row per (user, feature) — e.g. "muse",
+// "broadcasts". `requestedAt` is the waitlist signal (user clicked
+// "request access"); `grantedAt` flips the entitlement on. `revokedAt`
+// lets us pause access without losing history. Entitlement checks treat
+// access as active when grantedAt IS NOT NULL AND revokedAt IS NULL.
+export const featureAccess = pgTable(
+  "feature_access",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    feature: text("feature").notNull(),
+    requestedAt: timestamp("requestedAt"),
+    grantedAt: timestamp("grantedAt"),
+    grantedBy: uuid("grantedBy").references((): AnyPgColumn => users.id, {
+      onDelete: "set null",
+    }),
+    revokedAt: timestamp("revokedAt"),
+    note: text("note"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("feature_access_user_feature").on(table.userId, table.feature),
+    index("feature_access_feature_requested").on(
+      table.feature,
+      table.requestedAt,
+    ),
+  ],
+);
+
 // Named, versioned system prompts. Rolling a new template version is a
 // deploy, not a config change — feature code pins (name, version).
 export const promptTemplates = pgTable(
