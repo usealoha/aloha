@@ -342,6 +342,11 @@ export const automations = pgTable(
     // event-driven automations. The cron endpoint scans active rows where
     // nextFireAt <= now and enqueues a run.
     nextFireAt: timestamp("nextFireAt"),
+    // Message id for the currently-scheduled fire in the delayed-message
+    // queue (QStash today). When set, the queue will call the tick endpoint
+    // at nextFireAt. Cleared on pause/delete or after the message fires.
+    // Hourly cron is the safety net if this drifts.
+    scheduledMessageId: text("scheduledMessageId"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
@@ -374,6 +379,10 @@ export const automationRuns = pgTable(
     // accumulated context.
     resumeAt: timestamp("resumeAt"),
     cursor: text("cursor"),
+    // Message id for the pending resume in the delayed-message queue. When
+    // set, the queue will call the tick endpoint at resumeAt. The hourly
+    // cron is the safety net if this drifts.
+    scheduledMessageId: text("scheduledMessageId"),
     snapshot: jsonb("snapshot")
       .$type<Record<string, unknown>>()
       .default({})
