@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
-import { BookOpen, Link2, Sparkles, Upload, Wand2 } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  Image as ImageIcon,
+  Link2,
+  Sparkles,
+  Upload,
+  Wand2,
+} from "lucide-react";
 import { db } from "@/db";
 import {
   brandCorpus,
@@ -11,8 +19,10 @@ import { trainVoiceAction } from "@/app/actions/voice";
 import {
   syncNotionAction,
 } from "@/app/actions/corpus";
+import { requestMuseAccessAction } from "@/app/actions/muse-access";
 import { loadCurrentVoice } from "@/lib/ai/voice";
 import { getCurrentUser } from "@/lib/current-user";
+import { getMuseAccessState } from "@/lib/billing/muse";
 import { FlashToast } from "@/components/ui/flash-toast";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { Slider } from "./_components/slider";
@@ -27,6 +37,11 @@ const RECENT_SAMPLE_LIMIT = 20;
 
 export default async function MuseSettingsPage() {
   const user = (await getCurrentUser())!;
+
+  const access = await getMuseAccessState(user.id);
+  if (!access.granted) {
+    return <MuseRequestAccess requestedAt={access.requestedAt} />;
+  }
 
   const [voice, recentSamples, notion, corpusRows] = await Promise.all([
     loadCurrentVoice(user.id),
@@ -531,6 +546,113 @@ function NotionDocList({ docs }: { docs: CorpusRow[] }) {
           + {docs.length - 6} more in your corpus.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+const MUSE_BENEFITS: Array<{ Icon: typeof Sparkles; title: string; body: string }> = [
+  {
+    Icon: Wand2,
+    title: "Train Muse on your voice",
+    body: "Feed it your past posts, sliders, and sample writing. Every generation then sounds like you — not a generic AI.",
+  },
+  {
+    Icon: BookOpen,
+    title: "Pull in your knowledge",
+    body: "Connect Notion (and Google Docs, soon) so Muse drafts with the context of your actual work, not just the last tweet.",
+  },
+  {
+    Icon: Sparkles,
+    title: "Full drafts, not just polish",
+    body: "Go from topic to on-brand draft with hooks, key points, CTA, and hashtags — per platform.",
+  },
+  {
+    Icon: ImageIcon,
+    title: "On-brand images",
+    body: "Generate visuals that match your post, ready to attach without leaving the composer.",
+  },
+];
+
+function MuseRequestAccess({ requestedAt }: { requestedAt: Date | null }) {
+  return (
+    <div className="max-w-3xl space-y-8">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+          Invite-only
+        </p>
+        <h2 className="mt-2 font-display text-[28px] leading-[1.1] tracking-[-0.02em] text-ink">
+          Muse — join the waitlist
+        </h2>
+        <p className="mt-2 text-[13.5px] text-ink/65 leading-[1.55] max-w-2xl">
+          Muse is Aloha&apos;s style-trained AI layer. We&apos;re rolling it
+          out to a small group while we tune it. Register your interest and
+          we&apos;ll email you when your seat opens.
+        </p>
+      </div>
+
+      <section className="rounded-3xl border border-border bg-background-elev p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+          What you unlock
+        </p>
+        <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+          {MUSE_BENEFITS.map(({ Icon, title, body }) => (
+            <li key={title} className="flex items-start gap-3">
+              <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-peach-300 grid place-items-center shrink-0">
+                <Icon className="w-4 h-4 text-ink" />
+              </span>
+              <div>
+                <p className="text-[14px] text-ink font-medium">{title}</p>
+                <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55]">
+                  {body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {requestedAt ? (
+        <section className="rounded-3xl border border-primary/40 bg-primary-soft/60 p-6 flex items-start gap-3">
+          <span className="mt-[2px] w-9 h-9 rounded-full bg-background border border-primary/40 grid place-items-center shrink-0">
+            <Check className="w-4 h-4 text-ink" />
+          </span>
+          <div>
+            <p className="text-[14.5px] text-ink font-medium">
+              You&apos;re on the list
+            </p>
+            <p className="mt-1 text-[12.5px] text-ink/70 leading-[1.55]">
+              Requested{" "}
+              {new Intl.DateTimeFormat("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }).format(requestedAt)}
+              . We&apos;ll email you as soon as access opens up.
+            </p>
+          </div>
+        </section>
+      ) : (
+        <form
+          action={requestMuseAccessAction}
+          className="rounded-3xl border border-border bg-background-elev p-6 flex items-center justify-between gap-4 flex-wrap"
+        >
+          <div>
+            <p className="text-[14.5px] text-ink font-medium">
+              Ready when you are
+            </p>
+            <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55]">
+              One click — we&apos;ll reach out when your seat is ready.
+            </p>
+          </div>
+          <PendingSubmitButton
+            className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+            pendingLabel="Registering…"
+          >
+            <Sparkles className="w-4 h-4" />
+            Request access
+          </PendingSubmitButton>
+        </form>
+      )}
     </div>
   );
 }
