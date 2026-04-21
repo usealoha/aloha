@@ -89,12 +89,7 @@ const envSchema = z.object({
   // this list gets broadcast entitlement regardless of Basic/Muse plan.
   BROADCASTS_ALLOWLIST: z.string().optional(),
 
-  // Invite-only allowlist for Muse while pricing is off. Comma-separated
-  // emails. Any address here gets museEnabled=true without a Polar
-  // subscription. Remove or leave empty once the basic_muse SKU is live.
-  MUSE_ALLOWLIST: z.string().optional(),
-
-  // Observability — all optional. App boots without them; logging falls
+// Observability — all optional. App boots without them; logging falls
   // back to stdout/pretty and Sentry no-ops when DSN is absent.
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
   SENTRY_ORG: z.string().optional(),
