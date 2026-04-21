@@ -8,7 +8,11 @@ import { resolveSteps } from "@/app/app/automations/_lib/steps";
 import { resumeRun, startRun } from "@/lib/automations/executor";
 import { materializeNextFireAt } from "@/lib/automations/schedule";
 
-// Runs once a minute (see vercel.json). Two jobs:
+// Hourly reconciliation sweep (see vercel.json). Primary scheduling now
+// goes through QStash delayed messages (see lib/automations/scheduler.ts
+// + app/api/qstash/automations-tick). This cron is the safety net for
+// any message that was dropped, never published, or fired but failed to
+// advance the run. Two jobs:
 //   1. Resume automation runs waiting on a delay whose timer has elapsed.
 //   2. Start new runs for schedule-triggered automations that are due.
 //
