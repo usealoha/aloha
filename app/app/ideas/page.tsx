@@ -328,14 +328,13 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
               media: idea.media,
             }}
           >
-            <button
-              type="button"
+            <span
               aria-label="Edit"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-ink/65 hover:text-ink transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-ink/65 hover:text-ink transition-colors cursor-pointer"
             >
               <Pencil className="w-3.5 h-3.5" />
               Edit
-            </button>
+            </span>
           </IdeaDialog>
         ) : null}
 
