@@ -117,36 +117,43 @@ export function FeedDigestCard({
 				</ul>
 			) : null}
 
-			<ul className="mt-4 space-y-3">
+			<ul className="mt-4 -mx-2 space-y-0.5">
 				{items.map((item) => (
 					<li key={item.id}>
 						<a
 							href={item.url ?? "#"}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="group block"
+							className="group relative flex items-start gap-2.5 px-2 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
 						>
-							<div className="flex items-center gap-2 mb-0.5">
-								{!item.isRead ? (
-									<span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-								) : null}
-								<span className="text-[11px] uppercase tracking-[0.16em] text-ink/50 truncate">
-									{item.feedTitle}
-								</span>
-								{item.publishedAt ? (
-									<span className="ml-auto text-[11px] tabular-nums text-ink/40 shrink-0">
-										{timeAgo(item.publishedAt)}
-									</span>
-								) : null}
-							</div>
 							<span
 								className={cn(
-									"block text-[13px] leading-[1.45] line-clamp-2 transition-colors group-hover:text-ink",
-									item.isRead ? "text-ink/55" : "text-ink/85",
+									"mt-[7px] w-1.5 h-1.5 rounded-full shrink-0",
+									item.isRead ? "bg-transparent" : "bg-primary",
 								)}
-							>
-								{item.title}
-							</span>
+								aria-hidden
+							/>
+							<div className="flex-1 min-w-0">
+								<p
+									className={cn(
+										"text-[13px] leading-[1.4] line-clamp-2 transition-colors group-hover:text-ink",
+										item.isRead ? "text-ink/60" : "text-ink font-medium",
+									)}
+								>
+									{item.title}
+								</p>
+								<p className="mt-1 flex items-center gap-1.5 text-[11px] text-ink/50 min-w-0">
+									<span className="truncate">{item.feedTitle}</span>
+									{item.publishedAt ? (
+										<>
+											<span aria-hidden className="text-ink/30">·</span>
+											<span className="tabular-nums shrink-0">
+												{timeAgo(item.publishedAt)}
+											</span>
+										</>
+									) : null}
+								</p>
+							</div>
 						</a>
 					</li>
 				))}
