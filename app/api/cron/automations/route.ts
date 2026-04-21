@@ -19,8 +19,8 @@ import { materializeNextFireAt } from "@/lib/automations/schedule";
 const BATCH_LIMIT = 50;
 
 export async function GET(req: NextRequest) {
-  const key = new URL(req.url).searchParams.get("key");
-  if (!env.CRON_SECRET || key !== env.CRON_SECRET) {
+  const authHeader = req.headers.get("authorization");
+  if (!env.CRON_SECRET || authHeader !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

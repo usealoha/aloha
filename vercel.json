@@ -2,11 +2,11 @@
 	"$schema": "https://openapi.vercel.sh/vercel.json",
 	"crons": [
 		{
-			"path": "/api/cron/cleanup-deleted-posts?key=${CRON_SECRET}",
+			"path": "/api/cron/cleanup-deleted-posts",
 			"schedule": "0 0 * * *"
 		},
 		{
-			"path": "/api/cron/automations?key=${CRON_SECRET}",
+			"path": "/api/cron/automations",
 			"schedule": "* * * * *"
 		}
 	],

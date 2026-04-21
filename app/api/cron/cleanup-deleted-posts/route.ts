@@ -9,20 +9,14 @@ import { env } from "@/lib/env";
  * Cleanup job to permanently delete posts that have been in "deleted" status
  * for more than 30 days.
  *
- * This can be triggered by:
- * 1. Vercel Cron (recommended): Configure in vercel.json
- * 2. Manual trigger: Call with ?key=<CRON_SECRET>
+ * Triggered by Vercel Cron (see vercel.json); authorized via the
+ * `Authorization: Bearer <CRON_SECRET>` header Vercel injects.
  *
  * Returns stats about deleted posts.
  */
 export async function GET(req: NextRequest) {
-	// Verify authorization
-	const { searchParams } = new URL(req.url);
-	const key = searchParams.get("key");
-
-	// Check for cron secret from header (Vercel Cron) or query param (manual)
-	const cronSecret = env.CRON_SECRET;
-	if (key !== cronSecret) {
+	const authHeader = req.headers.get("authorization");
+	if (!env.CRON_SECRET || authHeader !== `Bearer ${env.CRON_SECRET}`) {
 		return NextResponse.json(
 			{ error: "Unauthorized" },
 			{ status: 401 },
