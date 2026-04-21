@@ -25,13 +25,6 @@ export type CuratedCategory = (typeof CURATED_CATEGORIES)[number];
 export const CURATED_FEEDS: CuratedFeed[] = [
   // Marketing
   {
-    url: "https://www.marketingbrew.com/rss.xml",
-    siteUrl: "https://www.marketingbrew.com/",
-    title: "Marketing Brew",
-    description: "Daily marketing news, without the marketing-speak.",
-    category: "Marketing",
-  },
-  {
     url: "https://cxl.com/institute/blog/feed/",
     siteUrl: "https://cxl.com/institute/blog/",
     title: "CXL",
@@ -43,13 +36,6 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     siteUrl: "https://seths.blog/",
     title: "Seth's Blog",
     description: "Daily notes on marketing, change, and taste.",
-    category: "Marketing",
-  },
-  {
-    url: "https://www.marketingprofs.com/rss/all.xml",
-    siteUrl: "https://www.marketingprofs.com/",
-    title: "MarketingProfs",
-    description: "Practical marketing how-tos and research.",
     category: "Marketing",
   },
   {
@@ -88,10 +74,24 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Marketing",
   },
   {
-    url: "https://everyonehatesmarketers.com/feed",
-    siteUrl: "https://everyonehatesmarketers.com/",
-    title: "Everyone Hates Marketers",
-    description: "Louis Grenier on no-BS positioning.",
+    url: "https://backlinko.com/feed",
+    siteUrl: "https://backlinko.com/",
+    title: "Backlinko",
+    description: "Brian Dean on SEO and content that ranks.",
+    category: "Marketing",
+  },
+  {
+    url: "https://www.semrush.com/blog/feed/",
+    siteUrl: "https://www.semrush.com/blog/",
+    title: "Semrush Blog",
+    description: "Search, content, and competitive marketing data.",
+    category: "Marketing",
+  },
+  {
+    url: "https://www.searchenginejournal.com/feed/",
+    siteUrl: "https://www.searchenginejournal.com/",
+    title: "Search Engine Journal",
+    description: "Daily search marketing news and how-tos.",
     category: "Marketing",
   },
 
@@ -146,7 +146,7 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Product",
   },
   {
-    url: "https://www.sachinrekhi.com/rss",
+    url: "https://www.sachinrekhi.com/feed",
     siteUrl: "https://www.sachinrekhi.com/",
     title: "Sachin Rekhi",
     description: "Essays on product management craft.",
@@ -160,7 +160,7 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Product",
   },
   {
-    url: "https://www.reforge.com/blog/rss.xml",
+    url: "https://www.reforge.com/blog/feed",
     siteUrl: "https://www.reforge.com/blog",
     title: "Reforge Blog",
     description: "Growth, retention, and product strategy essays.",
@@ -194,13 +194,6 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     siteUrl: "https://alistapart.com/",
     title: "A List Apart",
     description: "Design, development, and meaning on the web.",
-    category: "Design",
-  },
-  {
-    url: "https://www.figma.com/blog/rss/",
-    siteUrl: "https://www.figma.com/blog/",
-    title: "Figma Blog",
-    description: "Product updates and design craft from Figma.",
     category: "Design",
   },
   {
@@ -255,8 +248,8 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Engineering",
   },
   {
-    url: "http://highscalability.com/rss.xml",
-    siteUrl: "http://highscalability.com/",
+    url: "https://highscalability.com/rss/",
+    siteUrl: "https://highscalability.com/",
     title: "High Scalability",
     description: "System architecture at internet scale.",
     category: "Engineering",
@@ -334,24 +327,10 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "AI",
   },
   {
-    url: "https://www.deeplearning.ai/the-batch/feed/",
-    siteUrl: "https://www.deeplearning.ai/the-batch/",
-    title: "The Batch",
-    description: "Andrew Ng's weekly AI news summary.",
-    category: "AI",
-  },
-  {
     url: "https://openai.com/blog/rss.xml",
     siteUrl: "https://openai.com/blog",
     title: "OpenAI Blog",
     description: "Research and product updates from OpenAI.",
-    category: "AI",
-  },
-  {
-    url: "https://www.anthropic.com/news/rss.xml",
-    siteUrl: "https://www.anthropic.com/news",
-    title: "Anthropic News",
-    description: "Anthropic's product and research announcements.",
     category: "AI",
   },
   {
@@ -406,7 +385,7 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Creators",
   },
   {
-    url: "https://every.to/feed",
+    url: "https://every.to/feeds/main.xml",
     siteUrl: "https://every.to/",
     title: "Every",
     description: "A bundle of business and tech writers.",
@@ -434,8 +413,8 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Creators",
   },
   {
-    url: "https://trapital.co/feed/",
-    siteUrl: "https://trapital.co/",
+    url: "https://trapital.substack.com/feed",
+    siteUrl: "https://trapital.substack.com/",
     title: "Trapital",
     description: "Dan Runcie on music, culture, and the creator biz.",
     category: "Creators",
@@ -447,13 +426,6 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     description: "A network of creator-led business newsletters.",
     category: "Creators",
   },
-  {
-    url: "https://blog.convertkit.com/feed/",
-    siteUrl: "https://blog.convertkit.com/",
-    title: "ConvertKit Blog",
-    description: "Creator growth, email, and monetization craft.",
-    category: "Creators",
-  },
 
   // Business
   {
@@ -461,20 +433,6 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     siteUrl: "https://stratechery.com/",
     title: "Stratechery",
     description: "Ben Thompson on tech strategy.",
-    category: "Business",
-  },
-  {
-    url: "https://hbr.org/rss",
-    siteUrl: "https://hbr.org/",
-    title: "Harvard Business Review",
-    description: "HBR articles across leadership and strategy.",
-    category: "Business",
-  },
-  {
-    url: "https://a16z.com/feed/",
-    siteUrl: "https://a16z.com/",
-    title: "Andreessen Horowitz",
-    description: "Thesis posts from a16z partners.",
     category: "Business",
   },
   {
@@ -506,8 +464,8 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Business",
   },
   {
-    url: "https://diff.substack.com/feed",
-    siteUrl: "https://diff.substack.com/",
+    url: "https://www.thediff.co/feed",
+    siteUrl: "https://www.thediff.co/",
     title: "The Diff",
     description: "Byrne Hobart on markets and technology.",
     category: "Business",
