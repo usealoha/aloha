@@ -20,12 +20,28 @@ import { PostRowActions } from "./post-row-actions";
 type Row = {
 	id: string;
 	content: string;
+	channelContent?: Record<string, { content?: string } | null> | null;
 	platforms: string[];
 	status: string;
 	scheduledAt: Date | null;
 	publishedAt: Date | null;
 	createdAt: Date;
 };
+
+function previewContent(p: Row): string {
+	const base = p.content?.trim();
+	if (base) return p.content;
+	const overrides = p.channelContent ?? {};
+	for (const platform of p.platforms) {
+		const c = overrides[platform]?.content?.trim();
+		if (c) return overrides[platform]!.content!;
+	}
+	for (const entry of Object.values(overrides)) {
+		const c = entry?.content?.trim();
+		if (c) return entry!.content!;
+	}
+	return "";
+}
 
 const STATUS_META: Record<
 	string,
@@ -198,7 +214,7 @@ export function PostsList({
 								</div>
 								<div className="flex-1 min-w-0">
 									<p className="text-[14.5px] text-ink leading-[1.5] line-clamp-2">
-										{p.content}
+										{previewContent(p)}
 									</p>
 									<div className="mt-2 flex flex-wrap items-center gap-1.5">
 										{p.platforms.map((pl) => {

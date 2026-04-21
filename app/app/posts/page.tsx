@@ -139,6 +139,7 @@ export default async function PostsPage({
 			.select({
 				id: posts.id,
 				content: posts.content,
+				channelContent: posts.channelContent,
 				platforms: posts.platforms,
 				status: posts.status,
 				scheduledAt: posts.scheduledAt,
