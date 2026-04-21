@@ -6,7 +6,9 @@ import {
 	FacebookIcon,
 	InstagramIcon,
 	LinkedInIcon,
+	MastodonIcon,
 	MediumIcon,
+	TelegramIcon,
 	TikTokIcon,
 	XIcon,
 } from "@/app/auth/_components/provider-icons";
@@ -18,6 +20,8 @@ const PROVIDER_LABELS: Record<string, string> = {
 	instagram: "Instagram",
 	tiktok: "TikTok",
 	bluesky: "Bluesky",
+	mastodon: "Mastodon",
+	telegram: "Telegram",
 	medium: "Medium",
 };
 
@@ -31,6 +35,8 @@ const PROVIDER_ICONS: Record<
 	instagram: InstagramIcon,
 	tiktok: TikTokIcon,
 	bluesky: BlueskyIcon,
+	mastodon: MastodonIcon,
+	telegram: TelegramIcon,
 	medium: MediumIcon,
 };
 
