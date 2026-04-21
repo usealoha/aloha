@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/current-user";
 import { trainVoice, type VoiceSliders } from "@/lib/ai/voice";
+import { requireMuseAccess } from "@/lib/billing/muse";
 
 const VALID_PERSPECTIVES = [
   "first-person",
@@ -23,6 +24,7 @@ function parsePerspective(v: unknown): VoiceSliders["perspective"] {
 export async function trainVoiceAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  await requireMuseAccess(user.id);
 
   const sliders: VoiceSliders = {
     formality: clamp(Number(formData.get("formality") ?? 50), 0, 100),

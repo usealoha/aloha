@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/current-user";
+import { requireMuseAccess } from "@/lib/billing/muse";
 import { generate } from "@/lib/ai/router";
 import { PROMPTS, registerPrompts } from "@/lib/ai/prompts";
 import { loadCurrentVoice } from "@/lib/ai/voice";
@@ -38,6 +39,7 @@ export async function refineContent(
 export async function generateDraft(topic: string, platform: string = "general") {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  await requireMuseAccess(user.id);
   if (!topic.trim()) throw new Error("Topic is required");
 
   await registerPrompts();
@@ -87,6 +89,7 @@ export async function generateRichDraft(
 ): Promise<RichDraft> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  await requireMuseAccess(user.id);
   if (!topic.trim()) throw new Error("Topic is required");
 
   await registerPrompts();
@@ -273,6 +276,7 @@ export async function generateImageAction(
 ): Promise<GeneratedImagePayload> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  await requireMuseAccess(user.id);
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   try {
@@ -375,6 +379,7 @@ export async function improveWithBrief(
 ): Promise<string> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  await requireMuseAccess(user.id);
   if (!content.trim()) throw new Error("Nothing to improve yet.");
   if (!improvementBrief.trim()) {
     throw new Error("No improvement brief provided.");
