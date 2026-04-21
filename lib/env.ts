@@ -96,7 +96,6 @@ const envSchema = z.object({
 
   // Observability — all optional. App boots without them; logging falls
   // back to stdout/pretty and Sentry no-ops when DSN is absent.
-  SENTRY_DSN: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
