@@ -657,3 +657,13 @@ export const TEMPLATES: Record<AutomationKind, AutomationTemplate> = {
 };
 
 export const TEMPLATE_LIST: AutomationTemplate[] = Object.values(TEMPLATES);
+
+// Templates whose steps invoke Muse-backed actions. Kept in sync with the
+// handler-map so the pickers and server guards agree on what's gated.
+export const MUSE_TEMPLATE_KINDS: ReadonlySet<AutomationKind> = new Set<AutomationKind>([
+  "weekly_muse_draft",
+]);
+
+export function templateRequiresMuse(kind: AutomationKind): boolean {
+  return MUSE_TEMPLATE_KINDS.has(kind);
+}

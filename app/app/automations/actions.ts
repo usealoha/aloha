@@ -7,7 +7,13 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { automations } from "@/db/schema";
 import type { StoredFlowStep } from "@/db/schema";
-import { TEMPLATES, type AutomationKind, type ConfigField } from "./_lib/templates";
+import {
+  TEMPLATES,
+  templateRequiresMuse,
+  type AutomationKind,
+  type ConfigField,
+} from "./_lib/templates";
+import { requireMuseAccess } from "@/lib/billing/muse";
 import { resolveSteps } from "./_lib/steps";
 import { handlerFor } from "./_lib/handler-map";
 import { materializeNextFireAt } from "@/lib/automations/schedule";
@@ -104,6 +110,7 @@ export async function createAutomationFromBuilder(formData: FormData) {
   if (!name) throw new Error("Name is required.");
   const template = TEMPLATES[kind];
   if (!template) throw new Error("Unknown automation template.");
+  if (templateRequiresMuse(kind)) await requireMuseAccess(userId);
 
   const steps = validateStepValues(kind, parsePayload(formData));
 
@@ -130,6 +137,7 @@ export async function updateAutomationFromBuilder(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!id || !name) throw new Error("Missing id or name.");
   if (!TEMPLATES[kind]) throw new Error("Unknown automation template.");
+  if (templateRequiresMuse(kind)) await requireMuseAccess(userId);
 
   const steps = validateStepValues(kind, parsePayload(formData));
 
