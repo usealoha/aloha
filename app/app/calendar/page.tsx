@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { campaigns, posts } from "@/db/schema";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
 import { getCurrentUser } from "@/lib/current-user";
+import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { and, eq, gte, lt } from "drizzle-orm";
 import {
 	buildWeekDays,
@@ -26,6 +27,7 @@ export default async function CalendarPage({
 }) {
 	const user = (await getCurrentUser())!;
 	const tz = user.timezone ?? "UTC";
+	const museAccess = await hasMuseInviteEntitlement(user.id);
 
 	const params = await searchParams;
 	const view = parseView(first(params.view));
@@ -48,6 +50,7 @@ export default async function CalendarPage({
 			.select({
 				id: posts.id,
 				content: posts.content,
+				channelContent: posts.channelContent,
 				platforms: posts.platforms,
 				status: posts.status,
 				scheduledAt: posts.scheduledAt,
@@ -116,6 +119,7 @@ export default async function CalendarPage({
 			todayKey={todayKey}
 			channelStates={channelStates}
 			campaignIndex={campaignIndex}
+			museAccess={museAccess}
 		/>
 	);
 }

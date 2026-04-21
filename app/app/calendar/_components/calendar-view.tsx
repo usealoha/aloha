@@ -4,6 +4,7 @@
 
 import type { EffectiveState } from "@/lib/channel-state-format";
 import { stateOr, stateStyles } from "@/lib/channel-state-format";
+import { previewContent } from "@/lib/post-preview";
 import { cn } from "@/lib/utils";
 import {
 	AlertCircle,
@@ -12,18 +13,26 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Clock,
+	Lock,
 	Sparkles,
 	Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { GridScroll } from "../grid-scroll";
 import { ViewSelect } from "../view-select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type CalendarViewMode = "month" | "week" | "day";
 
 export type CalendarPostRow = {
 	id: string;
 	content: string;
+	channelContent?: Record<string, { content?: string } | null> | null;
 	platforms: string[];
 	status: string;
 	scheduledAt: Date | null;
@@ -50,6 +59,7 @@ export type CalendarViewProps = {
 	todayKey: string;
 	channelStates: Record<string, EffectiveState>;
 	campaignIndex: CalendarCampaignIndex;
+	museAccess?: boolean;
 };
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -69,6 +79,7 @@ export function CalendarView({
 	todayKey,
 	channelStates,
 	campaignIndex,
+	museAccess = false,
 }: CalendarViewProps) {
 	return (
 		<div className="space-y-10">
@@ -101,13 +112,34 @@ export function CalendarView({
 
 					<ViewSelect value={view} anchorKey={anchorKey} />
 
-					<Link
-						href="/app/campaigns/new"
-						className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink hover:border-ink transition-colors"
-					>
-						<Wand2 className="w-4 h-4 text-primary" />
-						New campaign
-					</Link>
+					{museAccess ? (
+						<Link
+							href="/app/campaigns/new"
+							className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink hover:border-ink transition-colors"
+						>
+							<Wand2 className="w-4 h-4 text-primary" />
+							New campaign
+						</Link>
+					) : (
+						<TooltipProvider delay={150}>
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<span className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong text-[13.5px] font-medium text-ink/40 cursor-not-allowed">
+											<Lock className="w-4 h-4 text-ink/30" />
+											New campaign
+										</span>
+									}
+								/>
+								<TooltipContent side="bottom" className="max-w-[240px] text-center">
+									<p className="font-medium">Campaigns need Muse</p>
+									<p className="text-ink/60 mt-1">
+										Muse plans the arc — beats, dates, hooks — so you can review and ship.
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					)}
 
 					<Link
 						href="/app/composer"
@@ -256,7 +288,7 @@ function MonthView({
 												</span>
 											</div>
 											<p className="line-clamp-2 text-ink group-hover:text-ink/90">
-												{p.content}
+												{previewContent(p)}
 											</p>
 											<CampaignPill
 												campaignId={p.campaignId}
@@ -451,7 +483,7 @@ function TimeGridView({
 												compact ? "line-clamp-2" : "line-clamp-4",
 											)}
 										>
-											{p.content}
+											{previewContent(p)}
 										</p>
 										<CampaignPill
 											campaignId={p.campaignId}
