@@ -82,9 +82,9 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
         </nav>
 
         <div className="py-3 px-3 border-t border-border">
-          <div className="flex flex-col gap-2 items-start">
-            <ThemeToggle />
-            <NotificationsBell />
+          <div className="flex flex-col gap-1 items-stretch">
+            <ThemeToggle expandedLabel={!collapsed} />
+            <NotificationsBell expandedLabel={!collapsed} />
             <AvatarMenu
               name={user.name}
               email={user.email}

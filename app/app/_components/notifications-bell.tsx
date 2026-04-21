@@ -56,7 +56,13 @@ function timeAgo(d: Date): string {
   return d.toLocaleDateString();
 }
 
-export function NotificationsBell({ className }: { className?: string }) {
+export function NotificationsBell({
+  className,
+  expandedLabel = false,
+}: {
+  className?: string;
+  expandedLabel?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
@@ -130,25 +136,41 @@ export function NotificationsBell({ className }: { className?: string }) {
       type="button"
       aria-label="Notifications"
       className={cn(
-        "relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
+        "group relative flex items-center h-10 w-full rounded-xl gap-3 px-3 text-left text-[14px] font-medium text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
         className,
       )}
     >
-      <Bell className="w-[17px] h-[17px]" />
-      {unread > 0 ? (
-        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
+      <span className="relative shrink-0">
+        <Bell className="w-[18px] h-[18px] text-ink/50 group-hover:text-ink transition-colors" />
+        {unread > 0 ? (
+          <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+        ) : null}
+      </span>
+      {expandedLabel ? (
+        <>
+          <span className="truncate flex-1">Notifications</span>
+          {unread > 0 ? (
+            <span className="text-[11px] font-medium text-ink/60">
+              {unread}
+            </span>
+          ) : null}
+        </>
       ) : null}
     </PopoverTrigger>
   );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger render={trigger} />
-        <TooltipContent side="right" sideOffset={12}>
-          Notifications
-        </TooltipContent>
-      </Tooltip>
+      {expandedLabel ? (
+        trigger
+      ) : (
+        <Tooltip>
+          <TooltipTrigger render={trigger} />
+          <TooltipContent side="right" sideOffset={12}>
+            Notifications
+          </TooltipContent>
+        </Tooltip>
+      )}
       <PopoverContent
         align="end"
         sideOffset={8}

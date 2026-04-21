@@ -9,10 +9,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({
+  className,
+  expandedLabel = false,
+}: {
+  className?: string;
+  expandedLabel?: boolean;
+}) {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+  const shortLabel = isDark ? "Light mode" : "Dark mode";
 
   const button = (
     <button
@@ -20,17 +27,20 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={label}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
-        "relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
+        "group flex items-center h-10 w-full rounded-xl gap-3 px-3 text-[14px] font-medium text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
         className,
       )}
     >
       {isDark ? (
-        <Sun className="w-[17px] h-[17px]" />
+        <Sun className="w-[18px] h-[18px] shrink-0 text-ink/50 group-hover:text-ink transition-colors" />
       ) : (
-        <Moon className="w-[17px] h-[17px]" />
+        <Moon className="w-[18px] h-[18px] shrink-0 text-ink/50 group-hover:text-ink transition-colors" />
       )}
+      {expandedLabel ? <span className="truncate">{shortLabel}</span> : null}
     </button>
   );
+
+  if (expandedLabel) return button;
 
   return (
     <Tooltip>
