@@ -864,11 +864,13 @@ export function Composer({
 									type="button"
 									onClick={() => toggle(p.id)}
 									aria-pressed={isSelected}
+									disabled={isReadOnly}
 									className={cn(
 										"inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full border text-[12px] font-medium transition-colors",
 										isSelected
 											? "bg-peach-100 text-ink border-border"
 											: "bg-background-elev text-ink/70 border-border-strong hover:border-ink hover:text-ink",
+										"disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:border-border-strong",
 									)}
 								>
 									{Icon && <Icon className="w-3.5 h-3.5" />}
@@ -1002,7 +1004,7 @@ export function Composer({
 								? `Edits here only affect ${activePlatform.name} — your base draft stays as-is.`
 								: `Edits here only affect ${activePlatform.name}. Switch to Draft to change the base for all channels.`}
 						</span>
-						{isOverridden(activePlatform.id) ? (
+						{isOverridden(activePlatform.id) && !isReadOnly ? (
 							<button
 								type="button"
 								onClick={() => handleResetOverride(activePlatform.id)}
@@ -1020,6 +1022,7 @@ export function Composer({
 						<textarea
 							value={editorValue}
 							onChange={(e) => handleEditorChange(e.target.value)}
+							readOnly={isReadOnly}
 							placeholder={
 								activePlatform
 									? `Write a version tailored for ${activePlatform.name}…`
@@ -1044,18 +1047,20 @@ export function Composer({
 												alt={m.alt ?? ""}
 												className="w-full h-full object-cover"
 											/>
-											<button
-												type="button"
-												onClick={() => removeMedia(m.url)}
-												aria-label="Remove image"
-												className="absolute top-1.5 right-1.5 w-6 h-6 inline-flex items-center justify-center rounded-full bg-ink/80 text-background hover:bg-ink transition-colors"
-											>
-												<XIcon className="w-3 h-3" />
-											</button>
+											{isReadOnly ? null : (
+												<button
+													type="button"
+													onClick={() => removeMedia(m.url)}
+													aria-label="Remove image"
+													className="absolute top-1.5 right-1.5 w-6 h-6 inline-flex items-center justify-center rounded-full bg-ink/80 text-background hover:bg-ink transition-colors"
+												>
+													<XIcon className="w-3 h-3" />
+												</button>
+											)}
 											<button
 												type="button"
 												onClick={() => handleGenerateAltText(m)}
-												disabled={loading}
+												disabled={loading || isReadOnly}
 												title={m.alt ? `Alt: ${m.alt}` : "Generate alt text"}
 												aria-label={
 													m.alt ? "Regenerate alt text" : "Generate alt text"
@@ -1080,7 +1085,7 @@ export function Composer({
 							</div>
 						) : null}
 
-						{hashSuggestions.length > 0 ? (
+						{hashSuggestions.length > 0 && !isReadOnly ? (
 							<div className="px-5 pt-3 pb-1 border-t border-border flex flex-wrap items-center gap-1.5">
 								<span className="text-[11px] uppercase tracking-[0.18em] text-ink/45 mr-1">
 									Suggested
@@ -1127,6 +1132,7 @@ export function Composer({
 							</div>
 						)}
 
+						{isReadOnly ? null : (
 						<div className="mt-auto flex flex-wrap items-center justify-end gap-2">
 							<button
 								type="button"
@@ -1175,9 +1181,11 @@ export function Composer({
 								</button>
 							) : null}
 						</div>
+						)}
 					</aside>
 				</div>
 
+						{isReadOnly ? null : (
 						<TooltipProvider delay={250}>
 							<div className="flex flex-wrap items-center gap-1 px-3 py-2 border-t border-border">
 								<input
@@ -1231,9 +1239,10 @@ export function Composer({
 								/>
 							</div>
 						</TooltipProvider>
+						)}
 
 					{/* Second footer: Assist — Muse / Variants / Fan out / Score / Import / Image / Library */}
-					{museAccess ? (
+					{isReadOnly ? null : museAccess ? (
 					<TooltipProvider delay={250}>
 						<div className="flex items-center gap-1 px-3 py-2 border-t border-border bg-muted/50 overflow-x-auto">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 px-2 shrink-0">
@@ -1380,7 +1389,7 @@ export function Composer({
 						</div>
 					)}
 
-						{museAccess && activeDrawer ? (
+						{museAccess && activeDrawer && !isReadOnly ? (
 							<div className="border-t border-border bg-muted/30">
 								{activeDrawer === "muse" ? (
 									<div className="px-5 py-4 lg:px-6 lg:py-5 space-y-3">
