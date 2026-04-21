@@ -13,17 +13,24 @@
 //    multiple calls yet — the Pro model's window handles a few hundred
 //    posts comfortably.
 
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   brandCorpus,
   brandVoice,
+  brandVoiceChannels,
   ideas,
   platformContentCache,
 } from "@/db/schema";
 import { and, eq, or } from "drizzle-orm";
 import { PROMPTS, registerPrompts } from "./prompts";
 import { generate } from "./router";
+
+// Channels need at least this many samples before we train a per-channel
+// delta. Below the threshold the channel falls back to the global profile
+// (see ai-grand-plan §11). 15 is the empirical floor where the delta stops
+// overfitting to a handful of posts.
+const CHANNEL_DELTA_MIN_SAMPLES = 15;
 
 export type VoiceSliders = {
   formality: number; // 0-100
@@ -62,11 +69,35 @@ export type TrainVoiceInput = {
   samplePostIds?: string[];
 };
 
+export type VoiceChannelDelta = {
+  summary: string;
+  tone_descriptors?: string[];
+  hook_patterns?: string[];
+  cta_style?: string;
+  emoji_rate?: "none" | "low" | "medium" | "high";
+  banned_phrases?: string[];
+  positive_examples?: string[];
+  sample_count: number;
+};
+
+export type TrainedChannelDelta = {
+  channel: string;
+  delta: VoiceChannelDelta;
+};
+
+export type SkippedChannelDelta = {
+  channel: string;
+  sampleCount: number;
+  reason: "below-threshold";
+};
+
 export type TrainVoiceResult = {
   profile: VoiceProfile;
   generationId: string;
   corpusSize: number;
   sampleCount: number;
+  channelDeltas: TrainedChannelDelta[];
+  skippedChannels: SkippedChannelDelta[];
 };
 
 export async function trainVoice(
@@ -104,12 +135,152 @@ export async function trainVoice(
 
   await persistVoiceProfile(input.userId, profile, samples.map((s) => s.id));
 
+  const { trained, skipped } = await trainChannelDeltas(
+    input.userId,
+    profile,
+    samples,
+  );
+
   return {
     profile,
     generationId: result.generationId,
     corpusSize: corpus.length,
     sampleCount: samples.length,
+    channelDeltas: trained,
+    skippedChannels: skipped,
   };
+}
+
+async function trainChannelDeltas(
+  userId: string,
+  globalProfile: VoiceProfile,
+  samples: Sample[],
+): Promise<{ trained: TrainedChannelDelta[]; skipped: SkippedChannelDelta[] }> {
+  const byChannel = new Map<string, Sample[]>();
+  for (const s of samples) {
+    const arr = byChannel.get(s.platform) ?? [];
+    arr.push(s);
+    byChannel.set(s.platform, arr);
+  }
+
+  const skipped: SkippedChannelDelta[] = [];
+  const eligible: Array<{ channel: string; samples: Sample[] }> = [];
+  for (const [channel, channelSamples] of byChannel) {
+    if (channelSamples.length < CHANNEL_DELTA_MIN_SAMPLES) {
+      skipped.push({
+        channel,
+        sampleCount: channelSamples.length,
+        reason: "below-threshold",
+      });
+    } else {
+      eligible.push({ channel, samples: channelSamples });
+    }
+  }
+
+  if (eligible.length === 0) {
+    await clearStaleChannelDeltas(userId, []);
+    return { trained: [], skipped };
+  }
+
+  const globalProfileJson = JSON.stringify(globalProfile);
+
+  const results = await Promise.all(
+    eligible.map(async ({ channel, samples: channelSamples }) => {
+      const corpus = buildChannelCorpus(channelSamples);
+      const out = await generate({
+        userId,
+        feature: "voice.trainChannelDelta",
+        template: PROMPTS.voiceTrainChannelDelta,
+        vars: { channel, globalProfile: globalProfileJson },
+        userMessage: corpus,
+        temperature: 0.3,
+      });
+      const delta = parseChannelDelta(out.text, channelSamples.length);
+      return { channel, delta };
+    }),
+  );
+
+  await persistChannelDeltas(userId, results);
+  await clearStaleChannelDeltas(
+    userId,
+    results.map((r) => r.channel),
+  );
+
+  return { trained: results, skipped };
+}
+
+function buildChannelCorpus(samples: Sample[]): string {
+  const capped = samples.slice(0, 60);
+  const joined = capped.map((s) => s.content).join("\n\n---\n\n");
+  return joined.length > MAX_CORPUS_CHARS
+    ? joined.slice(0, MAX_CORPUS_CHARS) + "\n\n[...truncated]"
+    : joined;
+}
+
+function parseChannelDelta(
+  text: string,
+  sampleCount: number,
+): VoiceChannelDelta {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error("Channel delta trainer returned non-JSON output.");
+  }
+  const p = parsed as Partial<VoiceChannelDelta>;
+  if (typeof p.summary !== "string") {
+    throw new Error("Channel delta JSON missing required 'summary' field.");
+  }
+  return { ...(parsed as VoiceChannelDelta), sample_count: sampleCount };
+}
+
+async function persistChannelDeltas(
+  userId: string,
+  deltas: TrainedChannelDelta[],
+) {
+  if (deltas.length === 0) return;
+  for (const { channel, delta } of deltas) {
+    await db
+      .insert(brandVoiceChannels)
+      .values({
+        userId,
+        channel,
+        overrides: delta as unknown as Record<string, unknown>,
+      })
+      .onConflictDoUpdate({
+        target: [brandVoiceChannels.userId, brandVoiceChannels.channel],
+        set: {
+          overrides: delta as unknown as Record<string, unknown>,
+          version: sql`${brandVoiceChannels.version} + 1`,
+          updatedAt: new Date(),
+        },
+      });
+  }
+}
+
+// When a retrain no longer includes a previously-trained channel (e.g. the
+// user disconnected an account), drop the stale delta so it can't continue
+// influencing generations.
+async function clearStaleChannelDeltas(userId: string, keep: string[]) {
+  const rows = await db
+    .select({ channel: brandVoiceChannels.channel })
+    .from(brandVoiceChannels)
+    .where(eq(brandVoiceChannels.userId, userId));
+  const stale = rows.map((r) => r.channel).filter((c) => !keep.includes(c));
+  if (stale.length === 0) return;
+  await db
+    .delete(brandVoiceChannels)
+    .where(
+      and(
+        eq(brandVoiceChannels.userId, userId),
+        inArray(brandVoiceChannels.channel, stale),
+      ),
+    );
 }
 
 async function loadCorpusSamples(
@@ -305,4 +476,67 @@ export async function loadCurrentVoice(userId: string) {
     .where(eq(brandVoice.userId, userId))
     .limit(1);
   return row ?? null;
+}
+
+export async function loadChannelVoice(
+  userId: string,
+  channel: string,
+): Promise<VoiceChannelDelta | null> {
+  const [row] = await db
+    .select({ overrides: brandVoiceChannels.overrides })
+    .from(brandVoiceChannels)
+    .where(
+      and(
+        eq(brandVoiceChannels.userId, userId),
+        eq(brandVoiceChannels.channel, channel),
+      ),
+    )
+    .limit(1);
+  return (row?.overrides as VoiceChannelDelta | undefined) ?? null;
+}
+
+export async function loadChannelVoices(
+  userId: string,
+  channels: string[],
+): Promise<Record<string, VoiceChannelDelta | null>> {
+  const result: Record<string, VoiceChannelDelta | null> = Object.fromEntries(
+    channels.map((c) => [c, null]),
+  );
+  if (channels.length === 0) return result;
+  const rows = await db
+    .select({
+      channel: brandVoiceChannels.channel,
+      overrides: brandVoiceChannels.overrides,
+    })
+    .from(brandVoiceChannels)
+    .where(
+      and(
+        eq(brandVoiceChannels.userId, userId),
+        inArray(brandVoiceChannels.channel, channels),
+      ),
+    );
+  for (const row of rows) {
+    result[row.channel] = row.overrides as VoiceChannelDelta;
+  }
+  return result;
+}
+
+export async function loadAllChannelVoices(
+  userId: string,
+): Promise<Array<{ channel: string; delta: VoiceChannelDelta; version: number; updatedAt: Date }>> {
+  const rows = await db
+    .select({
+      channel: brandVoiceChannels.channel,
+      overrides: brandVoiceChannels.overrides,
+      version: brandVoiceChannels.version,
+      updatedAt: brandVoiceChannels.updatedAt,
+    })
+    .from(brandVoiceChannels)
+    .where(eq(brandVoiceChannels.userId, userId));
+  return rows.map((r) => ({
+    channel: r.channel,
+    delta: r.overrides as VoiceChannelDelta,
+    version: r.version,
+    updatedAt: r.updatedAt,
+  }));
 }

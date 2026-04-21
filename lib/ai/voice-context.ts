@@ -3,7 +3,7 @@
 // row and shapes it into a prose block that every `composer.*` prompt
 // templates consume via the {{voiceBlock}} substitution.
 
-import type { VoiceProfile } from "./voice";
+import type { VoiceChannelDelta, VoiceProfile } from "./voice";
 
 type VoiceRow = {
   tone: unknown;
@@ -34,7 +34,18 @@ export function constraintsFor(platform: string): string {
   return PLATFORM_CONSTRAINTS[platform] ?? PLATFORM_CONSTRAINTS.general;
 }
 
-export function buildVoiceBlock(voice: VoiceRow | null): string {
+export function buildVoiceBlock(
+  voice: VoiceRow | null,
+  channelDelta?: VoiceChannelDelta | null,
+  channel?: string,
+): string {
+  const baseBlock = buildBaseVoiceBlock(voice);
+  if (!channelDelta || !channel) return baseBlock;
+  const overrideBlock = buildChannelOverrideBlock(channelDelta, channel);
+  return overrideBlock ? `${baseBlock}\n\n${overrideBlock}` : baseBlock;
+}
+
+function buildBaseVoiceBlock(voice: VoiceRow | null): string {
   if (!voice) {
     return "(No voice profile trained yet. Write in a neutral, direct tone.)";
   }
@@ -78,4 +89,29 @@ export function buildVoiceBlock(voice: VoiceRow | null): string {
   return parts.length > 0
     ? parts.join("\n")
     : "(Voice profile trained but sparse — treat as neutral.)";
+}
+
+function buildChannelOverrideBlock(
+  delta: VoiceChannelDelta,
+  channel: string,
+): string {
+  const parts: string[] = [];
+  parts.push(`Channel-specific overrides for ${channel} (apply on top of the above — these take precedence where they conflict):`);
+  if (delta.summary) parts.push(`How it differs: ${delta.summary}`);
+  if (delta.tone_descriptors?.length)
+    parts.push(`Tone (this channel): ${delta.tone_descriptors.join(", ")}`);
+  if (delta.hook_patterns?.length)
+    parts.push(`Hook patterns (this channel): ${delta.hook_patterns.join(" / ")}`);
+  if (delta.cta_style) parts.push(`CTA style (this channel): ${delta.cta_style}`);
+  if (delta.emoji_rate) parts.push(`Emoji rate (this channel): ${delta.emoji_rate}`);
+  if (delta.banned_phrases?.length)
+    parts.push(`Also never use (this channel): ${delta.banned_phrases.join(", ")}`);
+  if (delta.positive_examples?.length) {
+    parts.push("Channel-native examples:");
+    for (const ex of delta.positive_examples.slice(0, 3)) {
+      parts.push(`  - ${ex}`);
+    }
+  }
+  // Only the header line? Nothing meaningful to add — skip the block entirely.
+  return parts.length > 1 ? parts.join("\n") : "";
 }

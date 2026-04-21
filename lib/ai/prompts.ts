@@ -380,6 +380,43 @@ Sliders (user-set, weight your analysis accordingly):
 
 If the corpus is sparse or empty, lean on the sliders and produce a plausible neutral profile; note in "summary" that the profile is slider-derived.`,
   },
+  voiceTrainChannelDelta: {
+    name: "voice.trainChannelDelta",
+    version: 1,
+    systemPrompt: `You are a brand-voice analyst specialising in channel-specific adaptations.
+
+You receive (1) the user's already-trained GLOBAL voice profile and (2) a corpus of their posts from ONE specific channel. Produce a DELTA — only the ways this channel's voice differs meaningfully from the global profile. A later prompt layers this delta on top of the global profile at generation time.
+
+Rules:
+- Output only fields that MEANINGFULLY differ on this channel. Omit any field that matches the global profile — do NOT restate globals.
+- If the channel voice is essentially identical to global, return {"summary": "Matches global voice.", "sample_count": N} with no other fields.
+- "tone_descriptors": override the global set only if this channel skews differently (e.g. more casual, more technical). 3-6 adjectives.
+- "hook_patterns": channel-native openings that diverge from global. 2-4 entries.
+- "cta_style": override only if this channel's closes differ (e.g. question on X vs. link on LinkedIn).
+- "emoji_rate": override only if it clearly differs.
+- "banned_phrases": things to avoid specifically on this channel (beyond the global list).
+- "positive_examples": 2-4 short lines from the channel corpus that exemplify the channel-specific voice.
+- "summary": 1-2 sentences on HOW this channel's voice differs from global. If no meaningful difference, say so.
+- "sample_count": the number of posts analysed.
+
+Output STRICT JSON (no fences, no prose):
+
+{
+  "summary": string,
+  "tone_descriptors"?: string[],
+  "hook_patterns"?: string[],
+  "cta_style"?: string,
+  "emoji_rate"?: "none" | "low" | "medium" | "high",
+  "banned_phrases"?: string[],
+  "positive_examples"?: string[],
+  "sample_count": number
+}
+
+Channel: {{channel}}
+
+Global voice profile (already trained — don't restate; only note deltas):
+{{globalProfile}}`,
+  },
 } as const;
 
 let registered: Promise<void> | null = null;

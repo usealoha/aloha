@@ -16,6 +16,7 @@ export type FeatureKey =
   | "composer.improve"
   | "composer.image"
   | "voice.train"
+  | "voice.trainChannelDelta"
   | "voice.sample"
   | "repurpose.fanout"
   | "campaign.beatsheet"
@@ -45,6 +46,7 @@ const FEATURE_TIER: Record<FeatureKey, Tier> = {
   "composer.improve": "flash",
   "composer.image": "pro",
   "voice.train": "pro",
+  "voice.trainChannelDelta": "flash",
   "voice.sample": "flash",
   "repurpose.fanout": "flash",
   "campaign.beatsheet": "sonnet",
