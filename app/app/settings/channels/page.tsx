@@ -10,6 +10,8 @@ import {
   telegramCredentials,
 } from "@/db/schema";
 import { MastodonListItem } from "./_components/mastodon-list-item";
+import { BlueskyListItem } from "./_components/bluesky-list-item";
+import { TelegramListItem } from "./_components/telegram-list-item";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { isProviderConfigured } from "@/lib/configured-providers";
 import {
@@ -397,6 +399,26 @@ export default async function ChannelsSettingsPage({
             );
           }
 
+          if (p.id === "bluesky" && p.status === "available") {
+            return (
+              <BlueskyListItem
+                key={p.id}
+                isConnected={connected.has("bluesky")}
+                needsReauth={needsReauth.has("bluesky")}
+              />
+            );
+          }
+
+          if (p.id === "telegram" && p.status === "available") {
+            return (
+              <TelegramListItem
+                key={p.id}
+                isConnected={connected.has("telegram")}
+                needsReauth={needsReauth.has("telegram")}
+              />
+            );
+          }
+
           const isConnected = connected.has(p.id);
           const isSoon = p.status === "soon";
           const isApprovalNeeded = p.status === "approval_needed";
@@ -485,21 +507,7 @@ export default async function ChannelsSettingsPage({
                   </form>
                 ) : isConnected ? (
                     <div className="flex items-center gap-1.5">
-                    {p.id === "bluesky" ? (
-                      <Link
-                        href="/app/settings/channels/bluesky-connect"
-                        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary-deep transition-colors"
-                      >
-                        Reconnect
-                      </Link>
-                    ) : p.id === "telegram" ? (
-                      <Link
-                        href="/app/settings/channels/telegram-connect"
-                        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary-deep transition-colors"
-                      >
-                        Reconnect
-                      </Link>
-                    ) : isReauth ? (
+                    {isReauth ? (
                       <form action={connectChannel}>
                         <input type="hidden" name="provider" value={p.id} />
                         <button
@@ -520,23 +528,7 @@ export default async function ChannelsSettingsPage({
                     <Lock className="w-3.5 h-3.5" />
                     Upgrade to connect
                   </Link>
-) : p.id === "bluesky" ? (
-							<Link
-								href="/app/settings/channels/bluesky-connect"
-								className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary-deep transition-colors"
-							>
-								<Plus className="w-3.5 h-3.5" />
-								Connect
-							</Link>
-						) : p.id === "telegram" ? (
-							<Link
-								href="/app/settings/channels/telegram-connect"
-								className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-primary text-primary-foreground text-[13px] font-medium hover:bg-primary-deep transition-colors"
-							>
-								<Plus className="w-3.5 h-3.5" />
-								Connect
-							</Link>
-						) : (
+                ) : (
                   <form action={connectChannel}>
                     <input type="hidden" name="provider" value={p.id} />
                     <button
