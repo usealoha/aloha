@@ -37,6 +37,7 @@ import type { BestWindow } from "@/lib/best-time-format";
 import { formatWindow } from "@/lib/best-time-format";
 import type { EffectiveState } from "@/lib/channel-state-format";
 import { stateOr, stateStyles } from "@/lib/channel-state-format";
+import { ChannelIdentity, type ChannelProfileView } from "@/components/channel-identity";
 import {
 	buildTzLocalInput,
 	formatTzLocalInputForDisplay,
@@ -55,6 +56,7 @@ import {
 	ImagePlus,
 	ImageUp,
 	Images,
+	Info,
 	Layers,
 	Loader2,
 	Paperclip,
@@ -183,6 +185,7 @@ type TabId = "all" | string;
 export function Composer({
 	author,
 	connectedProviders,
+	channelProfiles = {},
 	museAccess,
 	bestWindows,
 	channelStates,
@@ -199,6 +202,7 @@ export function Composer({
 }: {
 	author: Author;
 	connectedProviders: string[];
+	channelProfiles?: Record<string, ChannelProfileView>;
 	museAccess: boolean;
 	bestWindows: Record<string, BestWindow[]>;
 	channelStates: Record<string, EffectiveState>;
@@ -949,6 +953,38 @@ export function Composer({
 					})}
 				</div>
 
+				{activePlatform && channelProfiles[activePlatform.id] ? (
+					<div className="px-5 py-2 border-b border-border flex items-center justify-between gap-3">
+						<span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-ink/50">
+							Posting as
+						</span>
+						{channelProfiles[activePlatform.id].profileUrl ? (
+							<a
+								href={channelProfiles[activePlatform.id].profileUrl!}
+								target="_blank"
+								rel="noreferrer"
+								className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1 hover:bg-muted/40 transition-colors"
+							>
+								<ChannelIdentity
+									profile={{
+										...channelProfiles[activePlatform.id],
+										channel: activePlatform.id,
+									}}
+									size="sm"
+								/>
+							</a>
+						) : (
+							<ChannelIdentity
+								profile={{
+									...channelProfiles[activePlatform.id],
+									channel: activePlatform.id,
+								}}
+								size="sm"
+							/>
+						)}
+					</div>
+				) : null}
+
 				{activePlatform && bestWindows[activePlatform.id]?.length ? (
 					<div className="px-5 py-2 border-b border-border">
 						<BestWindowHint
@@ -960,10 +996,11 @@ export function Composer({
 
 				{activePlatform ? (
 					<div className="flex items-center justify-between gap-3 px-5 py-2 border-b border-border text-[12px] text-ink/60">
-						<span>
+						<span className="inline-flex items-center gap-1.5">
+							<Info className="w-3.5 h-3.5 shrink-0 text-ink/50" />
 							{isOverridden(activePlatform.id)
-								? `Customized for ${activePlatform.name}.`
-								: `Inheriting from Draft. Edit to customize for ${activePlatform.name}.`}
+								? `Edits here only affect ${activePlatform.name} — your base draft stays as-is.`
+								: `Edits here only affect ${activePlatform.name}. Switch to Draft to change the base for all channels.`}
 						</span>
 						{isOverridden(activePlatform.id) ? (
 							<button

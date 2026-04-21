@@ -5,12 +5,14 @@ import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { db } from "@/db";
 import {
   accounts,
+  channelProfiles,
   ideas,
   posts,
   type ChannelOverride,
   type DraftMeta,
   type PostMedia,
 } from "@/db/schema";
+import type { ChannelProfileView } from "@/components/channel-identity";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
 import { Composer } from "./_components/composer";
@@ -33,7 +35,7 @@ export default async function ComposerPage({
 
   const timezone = user.timezone ?? "UTC";
 
-  const [connected, bestWindows, channelStates, museAccess] = await Promise.all([
+  const [connected, bestWindows, channelStates, museAccess, profileRows] = await Promise.all([
     db
       .selectDistinct({ provider: accounts.provider })
       .from(accounts)
@@ -46,7 +48,21 @@ export default async function ComposerPage({
     getBestWindowsForUser(user.id, timezone),
     getEffectiveStatesForUser(user.id),
     hasMuseInviteEntitlement(user.id),
+    db
+      .select({
+        channel: channelProfiles.channel,
+        displayName: channelProfiles.displayName,
+        handle: channelProfiles.handle,
+        avatarUrl: channelProfiles.avatarUrl,
+        profileUrl: channelProfiles.profileUrl,
+        followerCount: channelProfiles.followerCount,
+      })
+      .from(channelProfiles)
+      .where(eq(channelProfiles.userId, user.id)),
   ]);
+  const channelProfilesById: Record<string, ChannelProfileView> = Object.fromEntries(
+    profileRows.map((p) => [p.channel, p as ChannelProfileView]),
+  );
 
   // If the composer was opened from an idea, pull the body so the editor
   // starts populated. We don't flip the idea to "drafted" on open — the
@@ -132,6 +148,7 @@ export default async function ComposerPage({
         timezone,
       }}
       connectedProviders={connectedProviders}
+      channelProfiles={channelProfilesById}
       museAccess={museAccess}
       bestWindows={bestWindows}
       channelStates={channelStates}
