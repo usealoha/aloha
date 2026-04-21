@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   BookOpen,
   Check,
@@ -20,7 +20,7 @@ import {
   syncNotionAction,
 } from "@/app/actions/corpus";
 import { requestMuseAccessAction } from "@/app/actions/muse-access";
-import { loadCurrentVoice } from "@/lib/ai/voice";
+import { loadAllChannelVoices, loadCurrentVoice } from "@/lib/ai/voice";
 import { getCurrentUser } from "@/lib/current-user";
 import { getMuseAccessState } from "@/lib/billing/muse";
 import { FlashToast } from "@/components/ui/flash-toast";
@@ -34,6 +34,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const RECENT_SAMPLE_LIMIT = 20;
+const CHANNEL_DELTA_MIN_SAMPLES = 15;
 
 export default async function MuseSettingsPage() {
   const user = (await getCurrentUser())!;
@@ -43,7 +44,7 @@ export default async function MuseSettingsPage() {
     return <MuseRequestAccess requestedAt={access.requestedAt} />;
   }
 
-  const [voice, recentSamples, notion, corpusRows] = await Promise.all([
+  const [voice, recentSamples, notion, corpusRows, channelCounts, channelDeltas] = await Promise.all([
     loadCurrentVoice(user.id),
     db
       .select({
@@ -77,6 +78,15 @@ export default async function MuseSettingsPage() {
       .from(brandCorpus)
       .where(eq(brandCorpus.userId, user.id))
       .orderBy(desc(brandCorpus.fetchedAt)),
+    db
+      .select({
+        platform: platformContentCache.platform,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(platformContentCache)
+      .where(eq(platformContentCache.userId, user.id))
+      .groupBy(platformContentCache.platform),
+    loadAllChannelVoices(user.id),
   ]);
 
   const currentTone = (voice?.tone ?? {}) as {
@@ -125,6 +135,13 @@ export default async function MuseSettingsPage() {
       <KnowledgeSources notion={notion} corpus={corpusRows} />
 
       {voice ? <CurrentVoiceCard voice={voice} tone={currentTone} features={currentFeatures} /> : null}
+
+      {voice ? (
+        <PerChannelVoiceCard
+          counts={channelCounts}
+          deltas={channelDeltas}
+        />
+      ) : null}
 
       <form action={trainVoiceAction} className="space-y-8">
         <section className="rounded-3xl border border-border bg-background-elev p-6 space-y-6">
@@ -341,6 +358,105 @@ function CurrentVoiceCard({
           <Field label="Avoid">{voice.bannedPhrases.join(", ")}</Field>
         ) : null}
       </dl>
+    </section>
+  );
+}
+
+function PerChannelVoiceCard({
+  counts,
+  deltas,
+}: {
+  counts: Array<{ platform: string; count: number }>;
+  deltas: Array<{
+    channel: string;
+    delta: {
+      summary: string;
+      sample_count: number;
+      tone_descriptors?: string[];
+      hook_patterns?: string[];
+      cta_style?: string;
+      emoji_rate?: string;
+    };
+    version: number;
+    updatedAt: Date;
+  }>;
+}) {
+  const byChannel = new Map(counts.map((c) => [c.platform, c.count]));
+  for (const d of deltas) {
+    if (!byChannel.has(d.channel)) byChannel.set(d.channel, d.delta.sample_count);
+  }
+  const deltaByChannel = new Map(deltas.map((d) => [d.channel, d]));
+  const rows = Array.from(byChannel.entries()).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <section className="rounded-3xl border border-border bg-background-elev p-6 space-y-4">
+      <header className="flex items-start gap-3">
+        <span className="mt-[2px] w-9 h-9 rounded-full bg-peach-100 border border-peach-300 grid place-items-center shrink-0">
+          <Sparkles className="w-4 h-4 text-ink" />
+        </span>
+        <div>
+          <p className="text-[14.5px] text-ink font-medium">Per-channel voice</p>
+          <p className="mt-1 text-[12.5px] text-ink/65 leading-[1.55] max-w-2xl">
+            On top of your global voice, Muse trains a lightweight delta for
+            each channel with at least {CHANNEL_DELTA_MIN_SAMPLES} sample
+            posts. Others fall back to the global profile.
+          </p>
+        </div>
+      </header>
+
+      {rows.length === 0 ? (
+        <p className="text-[12.5px] text-ink/60 leading-[1.55]">
+          No per-channel posts cached yet. Once your channels are connected
+          and synced, retrain to pick up channel-specific nuance.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          {rows.map(([channel, count]) => {
+            const delta = deltaByChannel.get(channel);
+            const trained = !!delta;
+            const eligible = count >= CHANNEL_DELTA_MIN_SAMPLES;
+            return (
+              <li key={channel} className="px-4 py-3 space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] text-ink font-medium capitalize">
+                      {channel}
+                    </span>
+                    <span className="text-[11.5px] text-ink/55">
+                      {count} sample{count === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[11px] uppercase tracking-[0.16em] ${
+                      trained
+                        ? "text-ink"
+                        : eligible
+                          ? "text-ink/55"
+                          : "text-ink/45"
+                    }`}
+                  >
+                    {trained
+                      ? `Trained · v${delta.version}`
+                      : eligible
+                        ? "Retrain to tune"
+                        : `Need ${CHANNEL_DELTA_MIN_SAMPLES - count} more`}
+                  </span>
+                </div>
+                {trained && delta.delta.summary ? (
+                  <p className="text-[12.5px] text-ink/70 leading-[1.55]">
+                    {delta.delta.summary}
+                  </p>
+                ) : null}
+                {trained && delta.delta.tone_descriptors?.length ? (
+                  <p className="text-[11.5px] text-ink/55">
+                    Tone shift: {delta.delta.tone_descriptors.join(" · ")}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
