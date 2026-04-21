@@ -8,6 +8,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   fetchNotifications,
@@ -120,22 +125,30 @@ export function NotificationsBell({ className }: { className?: string }) {
     setOpen(false);
   };
 
+  const trigger = (
+    <PopoverTrigger
+      type="button"
+      aria-label="Notifications"
+      className={cn(
+        "relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
+        className,
+      )}
+    >
+      <Bell className="w-[17px] h-[17px]" />
+      {unread > 0 ? (
+        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
+      ) : null}
+    </PopoverTrigger>
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        type="button"
-        aria-label="Notifications"
-        title="Notifications"
-        className={cn(
-          "relative h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors",
-          className,
-        )}
-      >
-        <Bell className="w-[17px] h-[17px]" />
-        {unread > 0 ? (
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
-        ) : null}
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger render={trigger} />
+        <TooltipContent side="right" sideOffset={12}>
+          Notifications
+        </TooltipContent>
+      </Tooltip>
       <PopoverContent
         align="end"
         sideOffset={8}
