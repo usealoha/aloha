@@ -25,10 +25,10 @@ export type CuratedCategory = (typeof CURATED_CATEGORIES)[number];
 export const CURATED_FEEDS: CuratedFeed[] = [
   // Marketing
   {
-    url: "https://cxl.com/institute/blog/feed/",
-    siteUrl: "https://cxl.com/institute/blog/",
-    title: "CXL",
-    description: "Conversion, analytics, and growth essays.",
+    url: "https://unbounce.com/feed/",
+    siteUrl: "https://unbounce.com/",
+    title: "Unbounce",
+    description: "Landing pages, conversion, and CRO craft.",
     category: "Marketing",
   },
   {
@@ -262,10 +262,10 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Engineering",
   },
   {
-    url: "https://www.uber.com/blog/rss/",
-    siteUrl: "https://www.uber.com/blog/engineering/",
-    title: "Uber Engineering",
-    description: "Systems, data, and infra essays from Uber.",
+    url: "https://github.blog/feed/",
+    siteUrl: "https://github.blog/",
+    title: "The GitHub Blog",
+    description: "Engineering, security, and platform posts from GitHub.",
     category: "Engineering",
   },
   {
@@ -371,15 +371,15 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Creators",
   },
   {
-    url: "https://newsletter.systemsapproach.org/feed",
-    siteUrl: "https://newsletter.systemsapproach.org/",
+    url: "https://systemsapproach.substack.com/feed",
+    siteUrl: "https://systemsapproach.substack.com/",
     title: "The Systems Approach",
     description: "Essays on creator habits and workflow.",
     category: "Creators",
   },
   {
-    url: "https://newsletter.justinwelsh.me/feed",
-    siteUrl: "https://newsletter.justinwelsh.me/",
+    url: "https://www.justinwelsh.me/blog?format=rss",
+    siteUrl: "https://www.justinwelsh.me/",
     title: "The Saturday Solopreneur",
     description: "Justin Welsh on solo creator businesses.",
     category: "Creators",
@@ -399,10 +399,10 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Creators",
   },
   {
-    url: "https://www.thetilt.com/feed/",
-    siteUrl: "https://www.thetilt.com/",
-    title: "The Tilt",
-    description: "Content entrepreneur strategy and case studies.",
+    url: "https://creatorhandbook.net/feed/",
+    siteUrl: "https://creatorhandbook.net/",
+    title: "Creator Handbook",
+    description: "Practical guides for building a creator business.",
     category: "Creators",
   },
   {
@@ -420,10 +420,10 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Creators",
   },
   {
-    url: "https://workweek.com/feed/",
-    siteUrl: "https://workweek.com/",
-    title: "Workweek",
-    description: "A network of creator-led business newsletters.",
+    url: "https://www.indiehackers.com/feed.xml",
+    siteUrl: "https://www.indiehackers.com/",
+    title: "Indie Hackers",
+    description: "Stories and interviews from independent makers.",
     category: "Creators",
   },
 
@@ -457,10 +457,10 @@ export const CURATED_FEEDS: CuratedFeed[] = [
     category: "Business",
   },
   {
-    url: "https://www.morningbrew.com/feed",
-    siteUrl: "https://www.morningbrew.com/",
-    title: "Morning Brew",
-    description: "Daily business news, read in five minutes.",
+    url: "https://fortune.com/feed/",
+    siteUrl: "https://fortune.com/",
+    title: "Fortune",
+    description: "Daily business, finance, and leadership news.",
     category: "Business",
   },
   {
