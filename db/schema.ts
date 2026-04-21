@@ -43,6 +43,10 @@ export type DraftMeta = {
   formatGuidance?: string;
   format?: string;
   sourceIdeaId?: string;
+  // Set by repost_top (or any future "re-share" flow) to link a draft back
+  // to the original post it was cloned from. Lets the automation skip
+  // winners that have already been reposted in the current window.
+  sourcePostId?: string;
 };
 
 export const users = pgTable("users", {
