@@ -1036,6 +1036,7 @@ export const generations = pgTable("generations", {
     enum: ["accepted", "edited", "rejected"],
   }),
   feedbackAt: timestamp("feedbackAt", { mode: "date" }),
+  langfuseTraceId: text("langfuseTraceId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
