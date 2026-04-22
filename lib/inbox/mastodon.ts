@@ -93,13 +93,22 @@ export async function fetchMastodonNotifications(
 			if (!n.status) continue;
 
 			const status = n.status;
-			const isReply = status.in_reply_to_id !== null;
+			// Skip direct replies to our own statuses — those are post comments,
+			// picked up by the per-post sync. A mention inside a larger thread
+			// (in_reply_to_account_id belongs to someone else) stays here.
+			if (
+				status.in_reply_to_account_id === credentials.accountId &&
+				status.in_reply_to_id !== null
+			) {
+				continue;
+			}
 
 			messages.push({
 				remoteId: status.id,
 				threadId: null,
 				parentId: status.in_reply_to_id ?? null,
-				reason: isReply ? "reply" : "mention",
+				reason: "mention",
+				direction: null,
 				authorDid: n.account.id,
 				authorHandle: n.account.username,
 				authorDisplayName: n.account.display_name || n.account.username,
@@ -126,6 +135,7 @@ export async function fetchMastodonNotifications(
 
 	return {
 		messages,
+		comments: [],
 		newCursor: currentCursor ?? null,
 	};
 }

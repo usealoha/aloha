@@ -1,8 +1,14 @@
+// Mentions + DMs land here. Replies to the user's own posts live in
+// post_comments (see lib/posts/comments/*).
 export type NormalizedMessage = {
   remoteId: string;
+  // For DMs, threadId is the conversation id so thread views can group
+  // messages across the back-and-forth.
   threadId: string | null;
   parentId: string | null;
-  reason: "mention" | "reply";
+  reason: "mention" | "dm";
+  // null for mentions (always inbound). 'in' or 'out' for DMs.
+  direction: "in" | "out" | null;
   authorDid: string;
   authorHandle: string;
   authorDisplayName: string | null;
@@ -14,5 +20,6 @@ export type NormalizedMessage = {
 
 export type SyncResult = {
   messages: NormalizedMessage[];
+  comments: never[];
   newCursor: string | null;
 };

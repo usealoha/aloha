@@ -1,6 +1,11 @@
 import { getFreshToken, forceRefresh } from "@/lib/publishers/tokens";
 import type { SyncResult, NormalizedMessage } from "./types";
 
+// This fetcher hits /{pageId}/conversations — Facebook's Messenger (DM)
+// endpoint. Every row is a DM, emitted with reason='dm' and a direction
+// derived from the sender's id (page id → out, else → in). Post comments
+// are handled by the per-post pipeline, not here.
+
 const MAX_PAGES = 2;
 const PAGE_SIZE = 50;
 
@@ -96,7 +101,7 @@ export async function fetchFacebookInbox(
 	}
 
 	if (pages.length === 0) {
-		return { messages: [], newCursor: null };
+		return { messages: [], comments: [], newCursor: null };
 	}
 
 	const page = pages[0];
@@ -123,13 +128,13 @@ export async function fetchFacebookInbox(
 			if (!conv.comments?.data || conv.comments.data.length === 0) continue;
 
 			for (const comment of conv.comments.data) {
-				const isReply = comment.from.id !== page.id;
-
+				const outbound = comment.from.id === page.id;
 				messages.push({
 					remoteId: comment.id,
 					threadId: conv.id,
 					parentId: null,
-					reason: isReply ? "reply" : "mention",
+					reason: "dm",
+					direction: outbound ? "out" : "in",
 					authorDid: comment.from.id,
 					authorHandle: comment.from.id,
 					authorDisplayName: comment.from.name,
@@ -152,6 +157,7 @@ export async function fetchFacebookInbox(
 
 	return {
 		messages,
+		comments: [],
 		newCursor: currentCursor ?? null,
 	};
 }

@@ -7,6 +7,8 @@ import type { SyncResult, NormalizedMessage } from "./types";
 const MAX_PAGES = 2;
 const PAGE_SIZE = 50;
 
+// Inbox sync only cares about mentions. Replies land on the post detail
+// page and are fetched there via lib/posts/comments/bluesky.ts.
 export async function fetchBlueskyNotifications(
   userId: string,
   cursor: string | null,
@@ -22,11 +24,11 @@ export async function fetchBlueskyNotifications(
     const res = await agent.listNotifications({
       limit: PAGE_SIZE,
       cursor: currentCursor,
-      reasons: ["mention", "reply"],
+      reasons: ["mention"],
     });
 
     for (const n of res.data.notifications) {
-      if (n.reason !== "mention" && n.reason !== "reply") continue;
+      if (n.reason !== "mention") continue;
 
       const record = n.record as Record<string, unknown>;
       const reply = record.reply as
@@ -37,7 +39,8 @@ export async function fetchBlueskyNotifications(
         remoteId: n.uri,
         threadId: reply?.root?.uri ?? null,
         parentId: reply?.parent?.uri ?? null,
-        reason: n.reason as "mention" | "reply",
+        reason: "mention",
+        direction: null,
         authorDid: n.author.did,
         authorHandle: n.author.handle,
         authorDisplayName: n.author.displayName ?? null,
@@ -62,6 +65,7 @@ export async function fetchBlueskyNotifications(
 
   return {
     messages,
+    comments: [],
     newCursor: currentCursor ?? null,
   };
 }

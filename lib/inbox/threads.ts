@@ -79,7 +79,7 @@ export async function fetchThreadsInbox(
 		const pages = (await res.json()) as { data?: FacebookPage[] };
 		const page = pages.data?.[0];
 		if (!page) {
-			return { messages: [], newCursor: null };
+			return { messages: [], comments: [], newCursor: null };
 		}
 		pageAccessToken = page.access_token;
 
@@ -88,7 +88,7 @@ export async function fetchThreadsInbox(
 		);
 		const igData = (await igRes.json()) as { instagram_business_account?: { id: string; username: string } };
 		if (!igData.instagram_business_account) {
-			return { messages: [], newCursor: null };
+			return { messages: [], comments: [], newCursor: null };
 		}
 
 		const threadsRes = await fetch(
@@ -105,7 +105,7 @@ export async function fetchThreadsInbox(
 			const pages = (await res.json()) as { data?: FacebookPage[] };
 			const page = pages.data?.[0];
 			if (!page) {
-				return { messages: [], newCursor: null };
+				return { messages: [], comments: [], newCursor: null };
 			}
 			pageAccessToken = page.access_token;
 
@@ -114,7 +114,7 @@ export async function fetchThreadsInbox(
 			);
 			const igData = (await igRes.json()) as { instagram_business_account?: { id: string; username: string } };
 			if (!igData.instagram_business_account) {
-				return { messages: [], newCursor: null };
+				return { messages: [], comments: [], newCursor: null };
 			}
 
 			const threadsRes = await fetch(
@@ -128,7 +128,7 @@ export async function fetchThreadsInbox(
 	}
 
 	if (!threadsUser) {
-		return { messages: [], newCursor: null };
+		return { messages: [], comments: [], newCursor: null };
 	}
 
 	const messages: NormalizedMessage[] = [];
@@ -143,6 +143,7 @@ export async function fetchThreadsInbox(
 						threadId: null,
 						parentId: null,
 						reason: "mention",
+						direction: null,
 						authorDid: threadsUser.id,
 						authorHandle: threadsUser.username,
 						authorDisplayName: threadsUser.username,
@@ -155,11 +156,12 @@ export async function fetchThreadsInbox(
 			}
 		}
 	} catch {
-		return { messages: [], newCursor: null };
+		return { messages: [], comments: [], newCursor: null };
 	}
 
 	return {
 		messages,
+		comments: [],
 		newCursor: null,
 	};
 }

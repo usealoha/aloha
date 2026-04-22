@@ -4,13 +4,16 @@ import { getTelegramSession } from "@/lib/publishers/telegram";
 
 const MAX_MESSAGES = 100;
 
+// Telegram is a DM surface. Every message emits reason='dm' with a
+// direction derived from msg.out (outgoing vs incoming). Both directions
+// are kept so the thread view shows the full back-and-forth.
 export async function fetchTelegramMessages(
 	userId: string,
 	cursor: string | null,
 ): Promise<SyncResult> {
 	const session = await getTelegramSession(userId);
 	if (!session) {
-		return { messages: [], newCursor: null };
+		return { messages: [], comments: [], newCursor: null };
 	}
 
 	const { client, chatId } = session;
@@ -42,24 +45,22 @@ export async function fetchTelegramMessages(
 				maxId = msg.id;
 			}
 
-			// Skip messages sent by the user themselves (we only want incoming)
 			const sender = await msg.getSender();
-			const isOutgoing = msg.out;
+			const outbound = Boolean(msg.out);
 
-			if (isOutgoing) continue; // Skip our own messages
-
-			const senderId = sender ? String(sender.id) : "unknown";
-			const senderName = sender 
-				? (sender as { firstName?: string; lastName?: string; username?: string }).firstName || 
-				  (sender as { username?: string }).username || 
+			const senderId = sender ? String(sender.id) : "self";
+			const senderName = sender
+				? (sender as { firstName?: string; lastName?: string; username?: string }).firstName ||
+				  (sender as { username?: string }).username ||
 				  "Unknown"
-				: "Unknown";
+				: "You";
 
 			messages.push({
 				remoteId: String(msg.id),
 				threadId: String(entity.id),
 				parentId: msg.replyTo ? String(msg.replyTo.replyToMsgId) : null,
-				reason: msg.replyTo ? "reply" : "mention",
+				reason: "dm",
+				direction: outbound ? "out" : "in",
 				authorDid: senderId,
 				authorHandle: (sender as { username?: string }).username || senderId,
 				authorDisplayName: senderName,
@@ -79,10 +80,11 @@ export async function fetchTelegramMessages(
 
 		return {
 			messages,
+			comments: [],
 			newCursor,
 		};
 	} catch (err) {
 		console.error("[telegram] fetch messages failed", err);
-		return { messages: [], newCursor: cursor };
+		return { messages: [], comments: [], newCursor: cursor };
 	}
 }

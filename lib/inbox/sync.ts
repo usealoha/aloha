@@ -1,42 +1,98 @@
 import { db } from "@/db";
-import { captureException } from "@/lib/logger";
 import { inboxMessages, inboxSyncCursors } from "@/db/schema";
+import { Logger, captureException } from "@/lib/logger";
+import { createNotification } from "@/lib/notifications";
 import { and, eq } from "drizzle-orm";
 import { fetchBlueskyNotifications } from "./bluesky";
-import { fetchXMentions } from "./x";
+import { fetchBlueskyDms } from "./dms/bluesky";
+import { fetchInstagramDms } from "./dms/instagram";
+import { fetchXDms } from "./dms/x";
 import { fetchFacebookInbox } from "./facebook";
-import { fetchInstagramInbox } from "./instagram";
-import { fetchThreadsInbox } from "./threads";
 import { fetchMastodonNotifications } from "./mastodon";
-import { fetchPinterestInbox } from "./pinterest";
 import { fetchTelegramMessages } from "./telegram";
-import type { NormalizedMessage } from "./types";
-import { createNotification } from "@/lib/notifications";
+import { fetchThreadsInbox } from "./threads";
+import type { NormalizedMessage, SyncResult } from "./types";
+import { fetchXMentions } from "./x";
 
-type Platform = "bluesky" | "twitter" | "facebook" | "instagram" | "threads" | "mastodon" | "pinterest" | "telegram";
+const log = new Logger({ source: "inbox.sync" });
 
-const FETCHERS: Partial<
-  Record<
-    Platform,
-    (userId: string, cursor: string | null) => Promise<{ messages: NormalizedMessage[]; newCursor: string | null }>
-  >
+// Pinterest is omitted — its API only exposes comments on the user's own
+// media, which flow through the per-post sync. Instagram stays here
+// exclusively for DMs (no mentions endpoint available).
+type Platform =
+  | "bluesky"
+  | "twitter"
+  | "facebook"
+  | "instagram"
+  | "threads"
+  | "mastodon"
+  | "telegram";
+
+type Fetcher = (
+  userId: string,
+  cursor: string | null,
+) => Promise<SyncResult>;
+
+// Per-platform fetch list. Each platform has one mention fetcher (or null
+// when it doesn't expose mentions — e.g. Instagram) and an optional DM
+// fetcher. Multiple fetchers run sequentially; the mentions stream owns
+// the cursor since it's the expensive-to-re-fetch one. DMs ignore cursor
+// and re-pull the latest window each sync — the unique index on
+// inbox_messages dedupes overlap for free.
+const FETCHERS: Record<
+  Platform,
+  { mentions: Fetcher | null; dms: Fetcher | null }
 > = {
-  bluesky: fetchBlueskyNotifications,
-  twitter: fetchXMentions,
-  facebook: fetchFacebookInbox,
-  instagram: fetchInstagramInbox,
-  threads: fetchThreadsInbox,
-  mastodon: fetchMastodonNotifications,
-  pinterest: fetchPinterestInbox,
-  telegram: fetchTelegramMessages,
+  bluesky: { mentions: fetchBlueskyNotifications, dms: fetchBlueskyDms },
+  twitter: { mentions: fetchXMentions, dms: fetchXDms },
+  facebook: { mentions: null, dms: fetchFacebookInbox },
+  instagram: { mentions: null, dms: fetchInstagramDms },
+  threads: { mentions: fetchThreadsInbox, dms: null },
+  mastodon: { mentions: fetchMastodonNotifications, dms: null },
+  telegram: { mentions: null, dms: fetchTelegramMessages },
 };
+
+async function runFetcher(
+  userId: string,
+  platform: Platform,
+  kind: "mentions" | "dms",
+  fetcher: Fetcher,
+  cursor: string | null,
+): Promise<{ messages: NormalizedMessage[]; newCursor: string | null }> {
+  try {
+    const res = await fetcher(userId, cursor);
+    return { messages: res.messages, newCursor: res.newCursor };
+  } catch (err) {
+    await captureException(err, {
+      tags: { source: "inbox.sync", platform, kind },
+      extra: { userId },
+    });
+    const message = err instanceof Error ? err.message : String(err);
+    await createNotification({
+      userId,
+      kind: "inbox_sync_failed",
+      title: `Couldn't sync ${platform} ${kind}`,
+      body: message.slice(0, 200),
+      url: `/app/inbox`,
+      metadata: { platform, kind, error: message.slice(0, 500) },
+    });
+    log.warn(`fetcher failed`, {
+      platform,
+      kind,
+      userId,
+      error: message.slice(0, 200),
+    });
+    // A DM failure shouldn't take down mentions (or vice versa). Swallow
+    // and return empty so the other stream can still land its rows.
+    return { messages: [], newCursor: cursor };
+  }
+}
 
 export async function syncInbox(
   userId: string,
   platform: Platform,
-): Promise<{ synced: number }> {
-  const fetcher = FETCHERS[platform];
-  if (!fetcher) return { synced: 0 };
+): Promise<{ mentionsSynced: number; dmsSynced: number }> {
+  const routes = FETCHERS[platform];
 
   const [cursorRow] = await db
     .select({ cursor: inboxSyncCursors.cursor })
@@ -49,69 +105,76 @@ export async function syncInbox(
     )
     .limit(1);
 
-  let messages: NormalizedMessage[];
-  let newCursor: string | null;
-  try {
-    const result = await fetcher(userId, cursorRow?.cursor ?? null);
-    messages = result.messages;
-    newCursor = result.newCursor;
-  } catch (err) {
-    await captureException(err, {
-      tags: { source: "inbox.sync", platform },
-      extra: { userId },
-    });
-    const message = err instanceof Error ? err.message : String(err);
-    await createNotification({
+  let mentionResult: { messages: NormalizedMessage[]; newCursor: string | null } =
+    { messages: [], newCursor: cursorRow?.cursor ?? null };
+  let dmResult: { messages: NormalizedMessage[]; newCursor: string | null } =
+    { messages: [], newCursor: null };
+
+  if (routes.mentions) {
+    mentionResult = await runFetcher(
       userId,
-      kind: "inbox_sync_failed",
-      title: `Couldn't sync ${platform}`,
-      body: message.slice(0, 200),
-      url: `/app/inbox`,
-      metadata: { platform, error: message.slice(0, 500) },
-    });
-    throw err;
+      platform,
+      "mentions",
+      routes.mentions,
+      cursorRow?.cursor ?? null,
+    );
+  }
+  if (routes.dms) {
+    // DMs re-pull latest each sync (see note on FETCHERS above).
+    dmResult = await runFetcher(userId, platform, "dms", routes.dms, null);
   }
 
-  if (messages.length === 0) return { synced: 0 };
+  const allMessages = [...mentionResult.messages, ...dmResult.messages];
+  let mentionsSynced = 0;
+  let dmsSynced = 0;
 
-  const rows = messages.map((m) => ({
-    userId,
-    platform,
-    remoteId: m.remoteId,
-    threadId: m.threadId,
-    parentId: m.parentId,
-    reason: m.reason as "mention" | "reply",
-    authorDid: m.authorDid,
-    authorHandle: m.authorHandle,
-    authorDisplayName: m.authorDisplayName,
-    authorAvatarUrl: m.authorAvatarUrl,
-    content: m.content,
-    platformData: m.platformData,
-    platformCreatedAt: m.platformCreatedAt,
-  }));
+  if (allMessages.length > 0) {
+    const rows = allMessages.map((m) => ({
+      userId,
+      platform,
+      remoteId: m.remoteId,
+      threadId: m.threadId,
+      parentId: m.parentId,
+      reason: m.reason,
+      direction: m.direction,
+      authorDid: m.authorDid,
+      authorHandle: m.authorHandle,
+      authorDisplayName: m.authorDisplayName,
+      authorAvatarUrl: m.authorAvatarUrl,
+      content: m.content,
+      platformData: m.platformData,
+      platformCreatedAt: m.platformCreatedAt,
+    }));
 
-  const inserted = await db
-    .insert(inboxMessages)
-    .values(rows)
-    .onConflictDoNothing()
-    .returning({ id: inboxMessages.id });
+    const inserted = await db
+      .insert(inboxMessages)
+      .values(rows)
+      .onConflictDoNothing()
+      .returning({ id: inboxMessages.id, reason: inboxMessages.reason });
 
+    for (const r of inserted) {
+      if (r.reason === "mention") mentionsSynced += 1;
+      else if (r.reason === "dm") dmsSynced += 1;
+    }
+  }
+
+  // Persist the mentions cursor — it's the one that needs to advance.
   await db
     .insert(inboxSyncCursors)
     .values({
       userId,
       platform,
-      cursor: newCursor,
+      cursor: mentionResult.newCursor,
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [inboxSyncCursors.userId, inboxSyncCursors.platform],
       set: {
-        cursor: newCursor,
+        cursor: mentionResult.newCursor,
         lastSyncedAt: new Date(),
         updatedAt: new Date(),
       },
     });
 
-  return { synced: inserted.length };
+  return { mentionsSynced, dmsSynced };
 }

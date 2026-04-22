@@ -53,6 +53,9 @@ async function fetchMentionsPage(
   return res.json() as Promise<MentionsResponse>;
 }
 
+// Inbox sync only cares about mentions. Replies to the user's tweets are
+// fetched per-post via lib/posts/comments/x.ts when viewing the post page.
+// A tweet that replies to someone else but @-mentions the user stays here.
 export async function fetchXMentions(
   appUserId: string,
   cursor: string | null,
@@ -92,17 +95,21 @@ export async function fetchXMentions(
     }
 
     for (const tweet of res.data) {
+      // Skip direct replies to our own tweets — those are post comments,
+      // picked up by the per-post sync.
+      if (tweet.in_reply_to_user_id === account.providerAccountId) continue;
+
       const author = usersById.get(tweet.author_id);
-      const isReply = !!tweet.in_reply_to_user_id;
-      const parentTweetId = tweet.referenced_tweets?.find(
-        (r) => r.type === "replied_to",
-      )?.id ?? null;
+      const parentTweetId =
+        tweet.referenced_tweets?.find((r) => r.type === "replied_to")?.id ??
+        null;
 
       messages.push({
         remoteId: tweet.id,
         threadId: tweet.conversation_id ?? null,
         parentId: parentTweetId,
-        reason: isReply ? "reply" : "mention",
+        reason: "mention",
+        direction: null,
         authorDid: tweet.author_id,
         authorHandle: author?.username ?? tweet.author_id,
         authorDisplayName: author?.name ?? null,
@@ -123,6 +130,7 @@ export async function fetchXMentions(
 
   return {
     messages,
+    comments: [],
     newCursor: currentToken ?? null,
   };
 }
