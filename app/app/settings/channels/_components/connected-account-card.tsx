@@ -40,7 +40,7 @@ export function ConnectedAccountCard({
             rel: "noreferrer",
           }
         : {})}
-      className="group flex items-center gap-3 rounded-xl bg-background border border-border px-3 py-2.5 hover:bg-muted/30 transition-colors"
+      className="group flex items-center gap-3 rounded-xl bg-peach-100/40 border border-peach-200/60 px-3.5 py-2.5 hover:bg-peach-100/60 transition-colors"
     >
       <ChannelAvatar
         channel={channel}

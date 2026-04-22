@@ -475,60 +475,70 @@ export default async function ChannelsSettingsPage({
           const isReauth = isConnected && needsReauth.has(p.id);
           const profile = isConnected ? profileByChannel.get(p.id) ?? null : null;
           return (
-            <li key={p.id} className="flex flex-col gap-3 px-5 py-4">
-              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={cn(
-                        "w-7 h-7 rounded-full border grid place-items-center shrink-0",
-                        isReauth
-                          ? "bg-primary-soft border-primary/40"
-                          : isConnected
-                            ? "bg-peach-100 border-peach-300"
-                            : "bg-background border-border",
-                        p.mono && "text-ink",
-                      )}
-                    >
-                      <p.Icon className="w-3.5 h-3.5" />
+            <li
+              key={p.id}
+              className="flex flex-col sm:flex-row sm:items-start gap-4 px-5 py-4"
+            >
+              <span
+                className={cn(
+                  "w-11 h-11 rounded-full border grid place-items-center shrink-0",
+                  isReauth
+                    ? "bg-primary-soft border-primary/40"
+                    : isConnected
+                      ? "bg-peach-100 border-peach-300"
+                      : "bg-background border-border",
+                  p.mono && "text-ink",
+                )}
+              >
+                <p.Icon className="w-[18px] h-[18px]" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
+                  {isConnected && !isReauth ? (
+                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
+                      <ShieldCheck className="w-3 h-3" />
+                      Connected
                     </span>
-                    <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
-                    {isConnected && !isReauth ? (
-                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
-                        <ShieldCheck className="w-3 h-3" />
-                        Connected
-                      </span>
-                    ) : null}
-                    {isReauth ? (
-                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-primary-soft text-primary-deep text-[10.5px] font-medium tracking-wide">
-                        Reconnect needed
-                      </span>
-                    ) : null}
-                    {!isSoon ? (
-                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-peach-100 border border-peach-300 text-[10.5px] text-ink font-medium tracking-wide">
-                        <Sparkle className="w-3 h-3" />
-                        Muse
-                      </span>
-                    ) : null}
-                    {isSoon ? (
-                      <span className="inline-flex items-center h-5 px-2 rounded-full border border-dashed border-border-strong text-[10.5px] text-ink/55 tracking-wide uppercase">
-                        Soon
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1.5 text-[12.5px] text-ink/60">
-                    {isReauth
-                      ? "Your token expired or was revoked. Reconnect to resume publishing."
-                      : p.purpose}
-                  </p>
-                  {!isReauth && p.note ? (
-                    <p className="mt-1 text-[11.5px] text-ink/50 leading-[1.5]">
-                      {p.note}
-                    </p>
+                  ) : null}
+                  {isReauth ? (
+                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-primary-soft text-primary-deep text-[10.5px] font-medium tracking-wide">
+                      Reconnect needed
+                    </span>
+                  ) : null}
+                  {!isSoon ? (
+                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-peach-100 border border-peach-300 text-[10.5px] text-ink font-medium tracking-wide">
+                      <Sparkle className="w-3 h-3" />
+                      Muse
+                    </span>
+                  ) : null}
+                  {isSoon ? (
+                    <span className="inline-flex items-center h-5 px-2 rounded-full border border-dashed border-border-strong text-[10.5px] text-ink/55 tracking-wide uppercase">
+                      Soon
+                    </span>
                   ) : null}
                 </div>
+                <p className="mt-1 text-[12.5px] text-ink/60">
+                  {isReauth
+                    ? "Your token expired or was revoked. Reconnect to resume publishing."
+                    : p.purpose}
+                </p>
+                {!isReauth && p.note ? (
+                  <p className="mt-1 text-[11.5px] text-ink/50 leading-[1.5]">
+                    {p.note}
+                  </p>
+                ) : null}
+                {profile && (profile.handle || profile.displayName || profile.avatarUrl) ? (
+                  <div className="mt-3">
+                    <ConnectedAccountCard
+                      profile={{ ...profile, channel: p.id }}
+                      channel={p.id}
+                    />
+                  </div>
+                ) : null}
+              </div>
 
-                <div className="shrink-0">
+              <div className="shrink-0">
                 {isSoon ? (
                   <button
                     type="button"
@@ -605,15 +615,7 @@ export default async function ChannelsSettingsPage({
                     </button>
                   </form>
                 )}
-                </div>
               </div>
-
-              {profile && (profile.handle || profile.displayName || profile.avatarUrl) ? (
-                <ConnectedAccountCard
-                  profile={{ ...profile, channel: p.id }}
-                  channel={p.id}
-                />
-              ) : null}
             </li>
           );
         })}
