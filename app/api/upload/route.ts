@@ -51,13 +51,16 @@ export async function POST(req: Request) {
     token: env.BLOB_READ_WRITE_TOKEN,
   });
 
-  await db.insert(assets).values({
-    userId: user.id,
-    source: "upload",
-    url: blob.url,
-    mimeType: file.type,
-    metadata: { originalName: file.name, size: file.size },
-  });
+  const [row] = await db
+    .insert(assets)
+    .values({
+      userId: user.id,
+      source: "upload",
+      url: blob.url,
+      mimeType: file.type,
+      metadata: { originalName: file.name, size: file.size },
+    })
+    .returning({ id: assets.id });
 
-  return NextResponse.json({ url: blob.url, mimeType: file.type });
+  return NextResponse.json({ id: row.id, url: blob.url, mimeType: file.type });
 }
