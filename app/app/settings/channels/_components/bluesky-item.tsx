@@ -100,6 +100,11 @@ export function BlueskyChannelItem({ isConnected }: Props) {
 				</a>
 				. App passwords can be revoked anytime without affecting your main password.
 			</p>
+			<p className="text-[11.5px] text-ink/50 mt-1.5">
+				Tick <span className="text-ink/70">&ldquo;Allow access to your direct messages&rdquo;</span>{" "}
+				when creating the app password so we can sync DMs into the inbox. Without
+				it, mentions still work but DMs will be empty.
+			</p>
 		</div>
 	);
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, eq, notInArray } from "drizzle-orm";
-import { ArrowUpRight, Bell, BookOpen, Clock, Lock, Plus, RefreshCw, ShieldCheck, Sparkle } from "lucide-react";
+import { ArrowUpRight, Bell, BookOpen, Clock, Lock, Plus, ShieldCheck, Sparkle } from "lucide-react";
 import { db } from "@/db";
 import {
   accounts,
@@ -11,7 +11,7 @@ import {
   mastodonCredentials,
   telegramCredentials,
 } from "@/db/schema";
-import { ChannelIdentity, type ChannelProfileView } from "@/components/channel-identity";
+import type { ChannelProfileView } from "@/components/channel-identity";
 import { MastodonListItem } from "./_components/mastodon-list-item";
 import { BlueskyListItem } from "./_components/bluesky-list-item";
 import { TelegramListItem } from "./_components/telegram-list-item";
@@ -28,7 +28,10 @@ import { getEntitlements } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 import { connectChannel, refreshChannelProfileAction, updateChannelPublishMode, notifyWhenAvailable } from "../actions";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
+import { FlashToast } from "@/components/ui/flash-toast";
+import { ConnectedAccountCard } from "./_components/connected-account-card";
 import { DisconnectChannelButton } from "./_components/disconnect-confirm";
+import { RefreshChannelButton } from "./_components/refresh-channel-button";
 import {
   LinkedInIcon,
   XIcon,
@@ -51,6 +54,9 @@ type ProviderConfig = {
   id: string;
   name: string;
   purpose: string;
+  // Optional secondary line rendered under `purpose` — used for caveats
+  // that don't belong in the one-liner (DM scope requirements, etc).
+  note?: string;
   Icon: React.ComponentType<{ className?: string }>;
   mono?: boolean;
   status: "available" | "approval_needed" | "soon";
@@ -73,6 +79,7 @@ const PROVIDERS: ProviderConfig[] = [
     id: "twitter",
     name: "X",
     purpose: "Publish posts and threads.",
+    note: "DMs require the dm.read / dm.write scopes — if you connected before DMs shipped, reconnect to pick them up.",
     Icon: XIcon,
     mono: true,
     status: "available",
@@ -371,6 +378,16 @@ export default async function ChannelsSettingsPage({
 
   return (
     <div className="space-y-8">
+      <FlashToast
+        entries={[
+          {
+            param: "notify",
+            value: "1",
+            type: "success",
+            message: "You're on the list! We'll let you know when this channel becomes available.",
+          },
+        ]}
+      />
       <div>
         <h2 className="font-display text-[28px] leading-[1.1] tracking-[-0.02em] text-ink">
           Connected accounts
@@ -458,79 +475,60 @@ export default async function ChannelsSettingsPage({
           const isReauth = isConnected && needsReauth.has(p.id);
           const profile = isConnected ? profileByChannel.get(p.id) ?? null : null;
           return (
-            <li
-              key={p.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 py-4"
-            >
-              <span
-                className={cn(
-                  "w-11 h-11 rounded-full border grid place-items-center shrink-0",
-                  isReauth
-                    ? "bg-primary-soft border-primary/40"
-                    : isConnected
-                      ? "bg-peach-100 border-peach-300"
-                      : "bg-background border-border",
-                  p.mono && "text-ink",
-                )}
-              >
-                <p.Icon className="w-[18px] h-[18px]" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
-                  {isConnected && !isReauth ? (
-                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
-                      <ShieldCheck className="w-3 h-3" />
-                      Connected
+            <li key={p.id} className="flex flex-col gap-3 px-5 py-4">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={cn(
+                        "w-7 h-7 rounded-full border grid place-items-center shrink-0",
+                        isReauth
+                          ? "bg-primary-soft border-primary/40"
+                          : isConnected
+                            ? "bg-peach-100 border-peach-300"
+                            : "bg-background border-border",
+                        p.mono && "text-ink",
+                      )}
+                    >
+                      <p.Icon className="w-3.5 h-3.5" />
                     </span>
-                  ) : null}
-                  {isReauth ? (
-                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-primary-soft text-primary-deep text-[10.5px] font-medium tracking-wide">
-                      Reconnect needed
-                    </span>
-                  ) : null}
-                  {!isSoon ? (
-                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-peach-100 border border-peach-300 text-[10.5px] text-ink font-medium tracking-wide">
-                      <Sparkle className="w-3 h-3" />
-                      Muse
-                    </span>
-                  ) : null}
-                  {isSoon ? (
-                    <span className="inline-flex items-center h-5 px-2 rounded-full border border-dashed border-border-strong text-[10.5px] text-ink/55 tracking-wide uppercase">
-                      Soon
-                    </span>
+                    <p className="text-[14.5px] text-ink font-medium">{p.name}</p>
+                    {isConnected && !isReauth ? (
+                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-ink text-background text-[10.5px] font-medium tracking-wide">
+                        <ShieldCheck className="w-3 h-3" />
+                        Connected
+                      </span>
+                    ) : null}
+                    {isReauth ? (
+                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-primary-soft text-primary-deep text-[10.5px] font-medium tracking-wide">
+                        Reconnect needed
+                      </span>
+                    ) : null}
+                    {!isSoon ? (
+                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-peach-100 border border-peach-300 text-[10.5px] text-ink font-medium tracking-wide">
+                        <Sparkle className="w-3 h-3" />
+                        Muse
+                      </span>
+                    ) : null}
+                    {isSoon ? (
+                      <span className="inline-flex items-center h-5 px-2 rounded-full border border-dashed border-border-strong text-[10.5px] text-ink/55 tracking-wide uppercase">
+                        Soon
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1.5 text-[12.5px] text-ink/60">
+                    {isReauth
+                      ? "Your token expired or was revoked. Reconnect to resume publishing."
+                      : p.purpose}
+                  </p>
+                  {!isReauth && p.note ? (
+                    <p className="mt-1 text-[11.5px] text-ink/50 leading-[1.5]">
+                      {p.note}
+                    </p>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[12.5px] text-ink/60">
-                  {isReauth
-                    ? "Your token expired or was revoked. Reconnect to resume publishing."
-                    : p.purpose}
-                </p>
-                {profile && (profile.handle || profile.displayName || profile.avatarUrl) ? (
-                  <div className="mt-2">
-                    {profile.profileUrl ? (
-                      <a
-                        href={profile.profileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1 hover:bg-muted/40 transition-colors"
-                      >
-                        <ChannelIdentity
-                          profile={{ ...profile, channel: p.id }}
-                          size="sm"
-                        />
-                      </a>
-                    ) : (
-                      <ChannelIdentity
-                        profile={{ ...profile, channel: p.id }}
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                ) : null}
-              </div>
 
-              <div className="shrink-0">
+                <div className="shrink-0">
                 {isSoon ? (
                   <button
                     type="button"
@@ -579,17 +577,10 @@ export default async function ChannelsSettingsPage({
                         </button>
                       </form>
                     ) : (
-                      <form action={refreshChannelProfileAction}>
-                        <input type="hidden" name="provider" value={p.id} />
-                        <button
-                          type="submit"
-                          title="Refresh profile details"
-                          aria-label={`Refresh ${p.name} profile`}
-                          className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-border-strong text-ink/70 hover:text-ink hover:border-ink transition-colors"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                      </form>
+                      <RefreshChannelButton
+                        provider={p.id}
+                        channelName={p.name}
+                      />
                     )}
                     <DisconnectChannelButton provider={p.id} />
                   </div>
@@ -614,7 +605,15 @@ export default async function ChannelsSettingsPage({
                     </button>
                   </form>
                 )}
+                </div>
               </div>
+
+              {profile && (profile.handle || profile.displayName || profile.avatarUrl) ? (
+                <ConnectedAccountCard
+                  profile={{ ...profile, channel: p.id }}
+                  channel={p.id}
+                />
+              ) : null}
             </li>
           );
         })}

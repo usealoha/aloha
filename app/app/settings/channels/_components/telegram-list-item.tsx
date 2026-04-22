@@ -1,12 +1,13 @@
 "use client";
 
 import { TelegramIcon } from "@/app/auth/_components/provider-icons";
-import { Plus, RefreshCw, ShieldCheck, Sparkle } from "lucide-react";
-import { useState, useTransition } from "react";
-import { refreshChannelProfileAction } from "../../actions";
+import { Plus, ShieldCheck, Sparkle } from "lucide-react";
+import { useState } from "react";
 import { TelegramChannelItem } from "./telegram-item";
 import { DisconnectChannelButton } from "./disconnect-confirm";
-import { ChannelIdentity, type ChannelProfileView } from "@/components/channel-identity";
+import { RefreshChannelButton } from "./refresh-channel-button";
+import type { ChannelProfileView } from "@/components/channel-identity";
+import { ConnectedAccountCard } from "./connected-account-card";
 
 type Props = {
 	isConnected: boolean;
@@ -17,15 +18,6 @@ type Props = {
 
 export function TelegramListItem({ isConnected, needsReauth, atLimit, profile }: Props) {
 	const [showForm, setShowForm] = useState(false);
-	const [isRefreshing, startRefresh] = useTransition();
-	const handleRefresh = () => {
-		startRefresh(async () => {
-			const fd = new FormData();
-			fd.set("provider", "telegram");
-			await refreshChannelProfileAction(fd);
-		});
-	};
-
 	return (
 		<li className="flex flex-col px-5 py-4">
 			<div className="flex items-center gap-4">
@@ -67,21 +59,10 @@ export function TelegramListItem({ isConnected, needsReauth, atLimit, profile }:
 								: "Broadcast messages and photos to your channel."}
 					</p>
 					{isConnected && profile && (profile.handle || profile.displayName) ? (
-						<div className="mt-2">
-							{profile.profileUrl ? (
-								<a
-									href={profile.profileUrl}
-									target="_blank"
-									rel="noreferrer"
-									className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1 hover:bg-muted/40 transition-colors"
-								>
-									<ChannelIdentity profile={{ ...profile, channel: "telegram" }} size="sm" />
-								</a>
-							) : (
-								<ChannelIdentity profile={{ ...profile, channel: "telegram" }} size="sm" />
-							)}
-						</div>
-					) : null}
+					<div className="mt-3">
+						<ConnectedAccountCard profile={{ ...profile, channel: "telegram" }} channel="telegram" />
+					</div>
+				) : null}
 				</div>
 				<div className="flex items-center gap-1.5 shrink-0">
 					{showForm ? (
@@ -102,16 +83,7 @@ export function TelegramListItem({ isConnected, needsReauth, atLimit, profile }:
 							Connect
 						</button>
 					) : isConnected && !needsReauth ? (
-						<button
-							type="button"
-							onClick={handleRefresh}
-							disabled={isRefreshing}
-							title="Refresh profile details"
-							aria-label="Refresh Telegram profile"
-							className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-border-strong text-ink/70 hover:text-ink hover:border-ink transition-colors disabled:opacity-50"
-						>
-							<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-						</button>
+						<RefreshChannelButton provider="telegram" channelName="Telegram" />
 					) : isConnected && needsReauth ? (
 						<button
 							type="button"

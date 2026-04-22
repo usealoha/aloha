@@ -631,6 +631,9 @@ export async function notifyWhenAvailable(formData: FormData) {
         console.error("[notify] confirmation email failed", err);
       }
     }
+
+    // Redirect with a query param to trigger a toast confirmation
+    redirect(`/app/settings/channels?notify=1&channel=${provider}`);
   }
 
   revalidatePath("/app/settings/channels");
