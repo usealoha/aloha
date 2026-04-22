@@ -54,6 +54,8 @@ export default async function AdminRequestsPage({
       ? raw
       : "pending";
 
+  const showActions = status === "pending" || status === "all";
+
   const [[counts], rows] = await Promise.all([
     db
       .select({
@@ -135,7 +137,7 @@ export default async function AdminRequestsPage({
               <Th>Feature</Th>
               <Th>Status</Th>
               <Th>Requested</Th>
-              <Th className="text-right">Action</Th>
+              {showActions && <Th className="text-right">Action</Th>}
             </tr>
           </thead>
           <tbody>
@@ -160,20 +162,22 @@ export default async function AdminRequestsPage({
                   <Td className="text-ink/65">
                     {r.requestedAt?.toISOString().slice(0, 10) ?? "—"}
                   </Td>
-                  <Td className="text-right">
-                    {rowStatus === "pending" ? (
-                      <RequestRowActions id={r.id} />
-                    ) : (
-                      <span className="text-ink/45 text-[12px]">—</span>
-                    )}
-                  </Td>
+                  {showActions && (
+                    <Td className="text-right">
+                      {rowStatus === "pending" ? (
+                        <RequestRowActions id={r.id} />
+                      ) : (
+                        <span className="text-ink/45 text-[12px]">—</span>
+                      )}
+                    </Td>
+                  )}
                 </tr>
               );
             })}
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={showActions ? 5 : 4}
                   className="px-4 py-10 text-center text-ink/55 text-[13px]"
                 >
                   {status === "pending"
