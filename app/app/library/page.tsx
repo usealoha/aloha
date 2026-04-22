@@ -1,10 +1,11 @@
-import { and, desc, eq } from "drizzle-orm";
-import { ImageIcon, Lock, PenSquare, Sparkles } from "lucide-react";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { ImageIcon, Lock, PenSquare, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db";
 import { assets } from "@/db/schema";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { FilterTabs } from "@/components/ui/filter-tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +17,9 @@ import { DeleteAssetButton } from "./_components/delete-confirm";
 
 export const dynamic = "force-dynamic";
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+type Tab = "generated" | "uploaded";
+
 type Row = {
   id: string;
   url: string;
@@ -23,27 +27,51 @@ type Row = {
   width: number | null;
   height: number | null;
   metadata: Record<string, unknown>;
+  source: "upload" | "generated" | "imported";
   createdAt: Date;
 };
 
-export default async function LibraryPage() {
+const first = (v: string | string[] | undefined) =>
+  Array.isArray(v) ? v[0] : v;
+
+export default async function LibraryPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const user = (await getCurrentUser())!;
   const museAccess = await hasMuseInviteEntitlement(user.id);
 
-  const rows: Row[] = await db
-    .select({
-      id: assets.id,
-      url: assets.url,
-      prompt: assets.prompt,
-      width: assets.width,
-      height: assets.height,
-      metadata: assets.metadata,
-      createdAt: assets.createdAt,
-    })
-    .from(assets)
-    .where(and(eq(assets.userId, user.id), eq(assets.source, "generated")))
-    .orderBy(desc(assets.createdAt))
-    .limit(120);
+  const raw = first((await searchParams).tab);
+  const tab: Tab = raw === "uploaded" ? "uploaded" : "generated";
+  const sourceFilter = tab === "uploaded" ? "upload" : "generated";
+
+  const [[counts], rows] = await Promise.all([
+    db
+      .select({
+        generated: sql<number>`count(*) filter (where ${assets.source} = 'generated')::int`,
+        uploaded: sql<number>`count(*) filter (where ${assets.source} = 'upload')::int`,
+      })
+      .from(assets)
+      .where(eq(assets.userId, user.id)),
+    db
+      .select({
+        id: assets.id,
+        url: assets.url,
+        prompt: assets.prompt,
+        width: assets.width,
+        height: assets.height,
+        metadata: assets.metadata,
+        source: assets.source,
+        createdAt: assets.createdAt,
+      })
+      .from(assets)
+      .where(
+        and(eq(assets.userId, user.id), eq(assets.source, sourceFilter)),
+      )
+      .orderBy(desc(assets.createdAt))
+      .limit(120),
+  ]);
 
   return (
     <div className="space-y-10">
@@ -56,8 +84,8 @@ export default async function LibraryPage() {
             Library<span className="text-primary font-light">.</span>
           </h1>
           <p className="mt-3 text-[14px] text-ink/65 max-w-xl leading-[1.55]">
-            Every image you&apos;ve generated, with the prompt that made it.
-            Copy a prompt to iterate, or reuse an image in a new draft.
+            Your generated and uploaded images in one place. Reuse any of
+            them in a new draft, or copy a prompt to iterate.
           </p>
         </div>
         <div>
@@ -92,10 +120,28 @@ export default async function LibraryPage() {
         </div>
       </header>
 
+      <FilterTabs
+        activeKey={tab}
+        items={[
+          {
+            key: "generated",
+            label: "Generated",
+            count: counts.generated,
+            href: "/app/library?tab=generated",
+          },
+          {
+            key: "uploaded",
+            label: "Uploaded",
+            count: counts.uploaded,
+            href: "/app/library?tab=uploaded",
+          },
+        ]}
+      />
+
       {rows.length === 0 ? (
-        <EmptyState />
+        <EmptyState tab={tab} />
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <ul className="columns-1 sm:columns-2 xl:columns-3 gap-4 [column-fill:_balance]">
           {rows.map((row) => (
             <AssetCard key={row.id} row={row} />
           ))}
@@ -105,18 +151,24 @@ export default async function LibraryPage() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ tab }: { tab: Tab }) {
+  const isUploaded = tab === "uploaded";
   return (
     <div className="rounded-3xl border border-dashed border-border-strong bg-background-elev px-8 py-14 text-center">
       <span className="inline-grid place-items-center w-12 h-12 rounded-full bg-peach-100 border border-border">
-        <ImageIcon className="w-5 h-5 text-ink" />
+        {isUploaded ? (
+          <Upload className="w-5 h-5 text-ink" />
+        ) : (
+          <ImageIcon className="w-5 h-5 text-ink" />
+        )}
       </span>
       <p className="mt-5 font-display text-[22px] leading-[1.15] tracking-[-0.01em] text-ink">
-        No generated images yet.
+        {isUploaded ? "No uploads yet." : "No generated images yet."}
       </p>
       <p className="mt-2 text-[13.5px] text-ink/60 max-w-md mx-auto leading-[1.55]">
-        Generate an image from the composer and it&apos;ll land here — prompt,
-        aspect, and all.
+        {isUploaded
+          ? "Attach an image from the composer and it'll land here."
+          : "Generate an image from the composer and it'll land here — prompt, aspect, and all."}
       </p>
       <div className="mt-6">
         <Link
@@ -144,8 +196,11 @@ function AssetCard({ row }: { row: Row }) {
     day: "numeric",
   }).format(row.createdAt);
 
+  // `break-inside-avoid` + `mb-4` keeps cards whole inside a CSS-columns
+  // masonry. Intrinsic `width`/`height` on the img prevent layout shift
+  // and let the browser reserve space at the correct aspect ratio.
   return (
-    <li className="rounded-2xl border border-border-strong bg-background-elev p-3 flex flex-col gap-3">
+    <li className="mb-4 break-inside-avoid rounded-2xl border border-border-strong bg-background-elev p-3 flex flex-col gap-3">
       <a
         href={row.url}
         target="_blank"
@@ -155,8 +210,10 @@ function AssetCard({ row }: { row: Row }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={row.url}
-          alt={row.prompt ?? "Generated image"}
-          className="w-full h-auto object-cover max-h-[420px]"
+          alt={row.prompt ?? (row.source === "upload" ? "Uploaded image" : "Generated image")}
+          width={row.width ?? undefined}
+          height={row.height ?? undefined}
+          className="w-full h-auto block"
         />
       </a>
 
@@ -169,7 +226,7 @@ function AssetCard({ row }: { row: Row }) {
         <p className="text-[13.5px] text-ink/80 leading-[1.55] whitespace-pre-wrap px-1 line-clamp-5">
           {row.prompt}
         </p>
-      ) : (
+      ) : row.source === "upload" ? null : (
         <p className="text-[13px] text-ink/45 italic px-1">
           No prompt recorded.
         </p>

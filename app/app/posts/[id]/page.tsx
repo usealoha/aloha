@@ -271,7 +271,9 @@ export default async function PostDetailPage({
         </div>
       )}
 
-      {/* Selected channel view */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        <div className="lg:col-span-7 space-y-8 min-w-0">
+      {/* Selected channel details (left column) */}
       {selectedChannel && (
         <section className="space-y-6">
           <div className="space-y-3">
@@ -291,41 +293,6 @@ export default async function PostDetailPage({
                 </a>
               )}
             </div>
-            <div className="rounded-2xl shadow-[0_14px_32px_-18px_rgba(26,22,18,0.2)]">
-              <PostPreviewCard
-                channel={selectedChannel}
-                author={{
-                  name: user.name ?? "You",
-                  image: user.image ?? null,
-                }}
-                profile={profileByChannel.get(selectedChannel) ?? null}
-                content={resolvedContent}
-                timestampLabel={previewTimestampLabel(post, tz)}
-              />
-            </div>
-            {resolvedMedia.length > 0 && (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {resolvedMedia.map((m, i) => (
-                  <div
-                    key={`${m.url}-${i}`}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-border bg-background"
-                  >
-                    {m.mimeType.startsWith("image/") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.url}
-                        alt={m.alt ?? ""}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-[12px] text-ink/50">
-                        {m.mimeType}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
             {selectedDelivery?.status === "failed" &&
               selectedDelivery.errorMessage && (
                 <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
@@ -348,6 +315,27 @@ export default async function PostDetailPage({
           />
         </section>
       )}
+        </div>
+
+        {/* Right column — sticky preview */}
+        {selectedChannel && (
+          <aside className="lg:col-span-5 lg:sticky lg:top-8 self-start">
+            <div className="rounded-2xl w-fit shadow-[0_14px_32px_-18px_rgba(26,22,18,0.2)]">
+              <PostPreviewCard
+                channel={selectedChannel}
+                author={{
+                  name: user.name ?? "You",
+                  image: user.image ?? null,
+                }}
+                profile={profileByChannel.get(selectedChannel) ?? null}
+                content={resolvedContent}
+                media={resolvedMedia}
+                timestampLabel={previewTimestampLabel(post, tz)}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@
 //    multiple calls yet — the Pro model's window handles a few hundred
 //    posts comfortably.
 
-import { inArray, sql } from "drizzle-orm";
+import { inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   brandCorpus,
@@ -21,6 +21,8 @@ import {
   brandVoiceChannels,
   ideas,
   platformContentCache,
+  posts,
+  type ChannelOverride,
 } from "@/db/schema";
 import { and, eq, or } from "drizzle-orm";
 import { PROMPTS, registerPrompts } from "./prompts";
@@ -105,13 +107,21 @@ export async function trainVoice(
 ): Promise<TrainVoiceResult> {
   await registerPrompts();
 
-  const [samples, corpusDocs, userIdeas] = await Promise.all([
-    loadCorpusSamples(input.userId, input.samplePostIds),
-    loadBrandCorpusForTraining(input.userId),
-    loadIdeasForTraining(input.userId),
-  ]);
+  const [cachedSamples, internalSamples, corpusDocs, userIdeas] =
+    await Promise.all([
+      loadCorpusSamples(input.userId, input.samplePostIds),
+      loadInternalPostSamples(input.userId),
+      loadBrandCorpusForTraining(input.userId),
+      loadIdeasForTraining(input.userId),
+    ]);
+  // Internal Aloha posts (draft / scheduled / published / failed) always
+  // participate — they're the user's most direct voice signal on this
+  // platform. Explicit samplePostIds only narrows the cached platform
+  // samples, not the internal set.
+  const samples = [...cachedSamples, ...internalSamples];
   const corpus = assembleCorpus(
-    samples,
+    cachedSamples,
+    internalSamples,
     corpusDocs,
     userIdeas,
     input.uploadedCorpus,
@@ -311,6 +321,38 @@ async function loadCorpusSamples(
 type Sample = { id: string; platform: string; content: string };
 type CorpusDoc = { source: string; title: string | null; content: string };
 
+// Posts authored inside Aloha — drafts, scheduled, published, and failed.
+// We expand one sample per (post × platform), preferring the channel
+// override when present so channel-delta training sees the variant the
+// user actually wrote for that channel. Deleted posts are excluded.
+async function loadInternalPostSamples(userId: string): Promise<Sample[]> {
+  const rows = await db
+    .select({
+      id: posts.id,
+      content: posts.content,
+      platforms: posts.platforms,
+      channelContent: posts.channelContent,
+    })
+    .from(posts)
+    .where(and(eq(posts.userId, userId), ne(posts.status, "deleted")));
+
+  const out: Sample[] = [];
+  for (const row of rows) {
+    const overrides = (row.channelContent ?? {}) as Record<
+      string,
+      ChannelOverride
+    >;
+    const targets = row.platforms.length > 0 ? row.platforms : ["general"];
+    for (const platform of targets) {
+      const override = overrides[platform]?.content;
+      const content = (override ?? row.content)?.trim();
+      if (!content) continue;
+      out.push({ id: `post:${row.id}:${platform}`, platform, content });
+    }
+  }
+  return out;
+}
+
 async function loadBrandCorpusForTraining(userId: string): Promise<CorpusDoc[]> {
   return db
     .select({
@@ -345,18 +387,28 @@ async function loadIdeasForTraining(userId: string): Promise<IdeaNote[]> {
 }
 
 function assembleCorpus(
-  samples: Sample[],
+  cachedSamples: Sample[],
+  internalSamples: Sample[],
   docs: CorpusDoc[],
   ideaNotes: IdeaNote[],
   uploaded: string | undefined,
 ): string {
   const blocks: string[] = [];
 
-  if (samples.length > 0) {
+  if (cachedSamples.length > 0) {
     blocks.push(
       "--- Sample posts (your own writing from connected platforms) ---",
     );
-    for (const s of samples) {
+    for (const s of cachedSamples) {
+      blocks.push(`[${s.platform}] ${s.content}`);
+    }
+  }
+
+  if (internalSamples.length > 0) {
+    blocks.push(
+      "--- Aloha posts (drafts, scheduled, and published from this app) ---",
+    );
+    for (const s of internalSamples) {
       blocks.push(`[${s.platform}] ${s.content}`);
     }
   }

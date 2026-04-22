@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import {
   BookOpen,
   Check,
@@ -14,6 +14,7 @@ import {
   brandCorpus,
   notionCredentials,
   platformContentCache,
+  posts,
 } from "@/db/schema";
 import { trainVoiceAction } from "@/app/actions/voice";
 import {
@@ -44,7 +45,15 @@ export default async function MuseSettingsPage() {
     return <MuseRequestAccess requestedAt={access.requestedAt} />;
   }
 
-  const [voice, recentSamples, notion, corpusRows, channelCounts, channelDeltas] = await Promise.all([
+  const [
+    voice,
+    recentSamples,
+    notion,
+    corpusRows,
+    channelCounts,
+    channelDeltas,
+    internalPostStats,
+  ] = await Promise.all([
     loadCurrentVoice(user.id),
     db
       .select({
@@ -87,7 +96,46 @@ export default async function MuseSettingsPage() {
       .where(eq(platformContentCache.userId, user.id))
       .groupBy(platformContentCache.platform),
     loadAllChannelVoices(user.id),
+    // Total non-deleted posts + per-channel expansion via unnest, so
+    // PerChannelVoiceCard reflects internal posts too. Matches the
+    // training-side filter exactly.
+    (async () => {
+      const [totalRow] = await db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(posts)
+        .where(
+          and(eq(posts.userId, user.id), ne(posts.status, "deleted")),
+        );
+      const perChannel = await db.execute<{
+        platform: string;
+        count: number;
+      }>(sql`
+        select unnest(platforms) as platform, count(*)::int as count
+        from posts
+        where "userId" = ${user.id} and status <> 'deleted'
+        group by platform
+      `);
+      const rows = (perChannel as unknown as {
+        rows: Array<{ platform: string; count: number }>;
+      }).rows ?? [];
+      return {
+        total: totalRow?.total ?? 0,
+        perChannel: rows,
+      };
+    })(),
   ]);
+
+  // Combined per-channel sample counts (cached readback + internal Aloha
+  // posts) so the "need N more" threshold reflects what training actually
+  // sees.
+  const mergedChannelCounts = (() => {
+    const map = new Map<string, number>();
+    for (const c of channelCounts) map.set(c.platform, c.count);
+    for (const c of internalPostStats.perChannel) {
+      map.set(c.platform, (map.get(c.platform) ?? 0) + c.count);
+    }
+    return Array.from(map, ([platform, count]) => ({ platform, count }));
+  })();
 
   const currentTone = (voice?.tone ?? {}) as {
     summary?: string;
@@ -138,7 +186,7 @@ export default async function MuseSettingsPage() {
 
       {voice ? (
         <PerChannelVoiceCard
-          counts={channelCounts}
+          counts={mergedChannelCounts}
           deltas={channelDeltas}
         />
       ) : null}
@@ -322,7 +370,7 @@ function CurrentVoiceCard({
 }) {
   return (
     <section className="rounded-3xl border border-border bg-peach-100/50 p-6 space-y-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="grid grid-cols-[1fr_auto] items-start gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
             Current voice · v{voice.version}
@@ -343,7 +391,7 @@ function CurrentVoiceCard({
           </p>
         ) : null}
       </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+      <dl className="columns-1 sm:columns-2 gap-x-6 text-[13px] [column-fill:_balance]">
         {tone.descriptors && tone.descriptors.length > 0 ? (
           <Field label="Tone">{tone.descriptors.join(" · ")}</Field>
         ) : null}
@@ -463,7 +511,7 @@ function PerChannelVoiceCard({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="mb-4 break-inside-avoid">
       <dt className="text-[11px] uppercase tracking-[0.18em] text-ink/50">
         {label}
       </dt>
@@ -532,7 +580,7 @@ function NotionTile({
 }) {
   if (!notion) {
     return (
-      <article className="rounded-2xl border border-border bg-background p-5">
+      <article className="rounded-2xl border border-border bg-background p-5 flex flex-col h-full">
         <div className="flex items-center gap-2 text-[13.5px] text-ink font-medium">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-background border border-border text-ink">
             <NotionIcon className="w-3.5 h-3.5" />
@@ -543,20 +591,22 @@ function NotionTile({
           Share pages with the Aloha integration and we&apos;ll pull them into
           your corpus on a schedule.
         </p>
-        <Link
-          href="/api/notion/connect"
-          className="mt-4 inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
-        >
-          <Link2 className="w-3.5 h-3.5" />
-          Connect Notion
-        </Link>
+        <div className="mt-auto pt-4">
+          <Link
+            href="/api/notion/connect"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Connect Notion
+          </Link>
+        </div>
       </article>
     );
   }
 
   if (notion.reauthRequired) {
     return (
-      <article className="rounded-2xl border border-primary/40 bg-primary-soft/60 p-5">
+      <article className="rounded-2xl border border-primary/40 bg-primary-soft/60 p-5 flex flex-col h-full">
         <div className="flex items-center gap-2 text-[13.5px] text-ink font-medium">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-background border border-border text-ink">
             <NotionIcon className="w-3.5 h-3.5" />
@@ -568,13 +618,15 @@ function NotionTile({
           syncs. Reconnect to resume — your previously synced documents stay
           in the corpus.
         </p>
-        <Link
-          href="/api/notion/connect"
-          className="mt-4 inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
-        >
-          <Link2 className="w-3.5 h-3.5" />
-          Reconnect Notion
-        </Link>
+        <div className="mt-auto pt-4">
+          <Link
+            href="/api/notion/connect"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Reconnect Notion
+          </Link>
+        </div>
       </article>
     );
   }
@@ -589,7 +641,7 @@ function NotionTile({
     : null;
 
   return (
-    <article className="rounded-2xl border border-primary/40 bg-primary-soft/40 p-5">
+    <article className="rounded-2xl border border-primary/40 bg-primary-soft/40 p-5 flex flex-col h-full">
       <div className="flex items-center gap-2 text-[13.5px] text-ink font-medium">
         <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-background border border-border text-ink">
           <NotionIcon className="w-3.5 h-3.5" />
@@ -601,7 +653,7 @@ function NotionTile({
           ? "Connected, but no documents pulled yet. Run a sync to ingest."
           : `${docCount} document${docCount === 1 ? "" : "s"} in your corpus${lastSynced ? ` · last synced ${lastSynced}` : ""}.`}
       </p>
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-auto pt-4 flex items-center gap-2">
         <form action={syncNotionAction}>
           <SyncNotionButton />
         </form>
