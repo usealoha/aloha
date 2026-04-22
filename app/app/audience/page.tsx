@@ -1,20 +1,22 @@
 import { addLink, updatePage } from "@/app/actions/audience";
+import { LINKS_PER_PAGE_LIMIT } from "@/lib/audience-limits";
 import { db } from "@/db";
-import { links, pages, subscribers } from "@/db/schema";
+import { assets, links, pages, subscribers } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import {
 	ArrowUpRight,
 	ExternalLink,
-	Globe,
 	Mail,
+	Palette,
 	Plus,
 	Tags,
 } from "lucide-react";
 import Link from "next/link";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
-import { DeleteLinkButton } from "./_components/delete-confirm";
+import { AvatarEditor } from "./_components/avatar-editor";
+import { LinkList } from "./_components/link-list";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,16 @@ export default async function AudiencePage() {
 				.orderBy(asc(links.order))
 		: [];
 
+	const avatarAsset =
+		page?.avatarAssetId
+			? await db.query.assets.findFirst({
+					where: eq(assets.id, page.avatarAssetId),
+				})
+			: null;
+	const avatarRef = avatarAsset
+		? { id: avatarAsset.id, url: avatarAsset.url }
+		: null;
+
 	const allTags = Array.from(
 		new Set(
 			subs.flatMap((s) => s.tags ?? []).filter((t): t is string => Boolean(t)),
@@ -81,6 +93,15 @@ export default async function AudiencePage() {
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
+					{page ? (
+						<Link
+							href="/app/audience/design"
+							className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full bg-ink text-background text-[14px] font-medium hover:bg-primary transition-colors"
+						>
+							<Palette className="w-4 h-4" />
+							Design page
+						</Link>
+					) : null}
 					<Link
 						href="/app/audience/sending"
 						className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
@@ -96,7 +117,7 @@ export default async function AudiencePage() {
 							className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full border border-border-strong text-[14px] font-medium text-ink hover:border-ink transition-colors"
 						>
 							<ExternalLink className="w-4 h-4" />
-							View public page
+							View
 						</Link>
 					) : null}
 				</div>
@@ -113,78 +134,100 @@ export default async function AudiencePage() {
 					/>
 
 					<div className="rounded-3xl border border-border bg-background-elev overflow-hidden">
-						<form action={updatePage} className="divide-y divide-border">
-							<div className="p-6 space-y-5">
-								<div>
-									<label
-										htmlFor="slug"
-										className="block text-[13px] font-medium text-ink mb-2"
-									>
-										Handle
-									</label>
-									<div className="flex rounded-xl overflow-hidden border border-border-strong focus-within:border-ink transition-colors">
-										<span className="inline-flex items-center px-3.5 bg-muted text-[13px] text-ink/60 select-none">
-											usealoha.app/u/
-										</span>
-										<input
-											id="slug"
-											name="slug"
-											type="text"
-											required
-											defaultValue={page?.slug ?? ""}
-											placeholder="your-handle"
-											pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
-											className="flex-1 h-11 px-3.5 bg-background-elev text-[14px] text-ink outline-none"
-										/>
-									</div>
-									<p className="mt-2 text-[12px] text-ink/50">
-										3–40 characters. Lowercase letters, numbers, and hyphens.
+						<form action={updatePage}>
+							<div className="p-6 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 sm:gap-7">
+								<div className="flex flex-col items-start gap-2">
+									{page ? (
+										<AvatarEditor initial={avatarRef} />
+									) : (
+										<div
+											className="w-20 h-20 rounded-full border-2 border-dashed border-border-strong bg-peach-100/40 grid place-items-center text-ink/45"
+											title="Save your handle to upload an avatar"
+										>
+											<span className="text-[10px] uppercase tracking-[0.22em] text-center px-2 leading-tight">
+												Avatar
+											</span>
+										</div>
+									)}
+									<p className="text-[11px] text-ink/55 max-w-[88px] leading-tight">
+										{page
+											? "Click to change"
+											: "Available after save"}
 									</p>
 								</div>
 
-								<div>
-									<label
-										htmlFor="title"
-										className="block text-[13px] font-medium text-ink mb-2"
-									>
-										Display name
-									</label>
-									<input
-										id="title"
-										name="title"
-										type="text"
-										defaultValue={page?.title ?? user.name ?? ""}
-										placeholder="Longhand Studio"
-										className="w-full h-11 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
-									/>
-								</div>
+								<div className="space-y-5 min-w-0">
+									<div>
+										<label
+											htmlFor="slug"
+											className="block text-[13px] font-medium text-ink mb-2"
+										>
+											Handle
+										</label>
+										<div className="flex rounded-xl overflow-hidden border border-border-strong focus-within:border-ink transition-colors">
+											<span className="inline-flex items-center px-3.5 bg-muted text-[13px] text-ink/60 select-none">
+												usealoha.app/u/
+											</span>
+											<input
+												id="slug"
+												name="slug"
+												type="text"
+												required
+												defaultValue={page?.slug ?? ""}
+												placeholder="your-handle"
+												pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
+												className="flex-1 min-w-0 h-11 px-3.5 bg-background-elev text-[14px] text-ink outline-none"
+											/>
+										</div>
+										<p className="mt-2 text-[12px] text-ink/50">
+											3–40 characters. Lowercase letters, numbers, and hyphens.
+										</p>
+									</div>
 
-								<div>
-									<label
-										htmlFor="bio"
-										className="block text-[13px] font-medium text-ink mb-2"
-									>
-										Bio
-									</label>
-									<textarea
-										id="bio"
-										name="bio"
-										defaultValue={page?.bio ?? ""}
-										placeholder="One or two lines about what you make and who it's for."
-										className="w-full min-h-[88px] p-3.5 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink leading-normal focus:outline-none focus:border-ink transition-colors resize-y"
-									/>
+									<div>
+										<label
+											htmlFor="title"
+											className="block text-[13px] font-medium text-ink mb-2"
+										>
+											Display name
+										</label>
+										<input
+											id="title"
+											name="title"
+											type="text"
+											defaultValue={page?.title ?? user.name ?? ""}
+											placeholder="Longhand Studio"
+											className="w-full h-11 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink focus:outline-none focus:border-ink transition-colors"
+										/>
+									</div>
+
+									<div>
+										<label
+											htmlFor="bio"
+											className="block text-[13px] font-medium text-ink mb-2"
+										>
+											Bio
+										</label>
+										<textarea
+											id="bio"
+											name="bio"
+											defaultValue={page?.bio ?? ""}
+											placeholder="One or two lines about what you make and who it's for."
+											className="w-full min-h-[88px] p-3.5 rounded-xl bg-background-elev border border-border-strong text-[14px] text-ink leading-normal focus:outline-none focus:border-ink transition-colors resize-y"
+										/>
+									</div>
 								</div>
 							</div>
 
-							<div className="flex items-center justify-between px-6 py-4 bg-muted/30">
+							<div className="flex items-center justify-between px-6 py-4 bg-muted/30 border-t border-border">
 								<p className="text-[12px] text-ink/55">
-									Changes publish immediately.
+									{page ? "Changes publish immediately." : "Save to claim your handle."}
 								</p>
 								<PendingSubmitButton
 									className="inline-flex items-center h-10 px-5 rounded-full bg-ink text-background text-[13.5px] font-medium hover:bg-primary transition-colors"
 									pendingLabel="Saving…"
 								>
-									Save page
+									{page ? "Save page" : "Create page"}
 								</PendingSubmitButton>
 							</div>
 						</form>
@@ -199,42 +242,26 @@ export default async function AudiencePage() {
 								</p>
 								<p className="mt-1 font-display text-[18px] text-ink">
 									{pageLinks.length
-										? `${pageLinks.length} on your page`
+										? `${pageLinks.length} of ${LINKS_PER_PAGE_LIMIT}`
 										: "Nothing linked yet"}
 								</p>
 							</div>
+							{pageLinks.length >= LINKS_PER_PAGE_LIMIT ? (
+								<span className="inline-flex items-center h-6 px-2.5 rounded-full bg-peach-100 border border-peach-300 text-[11px] font-medium text-ink/75">
+									Limit reached
+								</span>
+							) : null}
 						</div>
 
-						<ul className="divide-y divide-border">
-							{pageLinks.length === 0 ? (
-								<li className="px-6 py-8 text-center text-[13.5px] text-ink/55">
-									Add your newsletter, portfolio, shop, or latest post.
-								</li>
-							) : (
-								pageLinks.map((l) => (
-									<li key={l.id} className="flex items-center gap-4 px-6 py-3">
-										<span className="w-8 h-8 rounded-full bg-peach-100 border border-border grid place-items-center shrink-0 text-[12px] font-medium text-ink">
-											{l.order + 1}
-										</span>
-										<div className="flex-1 min-w-0">
-											<p className="text-[14px] text-ink font-medium truncate">
-												{l.title}
-											</p>
-											<a
-												href={l.url}
-												target="_blank"
-												rel="noreferrer"
-												className="inline-flex items-center gap-1 text-[12px] text-ink/55 hover:text-ink transition-colors truncate max-w-full"
-											>
-												<Globe className="w-3 h-3 shrink-0" />
-												<span className="truncate">{l.url}</span>
-											</a>
-										</div>
-										<DeleteLinkButton linkId={l.id} title={l.title} />
-									</li>
-								))
-							)}
-						</ul>
+						<LinkList
+							initialLinks={pageLinks.map((l) => ({
+								id: l.id,
+								title: l.title,
+								url: l.url,
+								order: l.order,
+								iconPresetId: l.iconPresetId,
+							}))}
+						/>
 
 						<form
 							action={addLink}
@@ -246,17 +273,19 @@ export default async function AudiencePage() {
 								placeholder="Link title"
 								required
 								maxLength={80}
-								className="h-10 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[13.5px] text-ink focus:outline-none focus:border-ink transition-colors"
+								disabled={pageLinks.length >= LINKS_PER_PAGE_LIMIT}
+								className="h-10 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[13.5px] text-ink focus:outline-none focus:border-ink transition-colors disabled:opacity-40"
 							/>
 							<input
 								type="url"
 								name="url"
 								placeholder="https://"
 								required
-								className="h-10 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[13.5px] text-ink focus:outline-none focus:border-ink transition-colors"
+								disabled={pageLinks.length >= LINKS_PER_PAGE_LIMIT}
+								className="h-10 px-3.5 rounded-xl bg-background-elev border border-border-strong text-[13.5px] text-ink focus:outline-none focus:border-ink transition-colors disabled:opacity-40"
 							/>
 							<PendingSubmitButton
-								disabled={!page}
+								disabled={!page || pageLinks.length >= LINKS_PER_PAGE_LIMIT}
 								className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
 								pendingLabel="Adding…"
 							>
@@ -266,6 +295,11 @@ export default async function AudiencePage() {
 							{!page ? (
 								<p className="sm:col-span-3 text-[12px] text-ink/55">
 									Save your page above first, then add links.
+								</p>
+							) : pageLinks.length >= LINKS_PER_PAGE_LIMIT ? (
+								<p className="sm:col-span-3 text-[12px] text-ink/55">
+									You&apos;ve reached {LINKS_PER_PAGE_LIMIT} links. Remove one to add
+									another.
 								</p>
 							) : null}
 						</form>
