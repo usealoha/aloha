@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "qstash:dev": "qstash-cli dev -port 8081"
   },
   "dependencies": {
     "@atproto/api": "^0.19.9",
@@ -61,6 +62,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@upstash/qstash-cli": "^2.32.32",
     "dotenv": "^17.4.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
@@ -73,6 +75,7 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "@upstash/qstash-cli",
     "sharp",
     "unrs-resolver"
   ]
