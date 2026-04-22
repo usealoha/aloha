@@ -62,7 +62,7 @@ export function TopPostsCard({ topPosts, totalPostCount }: Props) {
                 </div>
                 {p.postId ? (
                   <Link
-                    href={`/app/composer?post=${p.postId}`}
+                    href={`/app/posts/${p.postId}`}
                     className="pencil-link text-[12px] font-medium text-ink shrink-0 mt-1"
                   >
                     Open

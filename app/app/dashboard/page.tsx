@@ -525,7 +525,7 @@ async function DashboardContent({
 							{upcoming.map((p) => (
 								<li key={p.id}>
 									<Link
-										href={`/app/composer?post=${p.id}`}
+										href={`/app/posts/${p.id}`}
 										className="group flex items-start gap-5 px-5 py-4 hover:bg-muted/40 transition-colors"
 									>
 										<div className="w-[88px] shrink-0 text-[12px] text-ink/55 leading-[1.4]">

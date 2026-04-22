@@ -321,7 +321,7 @@ function BeatRow({
         ) : null}
         {accepted && beat.acceptedPostId ? (
           <Link
-            href={`/app/composer?post=${beat.acceptedPostId}`}
+            href={`/app/posts/${beat.acceptedPostId}`}
             className="mt-2 inline-flex items-center gap-1 text-[12px] text-ink/60 hover:text-ink transition-colors"
           >
             Open draft

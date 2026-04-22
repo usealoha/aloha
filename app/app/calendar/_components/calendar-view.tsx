@@ -274,7 +274,7 @@ function MonthView({
 								{dayPosts.slice(0, 3).map((p) => (
 									<li key={p.id}>
 										<Link
-											href={`/app/composer?post=${p.id}`}
+											href={`/app/posts/${p.id}`}
 											prefetch={false}
 											className={cn(
 												"group block px-2 py-1.5 rounded-lg border text-[11.5px] leading-[1.35]",
@@ -464,7 +464,7 @@ function TimeGridView({
 									}}
 								>
 									<Link
-										href={`/app/composer?post=${p.id}`}
+										href={`/app/posts/${p.id}`}
 										prefetch={false}
 										className={cn(
 											"group block px-2 py-1.5 rounded-lg border text-[11.5px] leading-[1.35] shadow-sm",
