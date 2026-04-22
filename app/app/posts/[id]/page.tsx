@@ -1,5 +1,11 @@
 import { db } from "@/db";
-import { posts, postDeliveries, type ChannelOverride, type PostMedia } from "@/db/schema";
+import {
+  channelProfiles,
+  posts,
+  postDeliveries,
+  type ChannelOverride,
+  type PostMedia,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -19,6 +25,7 @@ import { PostAnalytics } from "./_components/post-analytics";
 import { PostReplies } from "./_components/post-replies";
 import { RefreshRepliesButton } from "./_components/refresh-replies-button";
 import { RescheduleButton } from "./_components/reschedule-button";
+import { PostPreviewCard } from "@/components/post-preview-card";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +71,25 @@ function formatDateTime(date: Date | null, tz: string) {
   }).format(date);
 }
 
+// Subheader label on the preview card ("Jan 12 · 2:30 PM" / "Scheduled for …" /
+// "Draft"). Published posts use publishedAt; scheduled uses scheduledAt with
+// a "Scheduled for" prefix so it doesn't look like the post has already
+// happened.
+function previewTimestampLabel(
+  post: { status: string; scheduledAt: Date | null; publishedAt: Date | null },
+  tz: string,
+): string {
+  if (post.status === "published" && post.publishedAt) {
+    return formatDateTime(post.publishedAt, tz) ?? "Published";
+  }
+  if (post.status === "scheduled" && post.scheduledAt) {
+    const t = formatDateTime(post.scheduledAt, tz);
+    return t ? `Scheduled · ${t}` : "Scheduled";
+  }
+  if (post.status === "failed") return "Failed";
+  return "Draft";
+}
+
 export default async function PostDetailPage({
   params,
   searchParams,
@@ -90,6 +116,19 @@ export default async function PostDetailPage({
     .from(postDeliveries)
     .where(eq(postDeliveries.postId, post.id))
     .orderBy(postDeliveries.platform);
+
+  // Pull channel profile handles so the preview card shows the real
+  // "@handle" for each connected account instead of the generic fallback.
+  const profileRows = await db
+    .select({
+      channel: channelProfiles.channel,
+      handle: channelProfiles.handle,
+    })
+    .from(channelProfiles)
+    .where(eq(channelProfiles.userId, user.id));
+  const handleByChannel = new Map(
+    profileRows.map((p) => [p.channel, p.handle]),
+  );
 
   // Channel chips come from post_deliveries when present (post has been
   // scheduled/published) and fall back to posts.platforms for drafts that
@@ -225,7 +264,7 @@ export default async function PostDetailPage({
       {/* Selected channel view */}
       {selectedChannel && (
         <section className="space-y-6">
-          <div className="rounded-2xl border border-border bg-background-elev p-6 space-y-5">
+          <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55">
                 {channelLabel(selectedChannel)} · Content
@@ -242,9 +281,18 @@ export default async function PostDetailPage({
                 </a>
               )}
             </div>
-            <p className="text-[15px] text-ink leading-[1.6] whitespace-pre-wrap">
-              {resolvedContent}
-            </p>
+            <div className="rounded-2xl shadow-[0_14px_32px_-18px_rgba(26,22,18,0.2)]">
+              <PostPreviewCard
+                channel={selectedChannel}
+                author={{
+                  name: user.name ?? "You",
+                  image: user.image ?? null,
+                }}
+                handle={handleByChannel.get(selectedChannel) ?? null}
+                content={resolvedContent}
+                timestampLabel={previewTimestampLabel(post, tz)}
+              />
+            </div>
             {resolvedMedia.length > 0 && (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {resolvedMedia.map((m, i) => (
