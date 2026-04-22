@@ -62,8 +62,10 @@ export function AdminMenu({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2.5 text-left rounded-full transition-colors",
-          expandedLabel ? "w-full px-1 py-1 pr-3 hover:bg-muted/60" : "",
+          "flex items-center gap-2.5 rounded-full transition-colors",
+          expandedLabel
+            ? "w-full text-left px-1 py-1 pr-3 hover:bg-muted/60"
+            : "w-full justify-center py-1 hover:bg-muted/60",
         )}
       >
         {avatarBox}
@@ -88,25 +90,17 @@ export function AdminMenu({
           )}
         >
           <div className="px-4 py-4 border-b border-border">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55">
-              Admin
-            </p>
-            <p className="mt-1 font-display text-[18px] tracking-[-0.01em] text-ink truncate">
-              {email}
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full overflow-hidden border border-border grid place-items-center bg-peach-100 text-[11px] font-semibold">
+            <div className="flex items-center gap-3">
+              <span className="w-10 h-10 rounded-full overflow-hidden border border-border-strong grid place-items-center bg-peach-100 text-[12.5px] font-semibold text-ink shrink-0">
                 {initials || "A"}
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] text-ink inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                  <span className="uppercase tracking-[0.14em] text-[11.5px] text-ink/65">
-                    {role}
-                  </span>
+                <p className="text-[13.5px] font-medium text-ink truncate">
+                  {email}
                 </p>
-                <p className="text-[12px] text-ink/55 truncate">
-                  Operator
+                <p className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] text-primary-deep">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span className="capitalize">{role.toLowerCase()}</span>
                 </p>
               </div>
             </div>

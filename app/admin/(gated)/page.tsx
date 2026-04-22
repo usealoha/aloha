@@ -117,9 +117,9 @@ export default async function AdminOverviewPage() {
 
       <section>
         <SectionHeader eyebrow="Queue" title="Needs your attention" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DataCard>
-            <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          <DataCard className="h-full flex flex-col">
+            <div className="p-6 flex flex-col h-full">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
                 Access requests
               </p>
@@ -131,17 +131,19 @@ export default async function AdminOverviewPage() {
                   pending
                 </span>
               </p>
-              <Link
-                href="/admin/requests"
-                className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
-              >
-                Review queue
-              </Link>
+              <div className="mt-auto pt-5">
+                <Link
+                  href="/admin/requests"
+                  className="inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+                >
+                  Review queue
+                </Link>
+              </div>
             </div>
           </DataCard>
 
-          <DataCard>
-            <div className="p-6">
+          <DataCard className="h-full flex flex-col">
+            <div className="p-6 flex flex-col h-full">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
                 Channel interest
               </p>
@@ -166,12 +168,14 @@ export default async function AdminOverviewPage() {
                   ))}
                 </ul>
               ) : null}
-              <Link
-                href="/admin/channel-interest"
-                className="mt-5 inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
-              >
-                See all signals
-              </Link>
+              <div className="mt-auto pt-5">
+                <Link
+                  href="/admin/channel-interest"
+                  className="inline-flex items-center justify-center w-full h-10 rounded-full border border-border-strong text-[13px] text-ink hover:border-ink transition-colors"
+                >
+                  See all signals
+                </Link>
+              </div>
             </div>
           </DataCard>
         </div>
