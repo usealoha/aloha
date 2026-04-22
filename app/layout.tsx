@@ -7,6 +7,7 @@ import {
 } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
+import { Loader2 } from "lucide-react";
 import { Fraunces, Geist, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { themeInitScript } from "./app/_components/theme-provider";
@@ -103,6 +104,11 @@ export default function RootLayout({
 				<Toaster
 					position="bottom-right"
 					closeButton
+					icons={{
+						loading: (
+							<Loader2 className="w-4 h-4 animate-spin text-ink/70" />
+						),
+					}}
 					toastOptions={{
 						unstyled: true,
 						classNames: {
@@ -111,7 +117,7 @@ export default function RootLayout({
 							title: "text-[13px] font-medium leading-snug",
 							description:
 								"text-[12.5px] leading-snug text-[var(--muted-foreground)]",
-							icon: "shrink-0 flex items-center justify-center",
+							icon: "order-first shrink-0 self-center relative inline-flex items-center justify-center w-4 h-4 [&>svg]:w-4 [&>svg]:h-4",
 							closeButton:
 								"!absolute !top-2 !right-2 !left-auto !translate-x-0 !translate-y-0 !size-6 !rounded-md !bg-transparent !border-0 !text-[var(--muted-foreground)] hover:!bg-[var(--muted)] hover:!text-[var(--foreground)] transition-colors",
 							success:
