@@ -78,6 +78,13 @@
       "when": 1776868404836,
       "tag": "0010_lucky_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776882198576,
+      "tag": "0011_first_sinister_six",
+      "breakpoints": true
     }
   ]
 }

@@ -1034,9 +1034,10 @@ export const featureAccess = pgTable(
     feature: text("feature").notNull(),
     requestedAt: timestamp("requestedAt"),
     grantedAt: timestamp("grantedAt"),
-    grantedBy: uuid("grantedBy").references((): AnyPgColumn => users.id, {
-      onDelete: "set null",
-    }),
+    grantedBy: uuid("grantedBy").references(
+      (): AnyPgColumn => internalUsers.id,
+      { onDelete: "set null" },
+    ),
     revokedAt: timestamp("revokedAt"),
     note: text("note"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
