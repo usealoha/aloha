@@ -102,7 +102,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
               url: "https://x.com/i/oauth2/authorize",
               params: {
                 scope:
-                  "tweet.read tweet.write users.read media.write offline.access",
+                  "tweet.read tweet.write users.read media.write dm.read dm.write offline.access",
               },
             },
           }),

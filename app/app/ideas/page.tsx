@@ -306,7 +306,7 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
         </a>
       ) : null}
 
-      <div className="mt-1 flex items-center gap-1 flex-wrap">
+      <div className="mt-auto pt-1 flex items-center gap-1 flex-wrap">
         {!isArchived ? (
           <Link
             href={`/app/composer?idea=${idea.id}`}

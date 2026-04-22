@@ -107,11 +107,11 @@ export default function RootLayout({
 						unstyled: true,
 						classNames: {
 							toast:
-								"group relative w-full flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--background-elev)] text-[var(--foreground)] pl-4 pr-10 py-3 shadow-[0_10px_30px_-12px_rgba(26,22,18,0.25)] font-sans",
+								"group relative w-full flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--background-elev)] text-[var(--foreground)] pl-4 pr-10 py-3 shadow-[0_10px_30px_-12px_rgba(26,22,18,0.25)] font-sans",
 							title: "text-[13px] font-medium leading-snug",
 							description:
 								"text-[12.5px] leading-snug text-[var(--muted-foreground)]",
-							icon: "mt-0.5 shrink-0",
+							icon: "shrink-0 flex items-center justify-center",
 							closeButton:
 								"!absolute !top-2 !right-2 !left-auto !translate-x-0 !translate-y-0 !size-6 !rounded-md !bg-transparent !border-0 !text-[var(--muted-foreground)] hover:!bg-[var(--muted)] hover:!text-[var(--foreground)] transition-colors",
 							success:
