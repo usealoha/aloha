@@ -57,13 +57,21 @@ async function uploadMedia(
 	}
 	const bytes = await bin.arrayBuffer();
 
-	const res = await fetch(`${instanceUrl}/api/v1/media`, {
+	const form = new FormData();
+	const filename = media.url.split("/").pop()?.split("?")[0] || "upload";
+	form.append(
+		"file",
+		new Blob([bytes], { type: media.mimeType }),
+		filename,
+	);
+	if (media.alt) form.append("description", media.alt);
+
+	const res = await fetch(`${instanceUrl}/api/v2/media`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
-			"Content-Type": media.mimeType,
 		},
-		body: bytes,
+		body: form,
 	});
 
 	if (!res.ok) {
@@ -75,6 +83,28 @@ async function uploadMedia(
 	}
 
 	const json = (await res.json()) as { id: string };
+
+	// v2/media returns 202 while processing. Statuses POST will 422 if the
+	// attachment isn't ready yet, so poll briefly until the server reports
+	// it's done (200 from /api/v1/media/:id).
+	if (res.status === 202) {
+		const deadline = Date.now() + 30_000;
+		while (Date.now() < deadline) {
+			await new Promise((r) => setTimeout(r, 1000));
+			const check = await fetch(`${instanceUrl}/api/v1/media/${json.id}`, {
+				headers: { Authorization: `Bearer ${accessToken}` },
+			});
+			if (check.status === 200) break;
+			if (check.status !== 206) {
+				const detail = await check.text().catch(() => "");
+				throw new PublishError(
+					categorizeHttpStatus(check.status),
+					`Mastodon media processing failed (${check.status}): ${detail.slice(0, 300)}`,
+				);
+			}
+		}
+	}
+
 	return json.id;
 }
 
