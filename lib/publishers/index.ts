@@ -247,7 +247,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 			kind,
 			title: titleByKind[kind],
 			body: snippet ? `"${snippet}"` : null,
-			url: `/app/composer?post=${postId}`,
+			url: `/app/posts/${postId}`,
 			metadata: { postId, okChannels, failedChannels },
 		});
 
