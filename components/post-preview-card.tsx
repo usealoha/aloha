@@ -2,9 +2,20 @@
 // channel. Same surface used in the composer's live preview pane and on the
 // post detail page, so the two surfaces show an identical card.
 
-import { Bookmark, Heart, MessageSquare, Repeat2, Share } from "lucide-react";
+import {
+  Bookmark,
+  Globe2,
+  Heart,
+  MessageSquare,
+  MoreHorizontal,
+  Repeat2,
+  Reply,
+  Share,
+  Star,
+} from "lucide-react";
 import { CHANNEL_ICONS, channelLabel } from "@/components/channel-chip";
 import { cn } from "@/lib/utils";
+import type { PostMedia } from "@/db/schema";
 
 // Platform-specific visual accent for the small channel chip on the card
 // header. Unknown channels fall back to the ink chip.
@@ -60,6 +71,7 @@ export function PostPreviewCard({
   profile,
   handle,
   content,
+  media,
   timestampLabel = "just now",
 }: {
   channel: string;
@@ -72,6 +84,7 @@ export function PostPreviewCard({
   profile?: PostPreviewProfile | null;
   handle?: string | null;
   content: string;
+  media?: PostMedia[];
   // Shown in the subheader line (e.g. "just now" in composer, "2d" on the
   // post page, or a formatted date).
   timestampLabel?: string;
@@ -94,8 +107,36 @@ export function PostPreviewCard({
 
   const text = content.trim().length > 0 ? content : null;
 
+  if (channel === "mastodon") {
+    return (
+      <MastodonPreview
+        displayName={displayName}
+        handle={resolvedHandle}
+        avatarUrl={avatarUrl}
+        initials={initials}
+        text={text}
+        media={media}
+        timestampLabel={timestampLabel}
+      />
+    );
+  }
+
+  if (channel === "bluesky") {
+    return (
+      <BlueskyPreview
+        displayName={displayName}
+        handle={resolvedHandle}
+        avatarUrl={avatarUrl}
+        initials={initials}
+        text={text}
+        media={media}
+        timestampLabel={timestampLabel}
+      />
+    );
+  }
+
   return (
-    <article className="rounded-2xl border border-border bg-background-elev overflow-hidden">
+    <article className="w-full max-w-[560px] rounded-2xl border border-border bg-background-elev overflow-hidden">
       <header className="px-5 pt-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="w-10 h-10 rounded-full overflow-hidden border border-border bg-peach-100 grid place-items-center text-[12px] font-semibold text-ink">
@@ -131,7 +172,7 @@ export function PostPreviewCard({
         </span>
       </header>
 
-      <div className="px-5 py-4">
+      <div className="px-5 py-4 space-y-3">
         {text ? (
           <p className="text-[14.5px] leading-[1.55] text-ink whitespace-pre-wrap break-words">
             {text}
@@ -141,6 +182,47 @@ export function PostPreviewCard({
             Your post will appear here as you type.
           </p>
         )}
+        {media && media.length > 0 ? (
+          <div
+            className={cn(
+              "grid gap-1.5 overflow-hidden rounded-xl border border-border",
+              media.length === 1 && "grid-cols-1",
+              media.length === 2 && "grid-cols-2",
+              media.length >= 3 && "grid-cols-2",
+            )}
+          >
+            {media.slice(0, 4).map((m, i) => (
+              <div
+                key={`${m.url}-${i}`}
+                className={cn(
+                  "relative bg-background",
+                  media.length === 1 ? "aspect-[16/10]" : "aspect-square",
+                  media.length === 3 && i === 0 && "row-span-2 aspect-auto",
+                )}
+              >
+                {m.mimeType.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.url}
+                    alt={m.alt ?? ""}
+                    className="w-full h-full object-cover"
+                  />
+                ) : m.mimeType.startsWith("video/") ? (
+                  <video
+                    src={m.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-[11px] text-ink/50">
+                    {m.mimeType}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <footer className="px-5 py-3 border-t border-border flex items-center justify-between text-ink/45">
@@ -170,5 +252,268 @@ function IconAction({
     >
       <Icon className="w-[15px] h-[15px]" />
     </button>
+  );
+}
+
+// Bluesky-specific layout: dark navy surface, avatar on the left rail,
+// header (name · handle · time) inline above wrapped text, image inset
+// with rounded corners, and a spread footer row of action glyphs — to
+// mimic how a post actually renders in the Bluesky app dark theme.
+function BlueskyPreview({
+  displayName,
+  handle,
+  avatarUrl,
+  initials,
+  text,
+  media,
+  timestampLabel,
+}: {
+  displayName: string;
+  handle: string;
+  avatarUrl: string | null;
+  initials: string;
+  text: string | null;
+  media?: PostMedia[];
+  timestampLabel: string;
+}) {
+  return (
+    <article className="w-full max-w-[560px] rounded-2xl border border-border bg-background-elev overflow-hidden">
+      <div className="flex gap-3 px-4 pt-4">
+        <span className="shrink-0 w-10 h-10 rounded-full overflow-hidden border border-border bg-peach-100 grid place-items-center text-[12px] font-semibold text-ink">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            initials
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-[14px] leading-tight flex-wrap">
+            <span className="font-semibold text-ink truncate">
+              {displayName}
+            </span>
+            <span className="text-ink/55 truncate">{handle}</span>
+            <span className="text-ink/55">·</span>
+            <span className="text-ink/55">{timestampLabel}</span>
+          </div>
+          {text ? (
+            <p className="mt-0.5 text-[14.5px] leading-[1.4] text-ink whitespace-pre-wrap break-words">
+              {text}
+            </p>
+          ) : (
+            <p className="mt-0.5 text-[14px] italic text-ink/35">
+              Your post will appear here as you type.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {media && media.length > 0 ? (
+        <div className="px-4 pt-3">
+          <div
+            className={cn(
+              "grid gap-1 overflow-hidden rounded-xl border border-border",
+              media.length === 1 && "grid-cols-1",
+              media.length === 2 && "grid-cols-2",
+              media.length >= 3 && "grid-cols-2",
+            )}
+          >
+            {media.slice(0, 4).map((m, i) => (
+              <div
+                key={`${m.url}-${i}`}
+                className={cn(
+                  "relative bg-background",
+                  media.length === 1 ? "aspect-[4/5]" : "aspect-square",
+                  media.length === 3 && i === 0 && "row-span-2 aspect-auto",
+                )}
+              >
+                {m.mimeType.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.url}
+                    alt={m.alt ?? ""}
+                    className="w-full h-full object-cover"
+                  />
+                ) : m.mimeType.startsWith("video/") ? (
+                  <video
+                    src={m.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-[11px] text-ink/50">
+                    {m.mimeType}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <footer className="px-4 py-3 mt-1 flex items-center justify-between text-ink/50">
+        <div className="flex items-center gap-6">
+          <BskyAction Icon={MessageSquare} />
+          <BskyAction Icon={Repeat2} />
+          <BskyAction Icon={Heart} />
+        </div>
+        <div className="flex items-center gap-4">
+          <BskyAction Icon={Bookmark} />
+          <BskyAction Icon={Share} />
+          <BskyAction Icon={MoreHorizontal} />
+        </div>
+      </footer>
+    </article>
+  );
+}
+
+function BskyAction({
+  Icon,
+}: {
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <span className="inline-flex items-center justify-center w-6 h-6">
+      <Icon className="w-[16px] h-[16px]" />
+    </span>
+  );
+}
+
+// Mastodon-specific layout: square (rounded) avatar + two-line header on
+// the left, visibility + timestamp on the right, text spans full card
+// width below the header, image is full-bleed, and the footer is an
+// evenly-spaced row of reply / boost / favorite / bookmark + more.
+function MastodonPreview({
+  displayName,
+  handle,
+  avatarUrl,
+  initials,
+  text,
+  media,
+  timestampLabel,
+}: {
+  displayName: string;
+  handle: string;
+  avatarUrl: string | null;
+  initials: string;
+  text: string | null;
+  media?: PostMedia[];
+  timestampLabel: string;
+}) {
+  return (
+    <article className="w-full max-w-[560px] rounded-2xl border border-border bg-background-elev overflow-hidden">
+      <div className="px-4 pt-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <span className="shrink-0 w-10 h-10 rounded-md overflow-hidden border border-border bg-peach-100 grid place-items-center text-[13px] font-semibold text-ink">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              initials
+            )}
+          </span>
+          <div className="min-w-0 leading-tight">
+            <p className="text-[14px] font-semibold text-ink truncate">
+              {displayName}
+            </p>
+            <p className="text-[13px] text-ink/55 truncate">{handle}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-[12px] text-ink/55 shrink-0">
+          <Globe2 className="w-3.5 h-3.5" />
+          <span>{timestampLabel}</span>
+        </div>
+      </div>
+
+      <div className="px-4 pt-3">
+        {text ? (
+          <p className="text-[14.5px] leading-[1.5] text-ink whitespace-pre-wrap break-words">
+            {text}
+          </p>
+        ) : (
+          <p className="text-[14px] text-ink/35 italic">
+            Your post will appear here as you type.
+          </p>
+        )}
+      </div>
+
+      {media && media.length > 0 ? (
+        <div className="px-4 pt-3">
+          <div
+            className={cn(
+              "grid gap-1 overflow-hidden rounded-xl border border-border",
+              media.length === 1 && "grid-cols-1",
+              media.length === 2 && "grid-cols-2",
+              media.length >= 3 && "grid-cols-2",
+            )}
+          >
+            {media.slice(0, 4).map((m, i) => (
+              <div
+                key={`${m.url}-${i}`}
+                className={cn(
+                  "relative bg-background",
+                  media.length === 1 ? "aspect-[4/5]" : "aspect-square",
+                  media.length === 3 && i === 0 && "row-span-2 aspect-auto",
+                )}
+              >
+                {m.mimeType.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.url}
+                    alt={m.alt ?? ""}
+                    className="w-full h-full object-cover"
+                  />
+                ) : m.mimeType.startsWith("video/") ? (
+                  <video
+                    src={m.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-[11px] text-ink/50">
+                    {m.mimeType}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <footer className="px-4 py-3 mt-2 flex items-center justify-between text-ink/50">
+        <MastoAction Icon={Reply} count={0} />
+        <MastoAction Icon={Repeat2} count={0} />
+        <MastoAction Icon={Star} count={0} />
+        <MastoAction Icon={Bookmark} />
+        <MastoAction Icon={MoreHorizontal} />
+      </footer>
+    </article>
+  );
+}
+
+function MastoAction({
+  Icon,
+  count,
+}: {
+  Icon: React.ComponentType<{ className?: string }>;
+  count?: number;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[12px]">
+      <Icon className="w-[16px] h-[16px]" />
+      {typeof count === "number" ? <span>{count}</span> : null}
+    </span>
   );
 }
