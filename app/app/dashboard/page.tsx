@@ -33,6 +33,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import {
 	ActiveCampaignCard,
+	ActivityCard,
 	ChannelsCard,
 	EmptyCard,
 	EngagementCard,
@@ -42,6 +43,7 @@ import {
 	ReachCard,
 	SectionHeader,
 } from "./_components";
+import { getRecentActivity } from "@/lib/dashboard/recent-activity";
 import type { CurrentUser } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
@@ -155,6 +157,7 @@ async function DashboardContent({
 		subscribedFeeds,
 		logicalSub,
 		museInvited,
+		recentActivity,
 	] = await Promise.all([
 		db
 			.select({
@@ -378,6 +381,7 @@ async function DashboardContent({
 
 		getLogicalSubscription(user.id),
 		hasMuseInviteEntitlement(user.id),
+		getRecentActivity(user.id),
 	]);
 
 	const counts = countsRows[0];
@@ -638,6 +642,8 @@ async function DashboardContent({
 							sources={subscribedFeeds}
 						/>
 					) : null}
+
+					<ActivityCard items={recentActivity} />
 
 					<EngagementCard unread={unreadInboxCount} total={totalInboxCount} />
 				</aside>

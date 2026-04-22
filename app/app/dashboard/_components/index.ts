@@ -7,3 +7,4 @@ export { ChannelsCard } from "./channels-card";
 export { KnowledgeCard } from "./knowledge-card";
 export { ReachCard } from "./reach-card";
 export { FeedDigestCard } from "./feed-digest-card";
+export { ActivityCard, type ActivityItem } from "./activity-card";
