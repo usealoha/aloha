@@ -2,67 +2,94 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { inboxMessages, blueskyCredentials, accounts, mastodonCredentials, telegramCredentials } from "@/db/schema";
+import {
+  accounts,
+  blueskyCredentials,
+  inboxMessages,
+  mastodonCredentials,
+  telegramCredentials,
+} from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { syncInbox } from "@/lib/inbox/sync";
-import { replyOnBluesky, replyOnX, replyOnMastodon, replyOnTelegram } from "@/lib/inbox/reply";
+import {
+  replyOnBluesky,
+  replyOnMastodon,
+  replyOnTelegram,
+  replyOnX,
+} from "@/lib/inbox/reply";
+import {
+  sendBlueskyDm,
+  sendInstagramDm,
+  sendXDm,
+} from "@/lib/inbox/reply-dm";
 
 export async function refreshInbox() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const userId = session.user.id;
-  let total = 0;
 
-  const [bsky] = await db
-    .select({ id: blueskyCredentials.id })
-    .from(blueskyCredentials)
-    .where(eq(blueskyCredentials.userId, userId))
-    .limit(1);
+  // Detect which platforms are connected by hitting every credential table
+  // in parallel. Each syncInbox call handles its own fetcher errors
+  // internally, so one platform failing doesn't short-circuit the others.
+  const [bsky, twitter, mastodon, telegram, instagram, facebook] =
+    await Promise.all([
+      db
+        .select({ id: blueskyCredentials.id })
+        .from(blueskyCredentials)
+        .where(eq(blueskyCredentials.userId, userId))
+        .limit(1),
+      db
+        .select({ provider: accounts.provider })
+        .from(accounts)
+        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "twitter")))
+        .limit(1),
+      db
+        .select({ id: mastodonCredentials.id })
+        .from(mastodonCredentials)
+        .where(eq(mastodonCredentials.userId, userId))
+        .limit(1),
+      db
+        .select({ id: telegramCredentials.id })
+        .from(telegramCredentials)
+        .where(eq(telegramCredentials.userId, userId))
+        .limit(1),
+      db
+        .select({ provider: accounts.provider })
+        .from(accounts)
+        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "instagram")))
+        .limit(1),
+      db
+        .select({ provider: accounts.provider })
+        .from(accounts)
+        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "facebook")))
+        .limit(1),
+    ]);
 
-  if (bsky) {
-    const result = await syncInbox(userId, "bluesky");
-    total += result.synced;
-  }
+  const platforms: Array<Parameters<typeof syncInbox>[1]> = [];
+  if (bsky.length > 0) platforms.push("bluesky");
+  if (twitter.length > 0) platforms.push("twitter");
+  if (mastodon.length > 0) platforms.push("mastodon");
+  if (telegram.length > 0) platforms.push("telegram");
+  if (instagram.length > 0) platforms.push("instagram");
+  if (facebook.length > 0) platforms.push("facebook");
 
-  const [twitter] = await db
-    .select({ provider: accounts.provider })
-    .from(accounts)
-    .where(
-      and(eq(accounts.userId, userId), eq(accounts.provider, "twitter")),
-    )
-    .limit(1);
+  const results = await Promise.allSettled(
+    platforms.map((p) => syncInbox(userId, p)),
+  );
 
-  if (twitter) {
-    const result = await syncInbox(userId, "twitter");
-    total += result.synced;
-  }
-
-  const [mastodon] = await db
-    .select({ id: mastodonCredentials.id })
-    .from(mastodonCredentials)
-    .where(eq(mastodonCredentials.userId, userId))
-    .limit(1);
-
-  if (mastodon) {
-    const result = await syncInbox(userId, "mastodon");
-    total += result.synced;
-  }
-
-  const [telegram] = await db
-    .select({ id: telegramCredentials.id })
-    .from(telegramCredentials)
-    .where(eq(telegramCredentials.userId, userId))
-    .limit(1);
-
-  if (telegram) {
-    const result = await syncInbox(userId, "telegram");
-    total += result.synced;
+  let mentions = 0;
+  let dms = 0;
+  for (const r of results) {
+    if (r.status === "fulfilled") {
+      mentions += r.value.mentionsSynced;
+      dms += r.value.dmsSynced;
+    }
   }
 
   revalidatePath("/app/inbox");
-  return { synced: total };
+  return { synced: mentions + dms, mentions, dms };
 }
 
 export async function markAsRead(messageId: string) {
@@ -80,6 +107,26 @@ export async function markAsRead(messageId: string) {
     );
 
   revalidatePath("/app/inbox");
+}
+
+// Mark every message in a DM conversation as read. Invoked when the user
+// opens a DM thread — DMs treat read-state at the conversation level,
+// unlike mentions which stay per-message.
+export async function markConvoAsRead(threadId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await db
+    .update(inboxMessages)
+    .set({ isRead: true, updatedAt: new Date() })
+    .where(
+      and(
+        eq(inboxMessages.userId, session.user.id),
+        eq(inboxMessages.threadId, threadId),
+        eq(inboxMessages.reason, "dm"),
+        eq(inboxMessages.isRead, false),
+      ),
+    );
 }
 
 export async function markAllAsRead() {
@@ -116,7 +163,24 @@ export async function sendReply(messageId: string, content: string) {
 
   if (!message) throw new Error("Message not found");
 
-  if (message.platform === "bluesky") {
+  // DMs send into a conversation (threadId). Mentions reply to the
+  // specific remote post/status. Telegram is DM-native — regardless of
+  // how it's classified, its reply endpoint takes (chatId, messageId) so
+  // we keep the existing replyOnTelegram call.
+  if (message.reason === "dm" && message.platform !== "telegram") {
+    const convoId = message.threadId;
+    if (!convoId) throw new Error("Missing conversation id for DM reply");
+
+    if (message.platform === "bluesky") {
+      await sendBlueskyDm(session.user.id, convoId, content);
+    } else if (message.platform === "twitter") {
+      await sendXDm(session.user.id, convoId, content);
+    } else if (message.platform === "instagram") {
+      await sendInstagramDm(session.user.id, convoId, content);
+    } else if (message.platform === "facebook") {
+      throw new Error("FACEBOOK_DM_REPLY_COMING_SOON");
+    }
+  } else if (message.platform === "bluesky") {
     const platformData = message.platformData as Record<string, unknown>;
     const parentCid = platformData.cid as string;
     if (!parentCid) throw new Error("Missing CID for reply");

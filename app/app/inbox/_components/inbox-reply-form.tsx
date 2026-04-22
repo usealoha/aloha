@@ -5,13 +5,28 @@ import { toast } from "sonner";
 import { sendReply } from "@/app/actions/inbox";
 import { Send } from "lucide-react";
 
-export function InboxReplyForm({ messageId }: { messageId: string }) {
+// Guard rails for DM reply platforms we haven't finished wiring up. Keeps
+// the composer locked with an honest "coming soon" label rather than
+// letting a submit go out and then throw.
+const DM_REPLY_COMING_SOON = new Set<string>(["facebook"]);
+
+export function InboxReplyForm({
+  messageId,
+  platform,
+  reason,
+}: {
+  messageId: string;
+  platform: string;
+  reason: "mention" | "dm";
+}) {
   const [content, setContent] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const locked = reason === "dm" && DM_REPLY_COMING_SOON.has(platform);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim() || pending) return;
+    if (!content.trim() || pending || locked) return;
 
     const toastId = toast.loading("Sending reply…");
     startTransition(async () => {
@@ -26,6 +41,15 @@ export function InboxReplyForm({ messageId }: { messageId: string }) {
         );
       }
     });
+  }
+
+  if (locked) {
+    return (
+      <div className="rounded-xl border border-dashed border-border-strong bg-muted/30 px-4 py-3 text-[13px] text-ink/55 text-center">
+        Replying to {platform.charAt(0).toUpperCase() + platform.slice(1)} DMs
+        — <span className="font-medium text-ink/70">coming soon</span>.
+      </div>
+    );
   }
 
   return (

@@ -25,6 +25,7 @@ export function InboxList({
           content={m.content}
           platform={m.platform}
           reason={m.reason}
+          direction={m.direction}
           isRead={m.isRead}
           isSelected={m.id === selectedId}
           platformCreatedAt={m.platformCreatedAt}

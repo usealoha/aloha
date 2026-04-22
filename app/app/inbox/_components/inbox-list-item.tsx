@@ -9,6 +9,7 @@ type Props = {
   content: string;
   platform: string;
   reason: string;
+  direction: "in" | "out" | null;
   isRead: boolean;
   isSelected: boolean;
   platformCreatedAt: Date;
@@ -19,6 +20,15 @@ const PLATFORM_LABELS: Record<string, string> = {
   bluesky: "Bluesky",
   twitter: "X",
   mastodon: "Mastodon",
+  telegram: "Telegram",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  threads: "Threads",
+};
+
+const REASON_LABELS: Record<string, string> = {
+  mention: "mention",
+  dm: "DM",
 };
 
 export function InboxListItem({
@@ -29,11 +39,13 @@ export function InboxListItem({
   content,
   platform,
   reason,
+  direction,
   isRead,
   isSelected,
   platformCreatedAt,
   tz,
 }: Props) {
+  const isOutboundPreview = direction === "out";
   return (
     <li>
       <Link
@@ -75,6 +87,9 @@ export function InboxListItem({
             </span>
           </div>
           <p className="text-[13px] text-ink/65 leading-[1.45] line-clamp-2 mt-0.5">
+            {isOutboundPreview && (
+              <span className="text-ink/40">You: </span>
+            )}
             {content}
           </p>
           <div className="mt-1.5 flex items-center gap-1.5">
@@ -82,7 +97,7 @@ export function InboxListItem({
               {PLATFORM_LABELS[platform] ?? platform}
             </span>
             <span className="inline-flex items-center h-5 px-2 rounded-full bg-muted text-[10px] text-ink/55">
-              {reason}
+              {REASON_LABELS[reason] ?? reason}
             </span>
           </div>
         </div>

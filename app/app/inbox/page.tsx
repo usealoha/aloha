@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const FILTERS = ["all", "unread", "replies", "mentions"] as const;
+const FILTERS = ["all", "unread", "mentions", "dms"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const first = (v: string | string[] | undefined) =>
@@ -32,10 +32,43 @@ export default async function InboxPage({
 		: "all";
 	const selectedId = first(params.selected) ?? null;
 
+	// Opening a DM convo marks every message in that thread as read.
+	// Mentions stay per-message. We mutate before the list query runs so
+	// the rendered rows reflect the new state without a second round-trip.
+	if (selectedId) {
+		const [preview] = await db
+			.select({
+				reason: inboxMessages.reason,
+				threadId: inboxMessages.threadId,
+			})
+			.from(inboxMessages)
+			.where(
+				and(
+					eq(inboxMessages.id, selectedId),
+					eq(inboxMessages.userId, user.id),
+				),
+			)
+			.limit(1);
+
+		if (preview?.reason === "dm" && preview.threadId) {
+			await db
+				.update(inboxMessages)
+				.set({ isRead: true, updatedAt: new Date() })
+				.where(
+					and(
+						eq(inboxMessages.userId, user.id),
+						eq(inboxMessages.threadId, preview.threadId),
+						eq(inboxMessages.reason, "dm"),
+						eq(inboxMessages.isRead, false),
+					),
+				);
+		}
+	}
+
 	const where = [eq(inboxMessages.userId, user.id)];
 	if (filter === "unread") where.push(eq(inboxMessages.isRead, false));
-	if (filter === "replies") where.push(eq(inboxMessages.reason, "reply"));
 	if (filter === "mentions") where.push(eq(inboxMessages.reason, "mention"));
+	if (filter === "dms") where.push(eq(inboxMessages.reason, "dm"));
 
 	// Messages + counts are independent — fire concurrently. Counts are
 	// computed in SQL rather than scanning the whole inbox in Node.
@@ -50,8 +83,8 @@ export default async function InboxPage({
 			.select({
 				all: sql<number>`count(*)`,
 				unread: sql<number>`count(*) filter (where ${inboxMessages.isRead} = false)`,
-				replies: sql<number>`count(*) filter (where ${inboxMessages.reason} = 'reply')`,
 				mentions: sql<number>`count(*) filter (where ${inboxMessages.reason} = 'mention')`,
+				dms: sql<number>`count(*) filter (where ${inboxMessages.reason} = 'dm')`,
 			})
 			.from(inboxMessages)
 			.where(eq(inboxMessages.userId, user.id)),
@@ -60,8 +93,8 @@ export default async function InboxPage({
 	const counts: Record<Filter, number> = {
 		all: Number(countRow?.all ?? 0),
 		unread: Number(countRow?.unread ?? 0),
-		replies: Number(countRow?.replies ?? 0),
 		mentions: Number(countRow?.mentions ?? 0),
+		dms: Number(countRow?.dms ?? 0),
 	};
 
 	let threadMessages: typeof messages = [];
@@ -95,8 +128,8 @@ export default async function InboxPage({
 						Inbox<span className="text-primary font-light">.</span>
 					</h1>
 					<p className="mt-3 text-[14px] text-ink/65 max-w-xl leading-[1.55]">
-						Replies, mentions, and DMs from your connected channels — all in one
-						place so nothing slips by.
+						Mentions and DMs from your connected channels. Replies on your
+						posts live on each post&apos;s page.
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
@@ -109,7 +142,7 @@ export default async function InboxPage({
 				activeKey={filter}
 				items={FILTERS.map((f) => ({
 					key: f,
-					label: f.charAt(0).toUpperCase() + f.slice(1),
+					label: f === "dms" ? "DMs" : f.charAt(0).toUpperCase() + f.slice(1),
 					href: f === "all" ? "/app/inbox" : `/app/inbox?filter=${f}`,
 					count: counts[f],
 				}))}
