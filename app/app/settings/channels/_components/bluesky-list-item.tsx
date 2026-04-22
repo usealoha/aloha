@@ -7,7 +7,7 @@ import { BlueskyChannelItem } from "./bluesky-item";
 import { DisconnectChannelButton } from "./disconnect-confirm";
 import { RefreshChannelButton } from "./refresh-channel-button";
 import type { ChannelProfileView } from "@/components/channel-identity";
-import { ConnectedAccountCard } from "./connected-account-card";
+import { ConnectedAccountCard } from "@/components/connected-account-card";
 
 type Props = {
 	isConnected: boolean;

@@ -76,10 +76,10 @@ export function AvatarMenu({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2.5 text-left rounded-full transition-colors",
+          "flex items-center gap-2.5 rounded-full transition-colors",
           expandedLabel
-            ? "w-full px-1 py-1 pr-3 hover:bg-muted/60"
-            : "",
+            ? "w-full text-left px-1 py-1 pr-3 hover:bg-muted/60"
+            : "w-full justify-center py-1 hover:bg-muted/60",
         )}
       >
         {avatarBox}
