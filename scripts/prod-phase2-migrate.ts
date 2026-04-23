@@ -108,9 +108,6 @@ async function main() {
   await step("backfill-workspace-ids.ts", () =>
     runTsScript("scripts/backfill-workspace-ids.ts"),
   );
-  await step("backfill-polar-customer.ts", () =>
-    runTsScript("scripts/backfill-polar-customer.ts"),
-  );
   await step("0016 — workspaceId NOT NULL (30 tables)", () =>
     applySqlFile("0016_cheerful_dazzler"),
   );

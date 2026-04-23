@@ -30,7 +30,6 @@ async function ensureWorkspaceForUser(userId: string) {
       workspaceName: users.workspaceName,
       role: users.role,
       timezone: users.timezone,
-      polarCustomerId: users.polarCustomerId,
       activeWorkspaceId: users.activeWorkspaceId,
     })
     .from(users)
@@ -61,7 +60,6 @@ async function ensureWorkspaceForUser(userId: string) {
         ownerUserId: user.id,
         timezone: user.timezone ?? null,
         role: user.role ?? null,
-        polarCustomerId: user.polarCustomerId ?? null,
       })
       .returning({ id: workspaces.id });
     workspaceId = row.id;

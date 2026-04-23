@@ -52,9 +52,6 @@ $PSQL -f "$DRIZZLE/0017_fantastic_firedrake.sql"
 step "backfill-workspace-ids.ts (populate workspaceId across tenant tables)"
 bun run scripts/backfill-workspace-ids.ts
 
-step "backfill-polar-customer.ts (copy polarCustomerId → workspace)"
-bun run scripts/backfill-polar-customer.ts
-
 step "0016 — workspaceId NOT NULL (30 tables)"
 $PSQL -f "$DRIZZLE/0016_cheerful_dazzler.sql"
 
