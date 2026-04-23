@@ -15,6 +15,9 @@ import {
 import type { ChannelProfileView } from "@/components/channel-identity";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
+import type { PostStatus } from "@/lib/posts/transitions";
+import { listNotes } from "@/app/actions/post-notes";
+import type { PostNote } from "@/app/actions/post-notes";
 import { Composer } from "./_components/composer";
 
 export const dynamic = "force-dynamic";
@@ -73,11 +76,12 @@ export default async function ComposerPage({
   let initialPlatforms: string[] = [];
   let initialOverrides: Record<string, ChannelOverride> = {};
   let initialScheduledAt: string | null = null;
-  let initialStatus: "draft" | "scheduled" | "published" | "failed" | null = null;
+  let initialStatus: PostStatus | null = null;
   let initialDraftMeta: DraftMeta | null = null;
   let editingPostId: string | null = null;
   let sourceIdeaId: string | null = null;
   let sourceIdeaTitle: string | null = null;
+  let initialNotes: PostNote[] = [];
 
   if (postId) {
     // Load the post for editing. Ownership-checked. Scheduled-time stays
@@ -115,13 +119,14 @@ export default async function ComposerPage({
       initialPlatforms = post.platforms;
       initialMedia = post.media;
       initialOverrides = post.channelContent;
-      initialStatus = post.status as "draft" | "scheduled" | "published" | "failed";
+      initialStatus = post.status as PostStatus;
       initialScheduledAt = post.scheduledAt?.toISOString() ?? null;
       initialDraftMeta = post.draftMeta ?? null;
       sourceIdeaId = post.sourceIdeaId;
       if (idea) {
         sourceIdeaTitle = idea.title ?? idea.body.slice(0, 60);
       }
+      initialNotes = await listNotes(post.id);
     }
   } else if (ideaId) {
     const [idea] = await db
@@ -162,6 +167,7 @@ export default async function ComposerPage({
       editingPostId={editingPostId}
       sourceIdeaId={sourceIdeaId}
       sourceIdeaTitle={sourceIdeaTitle}
+      initialNotes={initialNotes}
     />
   );
 }

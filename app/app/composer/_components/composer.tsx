@@ -8,11 +8,22 @@ import {
 	suggestHashtags,
 } from "@/app/actions/ai";
 import {
+	approvePost,
+	backToDraft,
 	publishPostNow,
 	saveDraft,
 	schedulePost,
+	submitForReview,
 	updatePost,
 } from "@/app/actions/posts";
+import {
+	availableActions,
+	isEditable,
+	type ComposerAction,
+} from "@/lib/posts/actions-available";
+import type { PostStatus } from "@/lib/posts/transitions";
+import type { PostNote } from "@/app/actions/post-notes";
+import { PostNotes } from "@/components/post-notes";
 import {
 	BlueskyIcon,
 	FacebookIcon,
@@ -221,6 +232,7 @@ export function Composer({
 	editingPostId = null,
 	sourceIdeaId = null,
 	sourceIdeaTitle = null,
+	initialNotes = [],
 }: {
 	author: Author;
 	connectedProviders: string[];
@@ -233,16 +245,26 @@ export function Composer({
 	initialPlatforms?: string[];
 	initialOverrides?: Record<string, ChannelOverride>;
 	initialScheduledAt?: string | null;
-	initialStatus?: "draft" | "scheduled" | "published" | "failed" | null;
+	initialStatus?: PostStatus | null;
 	initialDraftMeta?: DraftMeta | null;
 	editingPostId?: string | null;
 	sourceIdeaId?: string | null;
 	sourceIdeaTitle?: string | null;
+	initialNotes?: PostNote[];
 }) {
 	const router = useRouter();
 	const [baseContent, setBaseContent] = useState(initialContent);
 	const isEditing = editingPostId !== null;
-	const isReadOnly = initialStatus === "published";
+	// `isReadOnly` now covers all non-draft stages: published / failed /
+	// deleted are terminal, and in_review / approved / scheduled are frozen
+	// until the user moves the post back to draft. Content edit controls
+	// read off this flag; status-transition buttons (Approve, Back to
+	// draft, Schedule, Publish) stay live via the availableActions set.
+	const isReadOnly = !isEditable(initialStatus);
+	const allowedActions = new Set<ComposerAction>(
+		availableActions(initialStatus),
+	);
+	const canAct = (action: ComposerAction) => allowedActions.has(action);
 	// datetime-local strings are tz-less wall-clock. We always treat them as
 	// the user's configured tz (not the browser's), so hydrate from the UTC
 	// instant through the tz helper.
@@ -651,26 +673,81 @@ export function Composer({
 		draftMeta,
 	});
 
+	// Persist the current composer state. For a new post this creates a
+	// draft and returns its id; for an existing post it runs a content-only
+	// update (status is untouched — status flips happen via the dedicated
+	// transition actions). Callers that need to chain a transition rely on
+	// the returned id.
+	const persistContent = async (): Promise<string> => {
+		if (editingPostId) {
+			await updatePost(editingPostId, buildPayload());
+			return editingPostId;
+		}
+		const result = await saveDraft(buildPayload());
+		return result.postId;
+	};
+
 	const handleSaveDraft = () => {
 		if (!canSubmit || isReadOnly) return;
-		const toastId = toast.loading("Saving draft…");
+		if (!canAct("saveDraft") && !canAct("saveContent")) return;
+		const toastId = toast.loading("Saving…");
 		startSaving(async () => {
 			try {
-				if (editingPostId) {
-					// Editing an existing draft or scheduled post. Passing
-					// scheduledAt=null flips scheduled → draft; omitting it for
-					// a draft keeps it a draft.
-					await updatePost(editingPostId, {
-						...buildPayload(),
-						scheduledAt: null,
-					});
-				} else {
-					await saveDraft(buildPayload());
-				}
+				await persistContent();
 				toast.success("Draft saved.", { id: toastId });
 				router.push("/app/dashboard");
 			} catch {
 				toast.error("Couldn't save. Please try again.", { id: toastId });
+			}
+		});
+	};
+
+	const handleSubmitForReview = () => {
+		// Fires from draft (or new post) — content must be persisted first.
+		if (!canSubmit) return;
+		if (!canAct("submitForReview")) return;
+		const toastId = toast.loading("Submitting for review…");
+		startSaving(async () => {
+			try {
+				const id = await persistContent();
+				await submitForReview(id);
+				toast.success("Submitted for review.", { id: toastId });
+				router.push(`/app/posts/${id}`);
+			} catch {
+				toast.error("Couldn't submit. Please try again.", { id: toastId });
+			}
+		});
+	};
+
+	const handleApprove = () => {
+		// Runs on a locked in_review post — no content to persist.
+		if (!editingPostId || !canAct("approve")) return;
+		const toastId = toast.loading("Approving…");
+		startSaving(async () => {
+			try {
+				await approvePost(editingPostId);
+				toast.success("Approved.", { id: toastId });
+				router.push(`/app/posts/${editingPostId}`);
+			} catch {
+				toast.error("Couldn't approve. Please try again.", { id: toastId });
+			}
+		});
+	};
+
+	const handleBackToDraft = () => {
+		// Runs on any locked editable stage (in_review / approved / scheduled).
+		// No content persist — post is frozen until this call lands.
+		if (!editingPostId || !canAct("backToDraft")) return;
+		const toastId = toast.loading("Moving back to draft…");
+		startSaving(async () => {
+			try {
+				await backToDraft(editingPostId);
+				toast.success("Moved back to draft.", { id: toastId });
+				router.refresh();
+			} catch {
+				toast.error("Couldn't move back. Please try again.", {
+					id: toastId,
+				});
 			}
 		});
 	};
@@ -703,46 +780,31 @@ export function Composer({
 	};
 
 	const handleSchedule = () => {
-		if (!canSubmit || !scheduledAt || isReadOnly) return;
+		// Runs on a locked approved post — no content persist.
+		if (!scheduledAt || !editingPostId || !canAct("schedule")) return;
 		const toastId = toast.loading("Scheduling…");
 		startPublishing(async () => {
 			try {
 				const when = tzLocalInputToUtcDate(scheduledAt, author.timezone);
-				const result = editingPostId
-					? await updatePost(editingPostId, {
-							...buildPayload(),
-							scheduledAt: when,
-						})
-					: await schedulePost({
-							...buildPayload(),
-							scheduledAt: when,
-						});
+				await schedulePost(editingPostId, when);
 				toast.success("Post scheduled.", { id: toastId });
-				const postId = result.postId ?? editingPostId;
-				if (postId) {
-					router.push(`/app/posts/${postId}`);
-				} else {
-					router.refresh();
-				}
+				router.push(`/app/posts/${editingPostId}`);
 			} catch {
 				toast.error("Couldn't schedule. Check the time and try again.", {
-				id: toastId,
-			});
+					id: toastId,
+				});
 			}
 		});
 	};
 
 	const handlePublishNow = () => {
-		if (!canSubmit || isReadOnly) return;
+		// Runs on a locked approved post — no content persist.
+		if (!editingPostId || !canAct("publish")) return;
 		const toastId = toast.loading("Publishing…");
 		startPublishing(async () => {
 			try {
-				const result = await publishPostNow({
-					...buildPayload(),
-					postId: editingPostId ?? null,
-				});
+				const result = await publishPostNow(editingPostId);
 				const { summary } = result;
-				const postId = result.postId ?? editingPostId;
 				if (summary.allOk) {
 					toast.success("Published.", { id: toastId });
 				} else if (summary.anyOk) {
@@ -750,12 +812,7 @@ export function Composer({
 				} else {
 					toast.error("Couldn't publish. Please try again.", { id: toastId });
 				}
-				if (postId) {
-					router.push(`/app/posts/${postId}`);
-				} else {
-					resetComposer();
-					router.refresh();
-				}
+				router.push(`/app/posts/${editingPostId}`);
 			} catch {
 				toast.error("Couldn't publish. Please try again.", { id: toastId });
 			}
@@ -1129,39 +1186,87 @@ export function Composer({
 							</div>
 						)}
 
-						{isReadOnly ? null : (
+						{allowedActions.size > 0 ? (
 						<div className="mt-auto flex flex-wrap items-center justify-end gap-2">
-							<button
-								type="button"
-								onClick={handleSaveDraft}
-								disabled={!canSubmit || isSaving || isReadOnly}
-								className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
-							>
-								{isSaving ? (
-									<Loader2 className="w-4 h-4 animate-spin" />
-								) : (
-									<Paperclip className="w-4 h-4" />
-								)}
-								{isEditing ? "Save changes" : "Save draft"}
-							</button>
+							{canAct("backToDraft") ? (
+								<button
+									type="button"
+									onClick={handleBackToDraft}
+									disabled={isSaving || isPublishing}
+									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+								>
+									<RotateCcw className="w-4 h-4" />
+									Back to draft
+								</button>
+							) : null}
 
-							<SchedulePopover
-								scheduledAt={scheduledAt}
-								setScheduledAt={setScheduledAt}
-								open={showSchedule}
-								setOpen={setShowSchedule}
-								onConfirm={handleSchedule}
-								disabled={!canSubmit || isPublishing || isReadOnly}
-								busy={isPublishing && scheduledAt !== ""}
-								timezone={author.timezone}
-								hint={scheduleHint}
-							/>
+							{canAct("saveContent") || canAct("saveDraft") ? (
+								<button
+									type="button"
+									onClick={handleSaveDraft}
+									disabled={!canSubmit || isSaving}
+									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+								>
+									{isSaving ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										<Paperclip className="w-4 h-4" />
+									)}
+									{canAct("saveContent") ? "Save changes" : "Save draft"}
+								</button>
+							) : null}
 
-							{anyPublishable ? (
+							{canAct("submitForReview") ? (
+								<button
+									type="button"
+									onClick={handleSubmitForReview}
+									disabled={!canSubmit || isSaving}
+									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+								>
+									{isSaving ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										<FileText className="w-4 h-4" />
+									)}
+									Submit for review
+								</button>
+							) : null}
+
+							{canAct("approve") ? (
+								<button
+									type="button"
+									onClick={handleApprove}
+									disabled={isSaving}
+									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+								>
+									{isSaving ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										<Sparkles className="w-4 h-4" />
+									)}
+									Approve
+								</button>
+							) : null}
+
+							{canAct("schedule") ? (
+								<SchedulePopover
+									scheduledAt={scheduledAt}
+									setScheduledAt={setScheduledAt}
+									open={showSchedule}
+									setOpen={setShowSchedule}
+									onConfirm={handleSchedule}
+									disabled={isPublishing}
+									busy={isPublishing && scheduledAt !== ""}
+									timezone={author.timezone}
+									hint={scheduleHint}
+								/>
+							) : null}
+
+							{canAct("publish") && anyPublishable ? (
 								<button
 									type="button"
 									onClick={handlePublishNow}
-									disabled={!canSubmit || isPublishing || isReadOnly}
+									disabled={isPublishing}
 									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
 									title={
 										notifyOnlySelected.length > 0
@@ -1178,7 +1283,7 @@ export function Composer({
 								</button>
 							) : null}
 						</div>
-						)}
+						) : null}
 					</aside>
 				</div>
 
@@ -1592,6 +1697,12 @@ export function Composer({
 							</div>
 						) : null}
 			</div>
+
+			{editingPostId ? (
+				<div className="max-w-3xl">
+					<PostNotes postId={editingPostId} initialNotes={initialNotes} />
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -1783,15 +1894,21 @@ function BestWindowHint({
 }
 
 function headerEyebrowForStatus(
-	status: "draft" | "scheduled" | "published" | "failed" | null | undefined,
+	status: PostStatus | null | undefined,
 ): string {
 	switch (status) {
+		case "in_review":
+			return "Editing · in review";
+		case "approved":
+			return "Editing · approved";
 		case "scheduled":
 			return "Editing scheduled post";
 		case "published":
 			return "Published · read-only";
 		case "failed":
-			return "Editing failed post";
+			return "Failed · read-only";
+		case "deleted":
+			return "Deleted · read-only";
 		default:
 			return "Editing draft";
 	}
