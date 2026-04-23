@@ -39,7 +39,7 @@ function getClient(sessionString: string | null): TelegramClient | null {
 	return client;
 }
 
-export async function getTelegramCredentials(userId: string): Promise<TelegramCredentials & { authState: string }> {
+export async function getTelegramCredentials(workspaceId: string): Promise<TelegramCredentials & { authState: string }> {
 	const [row] = await db
 		.select({
 			phoneNumber: telegramCredentials.phoneNumber,
@@ -50,7 +50,7 @@ export async function getTelegramCredentials(userId: string): Promise<TelegramCr
 			reauthRequired: telegramCredentials.reauthRequired,
 		})
 		.from(telegramCredentials)
-		.where(eq(telegramCredentials.userId, userId))
+		.where(eq(telegramCredentials.workspaceId, workspaceId))
 		.limit(1);
 
 	if (!row) {
@@ -76,9 +76,9 @@ export async function getTelegramCredentials(userId: string): Promise<TelegramCr
 	};
 }
 
-async function getOrCreateClient(userId: string, credentials: TelegramCredentials): Promise<TelegramClient> {
+async function getOrCreateClient(workspaceId: string, credentials: TelegramCredentials): Promise<TelegramClient> {
 	// Check cache first
-	const cached = clientCache.get(userId);
+	const cached = clientCache.get(workspaceId);
 	if (cached && cached.connected) {
 		return cached;
 	}
@@ -102,12 +102,12 @@ async function getOrCreateClient(userId: string, credentials: TelegramCredential
 		await db
 			.update(telegramCredentials)
 			.set({ reauthRequired: true, authState: "failed" })
-			.where(eq(telegramCredentials.userId, userId));
+			.where(eq(telegramCredentials.workspaceId, workspaceId));
 		throw new PublishError("needs_reauth", "Telegram session expired. Please reconnect.");
 	}
 
 	// Cache the client
-	clientCache.set(userId, client);
+	clientCache.set(workspaceId, client);
 	return client;
 }
 
@@ -133,15 +133,15 @@ async function resolveChat(client: TelegramClient, chatId: string) {
 }
 
 export async function publishToTelegram(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<TelegramPostResult> {
-	const credentials = await getTelegramCredentials(args.userId);
+	const credentials = await getTelegramCredentials(args.workspaceId);
 
 	let client: TelegramClient;
 	try {
-		client = await getOrCreateClient(args.userId, credentials);
+		client = await getOrCreateClient(args.workspaceId, credentials);
 	} catch (err) {
 		if (err instanceof PublishError) throw err;
 		throw new PublishError("transient", `Failed to connect to Telegram: ${err}`);
@@ -192,7 +192,7 @@ export async function publishToTelegram(args: {
 			await db
 				.update(telegramCredentials)
 				.set({ reauthRequired: true, authState: "failed" })
-				.where(eq(telegramCredentials.userId, args.userId));
+				.where(eq(telegramCredentials.workspaceId, args.workspaceId));
 			throw new PublishError("needs_reauth", `Telegram auth failed: ${errorMessage}`);
 		}
 
@@ -236,7 +236,6 @@ export async function startTelegramAuth(
 		await db
 			.insert(telegramCredentials)
 			.values({
-				userId,
 				workspaceId,
 				phoneNumber,
 				chatId,
@@ -245,7 +244,7 @@ export async function startTelegramAuth(
 				sessionData: { tempClient: true },
 			})
 			.onConflictDoUpdate({
-				target: telegramCredentials.userId,
+				target: telegramCredentials.workspaceId,
 				set: {
 					phoneNumber,
 					chatId,
@@ -272,13 +271,14 @@ export async function completeTelegramAuth(
 		return { success: false, error: "Telegram API credentials not configured" };
 	}
 
+	const workspaceId = await requireActiveWorkspaceId(userId);
 	const [row] = await db
 		.select({
 			phoneNumber: telegramCredentials.phoneNumber,
 			authState: telegramCredentials.authState,
 		})
 		.from(telegramCredentials)
-		.where(eq(telegramCredentials.userId, userId))
+		.where(eq(telegramCredentials.workspaceId, workspaceId))
 		.limit(1);
 
 	if (!row || row.authState !== "pending_code") {
@@ -311,7 +311,7 @@ export async function completeTelegramAuth(
 				await db
 					.update(telegramCredentials)
 					.set({ authState: "pending_2fa" })
-					.where(eq(telegramCredentials.userId, userId));
+					.where(eq(telegramCredentials.workspaceId, workspaceId));
 				return { success: false, needsPassword: true };
 			}
 			throw err;
@@ -345,10 +345,10 @@ export async function completeTelegramAuth(
 				reauthRequired: false,
 				updatedAt: new Date(),
 			})
-			.where(eq(telegramCredentials.userId, userId));
+			.where(eq(telegramCredentials.workspaceId, workspaceId));
 
 		// Cache the client
-		clientCache.set(userId, client);
+		clientCache.set(workspaceId, client);
 
 		return { success: true };
 	} catch (err) {
@@ -356,18 +356,18 @@ export async function completeTelegramAuth(
 		await db
 			.update(telegramCredentials)
 			.set({ authState: "failed" })
-			.where(eq(telegramCredentials.userId, userId));
+			.where(eq(telegramCredentials.workspaceId, workspaceId));
 		return { success: false, error: errorMessage };
 	}
 }
 
 // Get session for inbox operations
-export async function getTelegramSession(userId: string): Promise<{ client: TelegramClient; chatId: string } | null> {
-	const credentials = await getTelegramCredentials(userId).catch(() => null);
+export async function getTelegramSession(workspaceId: string): Promise<{ client: TelegramClient; chatId: string } | null> {
+	const credentials = await getTelegramCredentials(workspaceId).catch(() => null);
 	if (!credentials) return null;
 
 	try {
-		const client = await getOrCreateClient(userId, credentials);
+		const client = await getOrCreateClient(workspaceId, credentials);
 		return { client, chatId: credentials.chatId };
 	} catch {
 		return null;

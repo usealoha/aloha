@@ -204,17 +204,17 @@ async function sendDM(
 }
 
 export async function publishToReddit(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 	subreddit?: string;
 }): Promise<RedditPostResult> {
 	let account: ProviderAccount;
 	try {
-		account = await getFreshToken(args.userId, "reddit");
+		account = await getFreshToken(args.workspaceId, "reddit");
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "reddit");
+			account = await forceRefresh(args.workspaceId, "reddit");
 		} else {
 			throw err;
 		}
@@ -245,16 +245,16 @@ export async function publishToReddit(args: {
 }
 
 export async function commentOnReddit(args: {
-	userId: string;
+	workspaceId: string;
 	parentId: string;
 	text: string;
 }): Promise<RedditCommentResult> {
 	let account: ProviderAccount;
 	try {
-		account = await getFreshToken(args.userId, "reddit");
+		account = await getFreshToken(args.workspaceId, "reddit");
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "reddit");
+			account = await forceRefresh(args.workspaceId, "reddit");
 		} else {
 			throw err;
 		}
@@ -273,16 +273,16 @@ export async function commentOnReddit(args: {
 }
 
 export async function sendRedditDM(args: {
-	userId: string;
+	workspaceId: string;
 	to: string;
 	text: string;
 }): Promise<RedditDMResult> {
 	let account: ProviderAccount;
 	try {
-		account = await getFreshToken(args.userId, "reddit");
+		account = await getFreshToken(args.workspaceId, "reddit");
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "reddit");
+			account = await forceRefresh(args.workspaceId, "reddit");
 		} else {
 			throw err;
 		}

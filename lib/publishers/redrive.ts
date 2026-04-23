@@ -32,7 +32,7 @@ export async function redrivePendingReview(): Promise<RedriveOutcome[]> {
     .select({
       postId: postDeliveries.postId,
       platform: postDeliveries.platform,
-      userId: posts.createdByUserId,
+      workspaceId: posts.workspaceId,
       postStatus: posts.status,
     })
     .from(postDeliveries)
@@ -44,7 +44,7 @@ export async function redrivePendingReview(): Promise<RedriveOutcome[]> {
   const byPost = new Map<
     string,
     {
-      userId: string;
+      workspaceId: string;
       postStatus: string;
       readyPlatforms: string[];
       stillGatedPlatforms: string[];
@@ -53,9 +53,9 @@ export async function redrivePendingReview(): Promise<RedriveOutcome[]> {
 
   for (const row of parked) {
     if (row.postStatus !== "scheduled") continue;
-    const decision = await decideForPublish(row.userId, row.platform);
+    const decision = await decideForPublish(row.workspaceId, row.platform);
     const entry = byPost.get(row.postId) ?? {
-      userId: row.userId,
+      workspaceId: row.workspaceId,
       postStatus: row.postStatus,
       readyPlatforms: [],
       stillGatedPlatforms: [],

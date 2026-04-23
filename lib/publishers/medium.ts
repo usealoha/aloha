@@ -71,11 +71,11 @@ async function callCreatePost(
 }
 
 export async function publishToMedium(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<MediumPostResult> {
-	let account = await getFreshToken(args.userId, "medium");
+	let account = await getFreshToken(args.workspaceId, "medium");
 
 	const title = extractTitle(args.text);
 	const content = buildContent(args.text, args.media);
@@ -85,7 +85,7 @@ export async function publishToMedium(args: {
 		mediumUserId = await getMediumUserId(account);
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "medium");
+			account = await forceRefresh(args.workspaceId, "medium");
 			mediumUserId = await getMediumUserId(account);
 		} else {
 			throw err;
@@ -95,7 +95,7 @@ export async function publishToMedium(args: {
 	let res = await callCreatePost(account, mediumUserId, title, content);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "medium");
+		account = await forceRefresh(args.workspaceId, "medium");
 		res = await callCreatePost(account, mediumUserId, title, content);
 	}
 

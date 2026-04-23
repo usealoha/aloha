@@ -142,11 +142,11 @@ async function callUgcPosts(
 }
 
 export async function publishToLinkedIn(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<LinkedInPostResult> {
-	let account = await getFreshToken(args.userId, "linkedin");
+	let account = await getFreshToken(args.workspaceId, "linkedin");
 	const media = args.media ?? [];
 	let assets: string[] = [];
 	if (media.length > 0) {
@@ -155,7 +155,7 @@ export async function publishToLinkedIn(args: {
 		} catch (err) {
 			// If the first asset call 401s, refresh once and retry the full set.
 			if (err instanceof PublishError && err.category === "needs_reauth") {
-				account = await forceRefresh(args.userId, "linkedin");
+				account = await forceRefresh(args.workspaceId, "linkedin");
 				assets = await uploadImages(account, media);
 			} else {
 				throw err;
@@ -169,7 +169,7 @@ export async function publishToLinkedIn(args: {
 	// refresh once and retry before giving up.
 	if (res.status === 401) {
 		try {
-			account = await forceRefresh(args.userId, "linkedin");
+			account = await forceRefresh(args.workspaceId, "linkedin");
 			res = await callUgcPosts(account, args.text, assets);
 		} catch (err) {
 			throw err instanceof PublishError

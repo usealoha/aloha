@@ -16,7 +16,7 @@ type BlueskyCredentials = {
 	did?: string | null;
 };
 
-export async function getBlueskyCredentials(userId: string): Promise<BlueskyCredentials> {
+export async function getBlueskyCredentials(workspaceId: string): Promise<BlueskyCredentials> {
 	const [row] = await db
 		.select({
 			handle: blueskyCredentials.handle,
@@ -24,7 +24,7 @@ export async function getBlueskyCredentials(userId: string): Promise<BlueskyCred
 			did: blueskyCredentials.did,
 		})
 		.from(blueskyCredentials)
-		.where(eq(blueskyCredentials.userId, userId))
+		.where(eq(blueskyCredentials.workspaceId, workspaceId))
 		.limit(1);
 
 	if (!row) {
@@ -98,11 +98,11 @@ async function createPost(
 }
 
 export async function publishToBluesky(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<BlueskyPostResult> {
-	const credentials = await getBlueskyCredentials(args.userId);
+	const credentials = await getBlueskyCredentials(args.workspaceId);
 	const agent = await createSession(credentials);
 
 	const uploadedImages = [];

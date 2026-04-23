@@ -171,11 +171,11 @@ async function createThreadsImagePost(
 }
 
 export async function publishToThreads(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<ThreadsPostResult> {
-	let account = await getFreshToken(args.userId, "threads");
+	let account = await getFreshToken(args.workspaceId, "threads");
 
 	let threadsUser: ThreadsUser;
 	let pageAccessToken: string;
@@ -227,7 +227,7 @@ export async function publishToThreads(args: {
 		};
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "threads");
+			account = await forceRefresh(args.workspaceId, "threads");
 			throw err;
 		}
 		throw err;

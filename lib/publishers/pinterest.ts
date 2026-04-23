@@ -159,12 +159,12 @@ async function createPin(
 }
 
 export async function publishToPinterest(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 	link?: string | null;
 }): Promise<PinterestPostResult> {
-	let account = await getFreshToken(args.userId, "pinterest");
+	let account = await getFreshToken(args.workspaceId, "pinterest");
 
 	const user = await getUserAccount(account);
 	account.providerAccountId = user.username;
@@ -177,7 +177,7 @@ export async function publishToPinterest(args: {
 			mediaId = await uploadMedia(account, args.media[0]);
 		} catch (err) {
 			if (err instanceof PublishError && err.category === "needs_reauth") {
-				account = await forceRefresh(args.userId, "pinterest");
+				account = await forceRefresh(args.workspaceId, "pinterest");
 				mediaId = await uploadMedia(account, args.media[0]);
 			} else {
 				throw err;
@@ -193,7 +193,7 @@ export async function publishToPinterest(args: {
 		};
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "pinterest");
+			account = await forceRefresh(args.workspaceId, "pinterest");
 			const result = await createPin(account, board.id, args.text, mediaId, args.link ?? null);
 			return {
 				remotePostId: result.pinId,

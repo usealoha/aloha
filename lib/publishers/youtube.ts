@@ -148,7 +148,7 @@ async function uploadVideo(
 }
 
 export async function publishToYouTube(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<YouTubePostResult> {
@@ -163,14 +163,14 @@ export async function publishToYouTube(args: {
 	const title = deriveTitle(args.text);
 	const description = buildDescription(args.text);
 
-	let account = await getFreshToken(args.userId, "youtube");
+	let account = await getFreshToken(args.workspaceId, "youtube");
 
 	let result: VideoResource;
 	try {
 		result = await uploadVideo(account, video, title, description);
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "youtube");
+			account = await forceRefresh(args.workspaceId, "youtube");
 			result = await uploadVideo(account, video, title, description);
 		} else {
 			throw err;

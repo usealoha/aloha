@@ -93,18 +93,18 @@ async function createTextPost(
 }
 
 export async function publishToFacebook(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<FacebookPostResult> {
-	let account = await getFreshToken(args.userId, "facebook");
+	let account = await getFreshToken(args.workspaceId, "facebook");
 
 	let pages: FacebookPage[];
 	try {
 		pages = await getUserPages(account);
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "facebook");
+			account = await forceRefresh(args.workspaceId, "facebook");
 			pages = await getUserPages(account);
 		} else {
 			throw err;

@@ -82,11 +82,11 @@ async function callCreateTweet(
 }
 
 export async function publishToX(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<XPostResult> {
-	let account = await getFreshToken(args.userId, "twitter");
+	let account = await getFreshToken(args.workspaceId, "twitter");
 	const media = args.media ?? [];
 	let mediaIds: string[] = [];
 	if (media.length > 0) {
@@ -94,7 +94,7 @@ export async function publishToX(args: {
 			mediaIds = await uploadMedia(account, media);
 		} catch (err) {
 			if (err instanceof PublishError && err.category === "needs_reauth") {
-				account = await forceRefresh(args.userId, "twitter");
+				account = await forceRefresh(args.workspaceId, "twitter");
 				mediaIds = await uploadMedia(account, media);
 			} else {
 				throw err;
@@ -106,7 +106,7 @@ export async function publishToX(args: {
 
 	if (res.status === 401) {
 		try {
-			account = await forceRefresh(args.userId, "twitter");
+			account = await forceRefresh(args.workspaceId, "twitter");
 			res = await callCreateTweet(account, args.text, mediaIds);
 		} catch (err) {
 			throw err instanceof PublishError

@@ -1,4 +1,4 @@
-// Fetches a valid access token for (userId, provider), refreshing the
+// Fetches a valid access token for (workspaceId, provider), refreshing the
 // stored OAuth tokens when they're expired. DrizzleAdapter stores everything
 // we need in the accounts table: access_token, refresh_token, expires_at.
 
@@ -18,7 +18,7 @@ export type ProviderAccount = {
 
 const REFRESH_LEEWAY_SECONDS = 60;
 
-async function loadAccount(userId: string, provider: string): Promise<ProviderAccount | null> {
+async function loadAccount(workspaceId: string, provider: string): Promise<ProviderAccount | null> {
 	const [row] = await db
 		.select({
 			access_token: accounts.access_token,
@@ -28,7 +28,7 @@ async function loadAccount(userId: string, provider: string): Promise<ProviderAc
 			scope: accounts.scope,
 		})
 		.from(accounts)
-		.where(and(eq(accounts.userId, userId), eq(accounts.provider, provider)))
+		.where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, provider)))
 		.limit(1);
 	if (!row?.access_token) return null;
 	return {
@@ -46,7 +46,7 @@ function isExpired(expiresAt: number | null): boolean {
 }
 
 async function writeRefreshedTokens(
-	userId: string,
+	workspaceId: string,
 	provider: string,
 	tokens: {
 		access_token: string;
@@ -65,10 +65,10 @@ async function writeRefreshedTokens(
 				: {}),
 			expires_at: expiresAt,
 		})
-		.where(and(eq(accounts.userId, userId), eq(accounts.provider, provider)));
+		.where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, provider)));
 }
 
-async function refreshLinkedIn(userId: string, refreshToken: string) {
+async function refreshLinkedIn(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_LINKEDIN_ID || !env.AUTH_LINKEDIN_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -97,11 +97,11 @@ async function refreshLinkedIn(userId: string, refreshToken: string) {
 		refresh_token?: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "linkedin", json);
+	await writeRefreshedTokens(workspaceId, "linkedin", json);
 	return json.access_token;
 }
 
-async function refreshX(userId: string, refreshToken: string) {
+async function refreshX(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_TWITTER_ID || !env.AUTH_TWITTER_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -135,11 +135,11 @@ async function refreshX(userId: string, refreshToken: string) {
 		refresh_token?: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "twitter", json);
+	await writeRefreshedTokens(workspaceId, "twitter", json);
 	return json.access_token;
 }
 
-async function refreshMedium(userId: string, refreshToken: string) {
+async function refreshMedium(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_MEDIUM_ID || !env.AUTH_MEDIUM_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -168,7 +168,7 @@ async function refreshMedium(userId: string, refreshToken: string) {
 		refresh_token?: string;
 		expires_at: number;
 	};
-	await writeRefreshedTokens(userId, "medium", {
+	await writeRefreshedTokens(workspaceId, "medium", {
 		access_token: json.access_token,
 		refresh_token: json.refresh_token,
 		expires_in: json.expires_at - Math.floor(Date.now() / 1000),
@@ -176,7 +176,7 @@ async function refreshMedium(userId: string, refreshToken: string) {
 	return json.access_token;
 }
 
-async function refreshFacebook(userId: string, refreshToken: string) {
+async function refreshFacebook(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_FACEBOOK_ID || !env.AUTH_FACEBOOK_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -204,11 +204,11 @@ async function refreshFacebook(userId: string, refreshToken: string) {
 		access_token: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "facebook", { ...json });
+	await writeRefreshedTokens(workspaceId, "facebook", { ...json });
 	return json.access_token;
 }
 
-async function refreshInstagram(userId: string, accessToken: string) {
+async function refreshInstagram(workspaceId: string, accessToken: string) {
 	const res = await fetch(
 		`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(accessToken)}`,
 	);
@@ -222,11 +222,11 @@ async function refreshInstagram(userId: string, accessToken: string) {
 		access_token: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "instagram", { ...json });
+	await writeRefreshedTokens(workspaceId, "instagram", { ...json });
 	return json.access_token;
 }
 
-async function refreshThreads(userId: string, accessToken: string) {
+async function refreshThreads(workspaceId: string, accessToken: string) {
 	const res = await fetch(
 		`https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=${encodeURIComponent(accessToken)}`,
 	);
@@ -240,11 +240,11 @@ async function refreshThreads(userId: string, accessToken: string) {
 		access_token: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "threads", { ...json });
+	await writeRefreshedTokens(workspaceId, "threads", { ...json });
 	return json.access_token;
 }
 
-async function refreshReddit(userId: string, refreshToken: string) {
+async function refreshReddit(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_REDDIT_ID || !env.AUTH_REDDIT_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -273,11 +273,11 @@ async function refreshReddit(userId: string, refreshToken: string) {
 		refresh_token?: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "reddit", json);
+	await writeRefreshedTokens(workspaceId, "reddit", json);
 	return json.access_token;
 }
 
-async function refreshPinterest(userId: string, refreshToken: string) {
+async function refreshPinterest(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_PINTEREST_ID || !env.AUTH_PINTEREST_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -306,11 +306,11 @@ async function refreshPinterest(userId: string, refreshToken: string) {
 		refresh_token?: string;
 		expires_in: number;
 	};
-	await writeRefreshedTokens(userId, "pinterest", json);
+	await writeRefreshedTokens(workspaceId, "pinterest", json);
 	return json.access_token;
 }
 
-async function refreshYouTube(userId: string, refreshToken: string) {
+async function refreshYouTube(workspaceId: string, refreshToken: string) {
 	if (!env.AUTH_YOUTUBE_ID || !env.AUTH_YOUTUBE_SECRET) {
 		throw new PublishError(
 			"needs_reauth",
@@ -340,7 +340,7 @@ async function refreshYouTube(userId: string, refreshToken: string) {
 		expires_in: number;
 	};
 	// Google rarely rotates the refresh_token on refresh — preserve ours.
-	await writeRefreshedTokens(userId, "youtube", json);
+	await writeRefreshedTokens(workspaceId, "youtube", json);
 	return json.access_token;
 }
 
@@ -348,7 +348,7 @@ async function refreshYouTube(userId: string, refreshToken: string) {
 // with category "needs_reauth" if the account is missing, has no refresh
 // token, or the refresh call fails.
 export async function getFreshToken(
-	userId: string,
+	workspaceId: string,
 	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
@@ -357,11 +357,11 @@ export async function getFreshToken(
 			"Bluesky uses app password auth. Token refresh not applicable.",
 		);
 	}
-	const account = await loadAccount(userId, provider);
+	const account = await loadAccount(workspaceId, provider);
 	if (!account) {
 		throw new PublishError(
 			"needs_reauth",
-			`No ${provider} account connected for user ${userId}`,
+			`No ${provider} account connected for workspace ${workspaceId}`,
 		);
 	}
 	if (!isExpired(account.expiresAt)) return account;
@@ -369,11 +369,11 @@ export async function getFreshToken(
 	// Instagram and Threads refresh using the current access token itself
 	// (long-lived tokens, no separate refresh_token).
 	if (provider === "instagram") {
-		const fresh = await refreshInstagram(userId, account.accessToken);
+		const fresh = await refreshInstagram(workspaceId, account.accessToken);
 		return { ...account, accessToken: fresh };
 	}
 	if (provider === "threads") {
-		const fresh = await refreshThreads(userId, account.accessToken);
+		const fresh = await refreshThreads(workspaceId, account.accessToken);
 		return { ...account, accessToken: fresh };
 	}
 
@@ -386,19 +386,19 @@ export async function getFreshToken(
 
 	let fresh: string;
 	if (provider === "linkedin") {
-		fresh = await refreshLinkedIn(userId, account.refreshToken);
+		fresh = await refreshLinkedIn(workspaceId, account.refreshToken);
 	} else if (provider === "medium") {
-		fresh = await refreshMedium(userId, account.refreshToken);
+		fresh = await refreshMedium(workspaceId, account.refreshToken);
 	} else if (provider === "twitter") {
-		fresh = await refreshX(userId, account.refreshToken);
+		fresh = await refreshX(workspaceId, account.refreshToken);
 	} else if (provider === "reddit") {
-		fresh = await refreshReddit(userId, account.refreshToken);
+		fresh = await refreshReddit(workspaceId, account.refreshToken);
 	} else if (provider === "pinterest") {
-		fresh = await refreshPinterest(userId, account.refreshToken);
+		fresh = await refreshPinterest(workspaceId, account.refreshToken);
 	} else if (provider === "youtube") {
-		fresh = await refreshYouTube(userId, account.refreshToken);
+		fresh = await refreshYouTube(workspaceId, account.refreshToken);
 	} else {
-		fresh = await refreshFacebook(userId, account.refreshToken);
+		fresh = await refreshFacebook(workspaceId, account.refreshToken);
 	}
 
 	return { ...account, accessToken: fresh };
@@ -407,7 +407,7 @@ export async function getFreshToken(
 // Forces a refresh without checking expiry — used after a 401 response
 // when the stored expires_at says "still valid" but the provider disagrees.
 export async function forceRefresh(
-	userId: string,
+	workspaceId: string,
 	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
@@ -416,7 +416,7 @@ export async function forceRefresh(
 			"Bluesky uses app password auth. Force refresh not applicable.",
 		);
 	}
-	const account = await loadAccount(userId, provider);
+	const account = await loadAccount(workspaceId, provider);
 	if (!account) {
 		throw new PublishError(
 			"needs_reauth",
@@ -425,11 +425,11 @@ export async function forceRefresh(
 	}
 
 	if (provider === "instagram") {
-		const fresh = await refreshInstagram(userId, account.accessToken);
+		const fresh = await refreshInstagram(workspaceId, account.accessToken);
 		return { ...account, accessToken: fresh };
 	}
 	if (provider === "threads") {
-		const fresh = await refreshThreads(userId, account.accessToken);
+		const fresh = await refreshThreads(workspaceId, account.accessToken);
 		return { ...account, accessToken: fresh };
 	}
 
@@ -441,19 +441,19 @@ export async function forceRefresh(
 	}
 	let fresh: string;
 	if (provider === "linkedin") {
-		fresh = await refreshLinkedIn(userId, account.refreshToken);
+		fresh = await refreshLinkedIn(workspaceId, account.refreshToken);
 	} else if (provider === "medium") {
-		fresh = await refreshMedium(userId, account.refreshToken);
+		fresh = await refreshMedium(workspaceId, account.refreshToken);
 	} else if (provider === "twitter") {
-		fresh = await refreshX(userId, account.refreshToken);
+		fresh = await refreshX(workspaceId, account.refreshToken);
 	} else if (provider === "reddit") {
-		fresh = await refreshReddit(userId, account.refreshToken);
+		fresh = await refreshReddit(workspaceId, account.refreshToken);
 	} else if (provider === "pinterest") {
-		fresh = await refreshPinterest(userId, account.refreshToken);
+		fresh = await refreshPinterest(workspaceId, account.refreshToken);
 	} else if (provider === "youtube") {
-		fresh = await refreshYouTube(userId, account.refreshToken);
+		fresh = await refreshYouTube(workspaceId, account.refreshToken);
 	} else {
-		fresh = await refreshFacebook(userId, account.refreshToken);
+		fresh = await refreshFacebook(workspaceId, account.refreshToken);
 	}
 	return { ...account, accessToken: fresh };
 }

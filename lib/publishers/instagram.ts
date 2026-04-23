@@ -180,11 +180,11 @@ async function uploadImage(
 }
 
 export async function publishToInstagram(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<InstagramPostResult> {
-	let account = await getFreshToken(args.userId, "instagram");
+	let account = await getFreshToken(args.workspaceId, "instagram");
 
 	let igUser: IgUser;
 	let pageAccessToken: string;
@@ -223,7 +223,7 @@ export async function publishToInstagram(args: {
 		};
 	} catch (err) {
 		if (err instanceof PublishError && err.category === "needs_reauth") {
-			account = await forceRefresh(args.userId, "instagram");
+			account = await forceRefresh(args.workspaceId, "instagram");
 			throw err;
 		}
 		throw err;

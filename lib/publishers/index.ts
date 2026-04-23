@@ -33,7 +33,7 @@ type PlatformKey = "linkedin" | "twitter" | "bluesky" | "medium" | "facebook" | 
 const PUBLISHERS: Record<
 	PlatformKey,
 	(args: {
-		userId: string;
+		workspaceId: string;
 		text: string;
 		media?: PostMedia[];
 	}) => Promise<{ remotePostId: string; remoteUrl: string }>
@@ -95,7 +95,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 			continue;
 		}
 
-		const decision = await decideForPublish(post.createdByUserId, platform);
+		const decision = await decideForPublish(post.workspaceId, platform);
 		if (decision.kind === "skip") {
 			// Channel is in a gated state — record it on the delivery and move
 			// on. A scheduled re-drive can pick it up once state flips.
@@ -149,7 +149,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 			const publisher = PUBLISHERS[platform];
 			const override = post.channelContent?.[platform];
 			const { remotePostId, remoteUrl } = await publisher({
-				userId: post.createdByUserId,
+				workspaceId: post.workspaceId,
 				text: override?.content ?? post.content,
 				media: override?.media ?? post.media,
 			});
@@ -168,7 +168,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 				})
 				.where(eq(postDeliveries.id, delivery.id));
 			// Clear any stale reauth flag — the token is proven working.
-			await setReauthRequired(post.createdByUserId, platform, false);
+			await setReauthRequired(post.workspaceId, platform, false);
 			results.push({ platform, ok: true, publishedAt });
 		} catch (err) {
 			const code =
@@ -186,7 +186,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 				})
 				.where(eq(postDeliveries.id, delivery.id));
 			if (code === "needs_reauth") {
-				await setReauthRequired(post.createdByUserId, platform, true);
+				await setReauthRequired(post.workspaceId, platform, true);
 			}
 			results.push({
 				platform,
@@ -307,13 +307,13 @@ async function markDeliveryFailed(id: string, code: string, message: string) {
 		.where(eq(postDeliveries.id, id));
 }
 
-async function setReauthRequired(userId: string, provider: string, value: boolean) {
+async function setReauthRequired(workspaceId: string, provider: string, value: boolean) {
 	// Handle OAuth providers (accounts table)
 	await db
 		.update(accounts)
 		.set({ reauthRequired: value })
 		.where(
-			and(eq(accounts.userId, userId), eq(accounts.provider, provider)),
+			and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, provider)),
 		);
 
 	// Handle custom credential providers
@@ -321,6 +321,6 @@ async function setReauthRequired(userId: string, provider: string, value: boolea
 		await db
 			.update(telegramCredentials)
 			.set({ reauthRequired: value })
-			.where(eq(telegramCredentials.userId, userId));
+			.where(eq(telegramCredentials.workspaceId, workspaceId));
 	}
 }

@@ -16,7 +16,7 @@ type MastodonCredentials = {
 	username: string;
 };
 
-export async function getMastodonCredentials(userId: string): Promise<MastodonCredentials> {
+export async function getMastodonCredentials(workspaceId: string): Promise<MastodonCredentials> {
 	const [row] = await db
 		.select({
 			instanceUrl: mastodonCredentials.instanceUrl,
@@ -25,7 +25,7 @@ export async function getMastodonCredentials(userId: string): Promise<MastodonCr
 			username: mastodonCredentials.username,
 		})
 		.from(mastodonCredentials)
-		.where(eq(mastodonCredentials.userId, userId))
+		.where(eq(mastodonCredentials.workspaceId, workspaceId))
 		.limit(1);
 
 	if (!row || !row.accessToken) {
@@ -141,11 +141,11 @@ async function createStatus(
 }
 
 export async function publishToMastodon(args: {
-	userId: string;
+	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
 }): Promise<MastodonPostResult> {
-	const credentials = await getMastodonCredentials(args.userId);
+	const credentials = await getMastodonCredentials(args.workspaceId);
 
 	const mediaIds: string[] = [];
 	if (args.media && args.media.length > 0) {
