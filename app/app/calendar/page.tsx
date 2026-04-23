@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { campaigns, posts } from "@/db/schema";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { and, eq, gte, lt } from "drizzle-orm";
 import {
@@ -25,8 +25,9 @@ export default async function CalendarPage({
 }: {
 	searchParams: SearchParams;
 }) {
-	const user = (await getCurrentUser())!;
-	const tz = user.timezone ?? "UTC";
+	const ctx = (await getCurrentContext())!;
+	const { user, workspace } = ctx;
+	const tz = workspace.timezone ?? user.timezone ?? "UTC";
 	const museAccess = await hasMuseInviteEntitlement(user.id);
 
 	const params = await searchParams;
@@ -60,7 +61,7 @@ export default async function CalendarPage({
 			.from(posts)
 			.where(
 				and(
-					eq(posts.userId, user.id),
+					eq(posts.workspaceId, workspace.id),
 					gte(posts.scheduledAt, fetchFrom),
 					lt(posts.scheduledAt, fetchTo),
 				),
@@ -72,7 +73,7 @@ export default async function CalendarPage({
 				name: campaigns.name,
 			})
 			.from(campaigns)
-			.where(eq(campaigns.userId, user.id)),
+			.where(eq(campaigns.workspaceId, workspace.id)),
 	]);
 
 	const campaignIndex = new Map<string, { name: string; colorIdx: number }>();

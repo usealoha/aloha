@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { and, eq, sql } from "drizzle-orm";
 import {
   ArrowLeft,
@@ -27,8 +28,12 @@ export default async function BroadcastDetailPage(props: {
   const { id } = await props.params;
   const user = (await getCurrentUser())!;
 
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
+
   const b = await db.query.broadcasts.findFirst({
-    where: and(eq(broadcasts.id, id), eq(broadcasts.userId, user.id)),
+    where: and(eq(broadcasts.id, id), eq(broadcasts.workspaceId, workspace.id)),
   });
   if (!b) notFound();
 
@@ -37,7 +42,7 @@ export default async function BroadcastDetailPage(props: {
   const domains = await db
     .select()
     .from(sendingDomains)
-    .where(eq(sendingDomains.userId, user.id));
+    .where(eq(sendingDomains.workspaceId, workspace.id));
   const verifiedDomains = domains.filter((d) => d.status === "verified");
 
   const [audienceCount] = await db
@@ -46,7 +51,7 @@ export default async function BroadcastDetailPage(props: {
       active: sql<number>`count(*) filter (where ${subscribers.unsubscribedAt} is null)`,
     })
     .from(subscribers)
-    .where(eq(subscribers.userId, user.id));
+    .where(eq(subscribers.workspaceId, workspace.id));
 
   const isDraft = b.status === "draft";
 

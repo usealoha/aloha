@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { automations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { Builder, type BuilderStepValues } from "../../_components/builder";
 import {
   TEMPLATES,
@@ -22,11 +23,14 @@ export default async function EditAutomationPage({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/auth/signin");
+  const ctx = await getCurrentContext();
+  if (!ctx) redirect("/auth/signin");
+  const { workspace } = ctx;
 
   const [row] = await db
     .select()
     .from(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, user.id)))
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspace.id)))
     .limit(1);
   if (!row) notFound();
 

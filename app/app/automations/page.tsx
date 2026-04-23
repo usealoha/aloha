@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { automations } from "@/db/schema";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { cn } from "@/lib/utils";
 import { desc, eq } from "drizzle-orm";
 import { Clock, Lock, Pencil, Plus, Workflow, Zap } from "lucide-react";
@@ -33,6 +34,10 @@ export default async function AutomationsPage({
 	searchParams: SearchParams;
 }) {
 	const user = (await getCurrentUser())!;
+
+	const ctx = (await getCurrentContext())!;
+
+	const { workspace } = ctx;
 	const museAccess = await hasMuseInviteEntitlement(user.id);
 	const params = await searchParams;
 	const selectedId = first(params.id);
@@ -40,7 +45,7 @@ export default async function AutomationsPage({
 	const myAutomations = await db
 		.select()
 		.from(automations)
-		.where(eq(automations.userId, user.id))
+		.where(eq(automations.workspaceId, workspace.id))
 		.orderBy(desc(automations.createdAt));
 
 	const hasAutomations = myAutomations.length > 0;

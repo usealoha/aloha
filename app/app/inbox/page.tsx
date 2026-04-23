@@ -2,6 +2,7 @@ import { FilterTabs } from "@/components/ui/filter-tabs";
 import { db } from "@/db";
 import { inboxMessages } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { MarkAllReadButton, RefreshButton } from "./_components/inbox-actions";
 import { InboxEmpty } from "./_components/inbox-empty";
@@ -24,6 +25,10 @@ export default async function InboxPage({
 	searchParams: SearchParams;
 }) {
 	const user = (await getCurrentUser())!;
+
+	const ctx = (await getCurrentContext())!;
+
+	const { workspace } = ctx;
 	const tz = user.timezone ?? "UTC";
 
 	const params = await searchParams;
@@ -45,7 +50,7 @@ export default async function InboxPage({
 			.where(
 				and(
 					eq(inboxMessages.id, selectedId),
-					eq(inboxMessages.userId, user.id),
+					eq(inboxMessages.workspaceId, workspace.id),
 				),
 			)
 			.limit(1);
@@ -56,7 +61,7 @@ export default async function InboxPage({
 				.set({ isRead: true, updatedAt: new Date() })
 				.where(
 					and(
-						eq(inboxMessages.userId, user.id),
+						eq(inboxMessages.workspaceId, workspace.id),
 						eq(inboxMessages.threadId, preview.threadId),
 						eq(inboxMessages.reason, "dm"),
 						eq(inboxMessages.isRead, false),
@@ -65,7 +70,7 @@ export default async function InboxPage({
 		}
 	}
 
-	const where = [eq(inboxMessages.userId, user.id)];
+	const where = [eq(inboxMessages.workspaceId, workspace.id)];
 	if (filter === "unread") where.push(eq(inboxMessages.isRead, false));
 	if (filter === "mentions") where.push(eq(inboxMessages.reason, "mention"));
 	if (filter === "dms") where.push(eq(inboxMessages.reason, "dm"));
@@ -87,7 +92,7 @@ export default async function InboxPage({
 				dms: sql<number>`count(*) filter (where ${inboxMessages.reason} = 'dm')`,
 			})
 			.from(inboxMessages)
-			.where(eq(inboxMessages.userId, user.id)),
+			.where(eq(inboxMessages.workspaceId, workspace.id)),
 	]);
 	const countRow = countsRows[0];
 	const counts: Record<Filter, number> = {
@@ -106,7 +111,7 @@ export default async function InboxPage({
 				.from(inboxMessages)
 				.where(
 					and(
-						eq(inboxMessages.userId, user.id),
+						eq(inboxMessages.workspaceId, workspace.id),
 						eq(inboxMessages.threadId, selected.threadId),
 					),
 				)

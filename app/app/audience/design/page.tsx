@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { assets, links, pages } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { isCustomThemeEnabled } from "@/lib/billing/entitlements";
 import { DesignEditor } from "./_components/design-editor";
 
@@ -40,8 +41,12 @@ const SAMPLE_LINKS = [
 export default async function AudienceDesignPage() {
   const user = (await getCurrentUser())!;
 
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
+
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, user.id),
+    where: eq(pages.workspaceId, workspace.id),
   });
   if (!page) redirect("/app/audience");
 
@@ -111,7 +116,7 @@ export default async function AudienceDesignPage() {
         }}
         previewPage={{
           id: page.id,
-          userId: page.userId,
+          userId: page.createdByUserId,
           slug: page.slug,
           title: page.title,
           bio: page.bio,

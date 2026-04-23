@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { broadcasts } from "@/db/schema";
 import { hasBroadcastEntitlement } from "@/lib/billing/broadcasts";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { desc, eq } from "drizzle-orm";
 import {
   ArrowUpRight,
@@ -22,6 +23,10 @@ export const dynamic = "force-dynamic";
 export default async function BroadcastsPage() {
   const user = (await getCurrentUser())!;
 
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
+
   // Entitlement check and the broadcasts list both depend only on
   // user.id — fire concurrently. If not entitled the rows are discarded,
   // but the wasted work is negligible and the happy path avoids a
@@ -31,7 +36,7 @@ export default async function BroadcastsPage() {
     db
       .select()
       .from(broadcasts)
-      .where(eq(broadcasts.userId, user.id))
+      .where(eq(broadcasts.workspaceId, workspace.id))
       .orderBy(desc(broadcasts.createdAt)),
   ]);
 

@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { assets } from "@/db/schema";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import {
   Tooltip,
@@ -40,6 +41,10 @@ export default async function LibraryPage({
   searchParams: SearchParams;
 }) {
   const user = (await getCurrentUser())!;
+
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
   const museAccess = await hasMuseInviteEntitlement(user.id);
 
   const raw = first((await searchParams).tab);
@@ -53,7 +58,7 @@ export default async function LibraryPage({
         uploaded: sql<number>`count(*) filter (where ${assets.source} = 'upload')::int`,
       })
       .from(assets)
-      .where(eq(assets.userId, user.id)),
+      .where(eq(assets.workspaceId, workspace.id)),
     db
       .select({
         id: assets.id,
@@ -67,7 +72,7 @@ export default async function LibraryPage({
       })
       .from(assets)
       .where(
-        and(eq(assets.userId, user.id), eq(assets.source, sourceFilter)),
+        and(eq(assets.workspaceId, workspace.id), eq(assets.source, sourceFilter)),
       )
       .orderBy(desc(assets.createdAt))
       .limit(120),

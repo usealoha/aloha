@@ -7,7 +7,7 @@ import { AddFeedDialog } from "./_components/add-feed-dialog";
 import { FeedSidebar } from "./_components/feed-sidebar";
 import { FeedStream } from "./_components/feed-stream";
 import { getCurrentUser } from "@/lib/current-user";
-
+import { getCurrentContext } from "@/lib/current-context";
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -22,6 +22,10 @@ export default async function FeedsPage({
   searchParams: SearchParams;
 }) {
   const user = (await getCurrentUser())!;
+
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
   const params = await searchParams;
   const selectedFeedId = first(params.feed) ?? null;
 
@@ -35,7 +39,7 @@ export default async function FeedsPage({
       lastError: feeds.lastError,
     })
     .from(feeds)
-    .where(eq(feeds.userId, user.id))
+    .where(eq(feeds.workspaceId, workspace.id))
     .orderBy(feeds.title);
 
   const activeFeed =
@@ -70,7 +74,7 @@ export default async function FeedsPage({
       })
       .from(feedItems)
       .innerJoin(feeds, eq(feedItems.feedId, feeds.id))
-      .where(eq(feeds.userId, user.id))
+      .where(eq(feeds.workspaceId, workspace.id))
       .groupBy(feedItems.feedId),
 
     db
@@ -78,7 +82,7 @@ export default async function FeedsPage({
       .from(feeds)
       .where(
         and(
-          eq(feeds.userId, user.id),
+          eq(feeds.workspaceId, workspace.id),
           inArray(
             feeds.url,
             CURATED_FEEDS.map((c) => c.url),

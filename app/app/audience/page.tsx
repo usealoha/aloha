@@ -3,6 +3,7 @@ import { LINKS_PER_PAGE_LIMIT } from "@/lib/audience-limits";
 import { db } from "@/db";
 import { assets, links, pages, subscribers } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { cn } from "@/lib/utils";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import {
@@ -24,12 +25,16 @@ export const dynamic = "force-dynamic";
 export default async function AudiencePage() {
 	const user = (await getCurrentUser())!;
 
+	const ctx = (await getCurrentContext())!;
+
+	const { workspace } = ctx;
+
 	// Subscribers + week-rollup don't depend on the page row, and the page
 	// lookup itself is cheap — fire all three concurrently, then fetch
 	// page links once we know the page id.
 	const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 	const [page, subs, weekCountRows] = await Promise.all([
-		db.query.pages.findFirst({ where: eq(pages.userId, user.id) }),
+		db.query.pages.findFirst({ where: eq(pages.workspaceId, workspace.id) }),
 		db
 			.select({
 				id: subscribers.id,
@@ -39,7 +44,7 @@ export default async function AudiencePage() {
 				createdAt: subscribers.createdAt,
 			})
 			.from(subscribers)
-			.where(eq(subscribers.userId, user.id))
+			.where(eq(subscribers.workspaceId, workspace.id))
 			.orderBy(desc(subscribers.createdAt))
 			.limit(50),
 		db
@@ -48,7 +53,7 @@ export default async function AudiencePage() {
 				newThisWeek: sql<number>`count(*) filter (where ${subscribers.createdAt} >= ${oneWeekAgo.toISOString()})`,
 			})
 			.from(subscribers)
-			.where(eq(subscribers.userId, user.id)),
+			.where(eq(subscribers.workspaceId, workspace.id)),
 	]);
 	const [weekCount] = weekCountRows;
 

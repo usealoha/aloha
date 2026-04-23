@@ -7,7 +7,7 @@ import { getRepeatability } from "@/lib/analytics/repeatability";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { PLATFORM_GATING } from "@/lib/channel-state";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import {
   BestTimesSection,
   ChannelCompare,
@@ -20,8 +20,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
-  const user = (await getCurrentUser())!;
-  const tz = user.timezone ?? "UTC";
+  const ctx = (await getCurrentContext())!;
+  const { user, workspace } = ctx;
+  const tz = workspace.timezone ?? user.timezone ?? "UTC";
 
   const [summary, bestWindows, repeatability, connectedProviders, hasBluesky] =
     await Promise.all([
@@ -33,14 +34,14 @@ export default async function AnalyticsPage() {
         .from(accounts)
         .where(
           and(
-            eq(accounts.userId, user.id),
+            eq(accounts.workspaceId, workspace.id),
             notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
           ),
         ),
       db
         .select({ id: blueskyCredentials.userId })
         .from(blueskyCredentials)
-        .where(eq(blueskyCredentials.userId, user.id))
+        .where(eq(blueskyCredentials.workspaceId, workspace.id))
         .limit(1),
     ]);
 

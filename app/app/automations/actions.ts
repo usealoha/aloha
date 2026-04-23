@@ -14,6 +14,7 @@ import {
   type AutomationKind,
   type ConfigField,
 } from "./_lib/templates";
+import { requireContext } from "@/lib/current-context";
 import { requireMuseAccess } from "@/lib/billing/muse";
 import { resolveSteps } from "./_lib/steps";
 import { handlerFor } from "./_lib/handler-map";
@@ -110,6 +111,10 @@ function parsePayload(formData: FormData): BuilderPayload {
 
 export async function createAutomationFromBuilder(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const kind = String(formData.get("kind") ?? "") as AutomationKind;
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name is required.");
@@ -125,7 +130,8 @@ export async function createAutomationFromBuilder(formData: FormData) {
   const [row] = await db
     .insert(automations)
     .values({
-      userId,
+      createdByUserId: userId,
+      workspaceId,
       kind,
       name,
       status: "draft",
@@ -140,6 +146,10 @@ export async function createAutomationFromBuilder(formData: FormData) {
 
 export async function updateAutomationFromBuilder(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   const kind = String(formData.get("kind") ?? "") as AutomationKind;
   const name = String(formData.get("name") ?? "").trim();
@@ -159,7 +169,7 @@ export async function updateAutomationFromBuilder(formData: FormData) {
       scheduledMessageId: automations.scheduledMessageId,
     })
     .from(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)))
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)))
     .limit(1);
   if (!existing) throw new Error("Automation not found.");
 
@@ -186,7 +196,7 @@ export async function updateAutomationFromBuilder(formData: FormData) {
       scheduledMessageId,
       updatedAt: new Date(),
     })
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)));
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)));
 
   revalidatePath("/app/automations");
   redirect(`/app/automations?id=${id}`);
@@ -194,13 +204,17 @@ export async function updateAutomationFromBuilder(formData: FormData) {
 
 export async function toggleAutomation(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const [current] = await db
     .select()
     .from(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)))
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)))
     .limit(1);
   if (!current) return;
 
@@ -243,7 +257,7 @@ export async function toggleAutomation(formData: FormData) {
       scheduledMessageId,
       updatedAt: new Date(),
     })
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)));
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)));
 
   revalidatePath("/app/automations");
 }
@@ -253,6 +267,10 @@ export async function toggleAutomation(formData: FormData) {
 export async function simulateRun(formData: FormData) {
   if (process.env.NODE_ENV === "production") return;
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   const outcome =
     String(formData.get("outcome") ?? "success") === "failed"
@@ -265,10 +283,10 @@ export async function simulateRun(formData: FormData) {
       id: automations.id,
       kind: automations.kind,
       steps: automations.steps,
-      userId: automations.userId,
+      userId: automations.createdByUserId,
     })
     .from(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)))
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)))
     .limit(1);
   if (!row) return;
 
@@ -295,6 +313,10 @@ export async function simulateRun(formData: FormData) {
 
 export async function deleteAutomation(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
@@ -305,7 +327,7 @@ export async function deleteAutomation(formData: FormData) {
   const [existing] = await db
     .select({ scheduledMessageId: automations.scheduledMessageId })
     .from(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)))
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)))
     .limit(1);
   if (!existing) {
     redirect("/app/automations");
@@ -328,7 +350,7 @@ export async function deleteAutomation(formData: FormData) {
 
   await db
     .delete(automations)
-    .where(and(eq(automations.id, id), eq(automations.userId, userId)));
+    .where(and(eq(automations.id, id), eq(automations.workspaceId, workspaceId)));
 
   revalidatePath("/app/automations");
   redirect("/app/automations");

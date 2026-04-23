@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { cn } from "@/lib/utils";
 import { and, count, eq, isNotNull, ne, notInArray } from "drizzle-orm";
 import {
@@ -32,7 +32,8 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function NewCampaignPage() {
-	const user = (await getCurrentUser())!;
+	const ctx = (await getCurrentContext())!;
+	const { user, workspace } = ctx;
 	if (!(await hasMuseInviteEntitlement(user.id))) {
 		redirect("/app/campaigns");
 	}
@@ -44,29 +45,29 @@ export default async function NewCampaignPage() {
 				.from(accounts)
 				.where(
 					and(
-						eq(accounts.userId, user.id),
+						eq(accounts.workspaceId, workspace.id),
 						notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
 					),
 				),
 			db
 				.select({ value: count() })
 				.from(ideas)
-				.where(and(eq(ideas.userId, user.id), ne(ideas.status, "archived"))),
+				.where(and(eq(ideas.workspaceId, workspace.id), ne(ideas.status, "archived"))),
 			db
 				.select({ value: count() })
 				.from(feedItems)
 				.innerJoin(feeds, eq(feedItems.feedId, feeds.id))
 				.where(
-					and(eq(feeds.userId, user.id), isNotNull(feedItems.savedAsIdeaId)),
+					and(eq(feeds.workspaceId, workspace.id), isNotNull(feedItems.savedAsIdeaId)),
 				),
 			db
 				.select({ value: count() })
 				.from(platformInsights)
-				.where(eq(platformInsights.userId, user.id)),
+				.where(eq(platformInsights.workspaceId, workspace.id)),
 			db
 				.select({ id: brandVoice.id })
 				.from(brandVoice)
-				.where(eq(brandVoice.userId, user.id))
+				.where(eq(brandVoice.workspaceId, workspace.id))
 				.limit(1),
 		]);
 	const channels = connected.map((c) => c.provider);

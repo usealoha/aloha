@@ -20,6 +20,7 @@ import { IdeaDialog } from "./_components/idea-dialog";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,10 @@ export default async function IdeasPage({
   searchParams: SearchParams;
 }) {
   const user = (await getCurrentUser())!;
+
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
   const params = await searchParams;
   const filterParam = first(params.filter);
   const filter: Filter = isFilter(filterParam) ? filterParam : "new";
@@ -57,15 +62,15 @@ export default async function IdeasPage({
     .from(ideas)
     .where(
       filter === "all"
-        ? eq(ideas.userId, user.id)
-        : and(eq(ideas.userId, user.id), eq(ideas.status, filter)),
+        ? eq(ideas.workspaceId, workspace.id)
+        : and(eq(ideas.workspaceId, workspace.id), eq(ideas.status, filter)),
     )
     .orderBy(desc(ideas.createdAt));
 
   const counts = await db
     .select({ status: ideas.status })
     .from(ideas)
-    .where(eq(ideas.userId, user.id));
+    .where(eq(ideas.workspaceId, workspace.id));
   const countBy = (s: string) => counts.filter((c) => c.status === s).length;
 
   return (

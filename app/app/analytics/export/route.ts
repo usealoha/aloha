@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { platformInsights, posts } from "@/db/schema";
 import { analyticsRetentionCutoff } from "@/lib/analytics/retention";
 import { getCurrentUser } from "@/lib/current-user";
-
+import { getCurrentContext } from "@/lib/current-context";
 export const dynamic = "force-dynamic";
 
 // All readback metric keys we might see across adapters. Unknown keys are
@@ -23,6 +23,11 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const ctx = await getCurrentContext();
+  if (!ctx) {
+    return NextResponse.json({ error: "no workspace" }, { status: 401 });
+  }
+  const { workspace } = ctx;
 
   const rows = await db
     .select({
@@ -35,7 +40,7 @@ export async function GET() {
     .from(platformInsights)
     .where(
       and(
-        eq(platformInsights.userId, user.id),
+        eq(platformInsights.workspaceId, workspace.id),
         gte(platformInsights.platformPostedAt, analyticsRetentionCutoff()),
       ),
     )

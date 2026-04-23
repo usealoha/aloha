@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { sendingDomains } from "@/db/schema";
 import { hasBroadcastEntitlement } from "@/lib/billing/broadcasts";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { desc, eq } from "drizzle-orm";
 import { ArrowLeft, CheckCircle2, Clock, Globe, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +22,10 @@ type Rec = { name: string; type: string; value: string };
 export default async function SendingDomainsPage() {
   const user = (await getCurrentUser())!;
 
+  const ctx = (await getCurrentContext())!;
+
+  const { workspace } = ctx;
+
   // Without broadcast entitlement, this page has no point — sending
   // domains are only useful once you can send. Bounce to the broadcasts
   // page, which shows the early-access copy.
@@ -31,7 +36,7 @@ export default async function SendingDomainsPage() {
   const domains = await db
     .select()
     .from(sendingDomains)
-    .where(eq(sendingDomains.userId, user.id))
+    .where(eq(sendingDomains.workspaceId, workspace.id))
     .orderBy(desc(sendingDomains.createdAt));
 
   return (
