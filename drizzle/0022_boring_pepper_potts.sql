@@ -1,0 +1,1 @@
+ALTER TABLE "post_notes" ADD COLUMN "mentions" jsonb DEFAULT '[]'::jsonb NOT NULL;

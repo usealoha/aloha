@@ -138,6 +138,47 @@ export const workspaceMembers = pgTable(
   ],
 );
 
+// Pending workspace invites. Each row is a signed token the recipient
+// trades in on `/app/invite/[token]`. `acceptedAt` is set when used;
+// expired or accepted rows stick around as an audit trail. The unique
+// index on (workspaceId, email) prevents double-inviting the same
+// address; re-sending updates the existing row instead of creating a
+// parallel invite.
+export const workspaceInvites = pgTable(
+  "workspace_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspaceId")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role", {
+      enum: ["owner", "admin", "editor", "reviewer", "viewer"],
+    }).notNull(),
+    // URL-safe secret. Long enough to resist brute-force; not reversible
+    // — the caller presents the token, we look it up directly.
+    token: text("token").notNull().unique(),
+    invitedBy: uuid("invitedBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expiresAt", { mode: "date" }).notNull(),
+    // Null while pending; stamped when the recipient accepts.
+    acceptedAt: timestamp("acceptedAt", { mode: "date" }),
+    // Stamped when an admin revokes the invite. Revoked rows stay around
+    // for audit but can't be accepted (accept flow checks both).
+    revokedAt: timestamp("revokedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("workspace_invites_workspace_email").on(
+      table.workspaceId,
+      table.email,
+    ),
+    index("workspace_invites_token").on(table.token),
+  ],
+);
+
 // One row per Polar subscription. A user with Basic + Muse has two rows;
 // the BillingService presents them as a single logical subscription.
 export const subscriptions = pgTable("subscriptions", {
@@ -299,6 +340,13 @@ export const posts = pgTable("posts", {
   }),
   approvedAt: timestamp("approvedAt"),
   approvedBy: uuid("approvedBy").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  // Optional reviewer assignment. When set, the post shows on that
+  // reviewer's "assigned to me" Kanban filter. Null = goes into the
+  // general reviewer queue (anyone with reviewer+ can approve). Cleared
+  // on transition back to draft so re-submissions start fresh.
+  assignedReviewerId: uuid("assignedReviewerId").references(() => users.id, {
     onDelete: "set null",
   }),
   // When the composer was seeded from an idea (via ?idea= URL), we stamp
@@ -1385,6 +1433,21 @@ export const notifications = pgTable("notifications", {
       "post_partial",
       "post_failed",
       "inbox_sync_failed",
+      // Review workflow (Phase 5). Fan-out rules:
+      //   post_submitted — fires to every reviewer+ in the workspace
+      //                    (excluding the submitter themselves)
+      //   post_approved  — fires to the submitter
+      //   post_comment   — fires to post author + earlier commenters
+      //                    (excluding the commenter themselves)
+      "post_submitted",
+      "post_approved",
+      "post_comment",
+      // Fires when a post gets assigned to a specific reviewer.
+      "post_assigned",
+      // Fires when a comment @-mentions someone. Distinct from
+      // post_comment so the mentioned party gets a louder signal than
+      // a general thread ping.
+      "post_mention",
     ],
   }).notNull(),
   title: text("title").notNull(),
@@ -1487,6 +1550,11 @@ export const postNotes = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
+    // Mentioned workspace-member user ids, deduped. Drives the mention
+    // notifications and lets the renderer style `@Name` tokens as pills.
+    // Kept as jsonb rather than a join table — handful of ids per note,
+    // read alongside the note every render.
+    mentions: jsonb("mentions").$type<string[]>().default([]).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
     editedAt: timestamp("editedAt"),

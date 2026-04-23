@@ -141,6 +141,27 @@
       "when": 1776939154501,
       "tag": "0019_wonderful_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1776946789205,
+      "tag": "0020_chief_peter_quill",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1776952754296,
+      "tag": "0021_fair_echo",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1776953513642,
+      "tag": "0022_boring_pepper_potts",
+      "breakpoints": true
     }
   ]
 }
