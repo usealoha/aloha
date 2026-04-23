@@ -13,13 +13,13 @@ type ReplyResult = {
 };
 
 export async function replyOnBluesky(
-  userId: string,
+  workspaceId: string,
   parentUri: string,
   parentCid: string,
   rootUri: string,
   text: string,
 ): Promise<ReplyResult> {
-  const credentials = await getBlueskyCredentials(userId);
+  const credentials = await getBlueskyCredentials(workspaceId);
   const agent = await createSession(credentials);
 
   let rootCid = parentCid;
@@ -46,11 +46,11 @@ export async function replyOnBluesky(
 }
 
 export async function replyOnX(
-  userId: string,
+  workspaceId: string,
   inReplyToTweetId: string,
   text: string,
 ): Promise<ReplyResult> {
-  let account = await getFreshToken(userId, "twitter");
+  let account = await getFreshToken(workspaceId, "twitter");
 
   async function postReply(accessToken: string): Promise<Response> {
     return fetch("https://api.x.com/2/tweets", {
@@ -69,7 +69,7 @@ export async function replyOnX(
   let res = await postReply(account.accessToken);
 
   if (res.status === 401) {
-    account = await forceRefresh(userId, "twitter");
+    account = await forceRefresh(workspaceId, "twitter");
     res = await postReply(account.accessToken);
   }
 
@@ -89,11 +89,11 @@ export async function replyOnX(
 }
 
 export async function replyOnMastodon(
-  userId: string,
+  workspaceId: string,
   inReplyToId: string,
   text: string,
 ): Promise<ReplyResult> {
-  const credentials = await getMastodonCredentials(userId);
+  const credentials = await getMastodonCredentials(workspaceId);
 
   const res = await fetch(`${credentials.instanceUrl}/api/v1/statuses`, {
     method: "POST",
@@ -123,12 +123,12 @@ export async function replyOnMastodon(
 }
 
 export async function replyOnTelegram(
-  userId: string,
+  workspaceId: string,
   chatId: string,
   replyToMessageId: string,
   text: string,
 ): Promise<ReplyResult> {
-  const session = await getTelegramSession(userId);
+  const session = await getTelegramSession(workspaceId);
   if (!session) {
     throw new Error("Telegram not connected");
   }

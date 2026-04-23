@@ -29,7 +29,7 @@ type MentionsResponse = {
 
 async function fetchMentionsPage(
   accessToken: string,
-  userId: string,
+  workspaceId: string,
   paginationToken?: string,
 ): Promise<MentionsResponse> {
   const params = new URLSearchParams({
@@ -41,7 +41,7 @@ async function fetchMentionsPage(
   if (paginationToken) params.set("pagination_token", paginationToken);
 
   const res = await fetch(
-    `https://api.x.com/2/users/${userId}/mentions?${params}`,
+    `https://api.x.com/2/users/${workspaceId}/mentions?${params}`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
 

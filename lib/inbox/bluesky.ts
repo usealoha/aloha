@@ -10,10 +10,10 @@ const PAGE_SIZE = 50;
 // Inbox sync only cares about mentions. Replies land on the post detail
 // page and are fetched there via lib/posts/comments/bluesky.ts.
 export async function fetchBlueskyNotifications(
-  userId: string,
+  workspaceId: string,
   cursor: string | null,
 ): Promise<SyncResult> {
-  const credentials = await getBlueskyCredentials(userId);
+  const credentials = await getBlueskyCredentials(workspaceId);
   const agent = await createSession(credentials);
 
   const messages: NormalizedMessage[] = [];

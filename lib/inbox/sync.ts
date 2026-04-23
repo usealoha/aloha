@@ -30,7 +30,7 @@ type Platform =
   | "telegram";
 
 type Fetcher = (
-  userId: string,
+  workspaceId: string,
   cursor: string | null,
 ) => Promise<SyncResult>;
 
@@ -55,18 +55,19 @@ const FETCHERS: Record<
 
 async function runFetcher(
   userId: string,
+  workspaceId: string,
   platform: Platform,
   kind: "mentions" | "dms",
   fetcher: Fetcher,
   cursor: string | null,
 ): Promise<{ messages: NormalizedMessage[]; newCursor: string | null }> {
   try {
-    const res = await fetcher(userId, cursor);
+    const res = await fetcher(workspaceId, cursor);
     return { messages: res.messages, newCursor: res.newCursor };
   } catch (err) {
     await captureException(err, {
       tags: { source: "inbox.sync", platform, kind },
-      extra: { userId },
+      extra: { userId, workspaceId },
     });
     const message = err instanceof Error ? err.message : String(err);
     await createNotification({
@@ -80,7 +81,7 @@ async function runFetcher(
     log.warn(`fetcher failed`, {
       platform,
       kind,
-      userId,
+      workspaceId,
       error: message.slice(0, 200),
     });
     // A DM failure shouldn't take down mentions (or vice versa). Swallow
@@ -101,7 +102,7 @@ export async function syncInbox(
     .from(inboxSyncCursors)
     .where(
       and(
-        eq(inboxSyncCursors.userId, userId),
+        eq(inboxSyncCursors.workspaceId, workspaceId),
         eq(inboxSyncCursors.platform, platform),
       ),
     )
@@ -115,6 +116,7 @@ export async function syncInbox(
   if (routes.mentions) {
     mentionResult = await runFetcher(
       userId,
+      workspaceId,
       platform,
       "mentions",
       routes.mentions,
@@ -123,7 +125,7 @@ export async function syncInbox(
   }
   if (routes.dms) {
     // DMs re-pull latest each sync (see note on FETCHERS above).
-    dmResult = await runFetcher(userId, platform, "dms", routes.dms, null);
+    dmResult = await runFetcher(userId, workspaceId, platform, "dms", routes.dms, null);
   }
 
   const allMessages = [...mentionResult.messages, ...dmResult.messages];
@@ -132,7 +134,6 @@ export async function syncInbox(
 
   if (allMessages.length > 0) {
     const rows = allMessages.map((m) => ({
-      userId,
       workspaceId,
       platform,
       remoteId: m.remoteId,
@@ -165,14 +166,13 @@ export async function syncInbox(
   await db
     .insert(inboxSyncCursors)
     .values({
-      userId,
       workspaceId,
       platform,
       cursor: mentionResult.newCursor,
       lastSyncedAt: new Date(),
     })
     .onConflictDoUpdate({
-      target: [inboxSyncCursors.userId, inboxSyncCursors.platform],
+      target: [inboxSyncCursors.workspaceId, inboxSyncCursors.platform],
       set: {
         cursor: mentionResult.newCursor,
         lastSyncedAt: new Date(),

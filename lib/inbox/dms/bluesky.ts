@@ -34,10 +34,10 @@ type MessageView = {
 };
 
 export async function fetchBlueskyDms(
-  userId: string,
+  workspaceId: string,
   cursor: string | null,
 ): Promise<SyncResult> {
-  const credentials = await getBlueskyCredentials(userId);
+  const credentials = await getBlueskyCredentials(workspaceId);
   const agent = await createSession(credentials);
   const chatAgent = agent.withProxy("bsky_chat", "did:web:api.bsky.chat");
 

@@ -10,11 +10,11 @@ import { forceRefresh, getFreshToken } from "@/lib/publishers/tokens";
 // message row before invoking.
 
 export async function sendBlueskyDm(
-  userId: string,
+  workspaceId: string,
   convoId: string,
   content: string,
 ): Promise<void> {
-  const credentials = await getBlueskyCredentials(userId);
+  const credentials = await getBlueskyCredentials(workspaceId);
   const agent = await createSession(credentials);
   const chatAgent = agent.withProxy("bsky_chat", "did:web:api.bsky.chat");
 
@@ -38,11 +38,11 @@ export async function sendBlueskyDm(
 }
 
 export async function sendXDm(
-  userId: string,
+  workspaceId: string,
   convoId: string,
   content: string,
 ): Promise<void> {
-  let account = await getFreshToken(userId, "twitter");
+  let account = await getFreshToken(workspaceId, "twitter");
 
   const body = JSON.stringify({ text: content });
   const url = `https://api.x.com/2/dm_conversations/${convoId}/messages`;
@@ -57,7 +57,7 @@ export async function sendXDm(
   });
 
   if (res.status === 401) {
-    account = await forceRefresh(userId, "twitter");
+    account = await forceRefresh(workspaceId, "twitter");
     res = await fetch(url, {
       method: "POST",
       headers: {
@@ -75,11 +75,11 @@ export async function sendXDm(
 }
 
 export async function sendInstagramDm(
-  userId: string,
+  workspaceId: string,
   convoId: string,
   content: string,
 ): Promise<void> {
-  let account = await getFreshToken(userId, "instagram");
+  let account = await getFreshToken(workspaceId, "instagram");
 
   // Resolve the page + IG account id so we know whose outbox we're
   // sending from. Same two-hop as the DM fetcher.
@@ -88,7 +88,7 @@ export async function sendInstagramDm(
   );
   if (!pagesRes.ok) {
     if (pagesRes.status === 401) {
-      account = await forceRefresh(userId, "instagram");
+      account = await forceRefresh(workspaceId, "instagram");
     } else {
       throw new Error(`Instagram pages lookup ${pagesRes.status}`);
     }

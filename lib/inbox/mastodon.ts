@@ -72,10 +72,10 @@ function stripHtml(html: string): string {
 }
 
 export async function fetchMastodonNotifications(
-	userId: string,
+	workspaceId: string,
 	cursor: string | null,
 ): Promise<SyncResult> {
-	const credentials = await getMastodonCredentials(userId);
+	const credentials = await getMastodonCredentials(workspaceId);
 
 	const messages: NormalizedMessage[] = [];
 	let currentCursor = cursor ?? undefined;

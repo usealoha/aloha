@@ -106,10 +106,10 @@ async function fetchMessagesPage(
 }
 
 export async function fetchInstagramDms(
-  userId: string,
+  workspaceId: string,
   cursor: string | null,
 ): Promise<SyncResult> {
-  let account = await getFreshToken(userId, "instagram");
+  let account = await getFreshToken(workspaceId, "instagram");
 
   let pageAccessToken: string;
   let igAccountId: string;
@@ -119,7 +119,7 @@ export async function fetchInstagramDms(
     ));
   } catch (err) {
     if (String(err).includes("401") || String(err).includes("190")) {
-      account = await forceRefresh(userId, "instagram");
+      account = await forceRefresh(workspaceId, "instagram");
       ({ pageAccessToken, igAccountId } = await getPageAndIgAccount(
         account.accessToken,
       ));

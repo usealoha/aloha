@@ -8,10 +8,10 @@ const MAX_MESSAGES = 100;
 // direction derived from msg.out (outgoing vs incoming). Both directions
 // are kept so the thread view shows the full back-and-forth.
 export async function fetchTelegramMessages(
-	userId: string,
+	workspaceId: string,
 	cursor: string | null,
 ): Promise<SyncResult> {
-	const session = await getTelegramSession(userId);
+	const session = await getTelegramSession(workspaceId);
 	if (!session) {
 		return { messages: [], comments: [], newCursor: null };
 	}

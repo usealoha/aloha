@@ -53,10 +53,10 @@ async function fetchPage(
 }
 
 export async function fetchXDms(
-  userId: string,
+  workspaceId: string,
   cursor: string | null,
 ): Promise<SyncResult> {
-  let account = await getFreshToken(userId, "twitter");
+  let account = await getFreshToken(workspaceId, "twitter");
 
   const messages: NormalizedMessage[] = [];
   let token = cursor ?? undefined;
@@ -68,7 +68,7 @@ export async function fetchXDms(
       res = await fetchPage(account.accessToken, token);
     } catch (err) {
       if (pagesRead === 0 && String(err).includes("401")) {
-        account = await forceRefresh(userId, "twitter");
+        account = await forceRefresh(workspaceId, "twitter");
         res = await fetchPage(account.accessToken, token);
       } else {
         throw err;
