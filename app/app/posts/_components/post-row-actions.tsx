@@ -18,7 +18,14 @@ type Props = {
 	// Drives which delete options appear. Only `published` shows the
 	// "delete from platforms" option — everything else is local-only.
 	// `deleted` posts show "permanently delete" option.
-	status: "draft" | "scheduled" | "published" | "failed" | "deleted";
+	status:
+		| "draft"
+		| "in_review"
+		| "approved"
+		| "scheduled"
+		| "published"
+		| "failed"
+		| "deleted";
 	platforms: string[];
 };
 

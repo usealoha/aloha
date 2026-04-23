@@ -38,6 +38,16 @@ const STATUS_META: Record<
 	}
 > = {
 	draft: { label: "Draft", icon: FileText, badgeClass: "bg-muted text-ink/70" },
+	in_review: {
+		label: "In review",
+		icon: Clock,
+		badgeClass: "bg-amber-100 text-amber-900",
+	},
+	approved: {
+		label: "Approved",
+		icon: CheckCircle2,
+		badgeClass: "bg-emerald-100 text-emerald-900",
+	},
 	scheduled: {
 		label: "Scheduled",
 		icon: Clock,
