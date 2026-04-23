@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
@@ -15,6 +15,8 @@ import {
 } from "@/app/actions/campaigns";
 import { loadCampaign, type CampaignBeat } from "@/lib/ai/campaign";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +65,11 @@ export default async function CampaignDetailPage({
   searchParams: SearchParams;
 }) {
   const user = (await getCurrentUser())!;
+  const ctx = (await getCurrentContext())!;
+  if (!hasRole(ctx.role, ROLES.ADMIN)) {
+    redirect("/app/dashboard");
+  }
+  const canManage = hasRole(ctx.role, ROLES.ADMIN);
   const { id } = await params;
   const q = await searchParams;
   const acceptedFlash = first(q.accepted) === "1";
@@ -127,6 +134,7 @@ export default async function CampaignDetailPage({
           <CampaignControls
             campaignId={campaign.id}
             status={campaign.status}
+            canManage={canManage}
           />
         </div>
         <h1 className="mt-3 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-ink">

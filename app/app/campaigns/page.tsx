@@ -1,9 +1,12 @@
 import { listCampaigns } from "@/lib/ai/campaign";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { cn } from "@/lib/utils";
 import { CalendarRange, Lock, Megaphone, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,10 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default async function CampaignsPage() {
 	const user = (await getCurrentUser())!;
+	const ctx = (await getCurrentContext())!;
+	if (!hasRole(ctx.role, ROLES.ADMIN)) {
+		redirect("/app/dashboard");
+	}
 	const museAccess = await hasMuseInviteEntitlement(user.id);
 	const campaigns = museAccess ? await listCampaigns(user.id) : [];
 

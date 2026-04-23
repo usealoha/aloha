@@ -15,6 +15,7 @@ import {
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { cn } from "@/lib/utils";
 import { and, count, eq, isNotNull, ne, notInArray } from "drizzle-orm";
 import {
@@ -34,6 +35,9 @@ export const dynamic = "force-dynamic";
 export default async function NewCampaignPage() {
 	const ctx = (await getCurrentContext())!;
 	const { user, workspace } = ctx;
+	if (!hasRole(ctx.role, ROLES.ADMIN)) {
+		redirect("/app/dashboard");
+	}
 	if (!(await hasMuseInviteEntitlement(user.id))) {
 		redirect("/app/campaigns");
 	}

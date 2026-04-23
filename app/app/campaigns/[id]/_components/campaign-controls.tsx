@@ -25,12 +25,16 @@ type DialogKind = "pause" | "delete" | null;
 export function CampaignControls({
   campaignId,
   status,
+  canManage,
 }: {
   campaignId: string;
   status: string;
+  canManage: boolean;
 }) {
   const paused = status === "paused";
   const pauseable = status === "running" || status === "ready";
+
+  if (!canManage) return null;
 
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [isPending, startTransition] = useTransition();
