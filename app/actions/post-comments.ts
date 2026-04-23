@@ -1,8 +1,8 @@
 "use server";
 
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { postDeliveries, posts } from "@/db/schema";
+import { requireContext } from "@/lib/current-context";
 import { syncPostDeliveryComments } from "@/lib/posts/comments/sync";
 import { syncPostDeliveryMetrics } from "@/lib/posts/engagement/sync";
 import { and, eq } from "drizzle-orm";
@@ -14,13 +14,12 @@ import { revalidatePath } from "next/cache";
 // a fast one. Errors per call are swallowed into the failed count so a
 // single bad channel doesn't kill the whole refresh.
 export async function refreshPost(postId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   const [post] = await db
     .select({ id: posts.id })
     .from(posts)
-    .where(and(eq(posts.id, postId), eq(posts.userId, session.user.id)))
+    .where(and(eq(posts.id, postId), eq(posts.workspaceId, ctx.workspace.id)))
     .limit(1);
 
   if (!post) throw new Error("Post not found");

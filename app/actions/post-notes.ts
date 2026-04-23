@@ -4,7 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { postNotes, posts, users } from "@/db/schema";
-import { getCurrentUser } from "@/lib/current-user";
+import { requireContext } from "@/lib/current-context";
 
 export type PostNote = {
   id: string;
@@ -21,19 +21,18 @@ export type PostNote = {
 
 const MAX_BODY_LENGTH = 4000;
 
-async function assertPostAccess(postId: string, userId: string) {
+async function assertPostAccess(postId: string, workspaceId: string) {
   const [post] = await db
     .select({ id: posts.id })
     .from(posts)
-    .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
+    .where(and(eq(posts.id, postId), eq(posts.workspaceId, workspaceId)))
     .limit(1);
   if (!post) throw new Error("Post not found");
 }
 
 export async function listNotes(postId: string): Promise<PostNote[]> {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
-  await assertPostAccess(postId, user.id);
+  const ctx = await requireContext();
+  await assertPostAccess(postId, ctx.workspace.id);
 
   const rows = await db
     .select({
@@ -54,13 +53,12 @@ export async function listNotes(postId: string): Promise<PostNote[]> {
 
   return rows.map((row) => ({
     ...row,
-    isMine: row.authorUserId === user.id,
+    isMine: row.authorUserId === ctx.user.id,
   }));
 }
 
 export async function addNote(postId: string, body: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Comment cannot be empty");
@@ -68,11 +66,11 @@ export async function addNote(postId: string, body: string) {
     throw new Error(`Comment exceeds ${MAX_BODY_LENGTH} characters`);
   }
 
-  await assertPostAccess(postId, user.id);
+  await assertPostAccess(postId, ctx.workspace.id);
 
   const [row] = await db
     .insert(postNotes)
-    .values({ postId, authorUserId: user.id, body: trimmed })
+    .values({ postId, authorUserId: ctx.user.id, body: trimmed })
     .returning();
 
   revalidatePath(`/app/posts/${postId}`);
@@ -80,8 +78,7 @@ export async function addNote(postId: string, body: string) {
 }
 
 export async function editNote(noteId: string, body: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Comment cannot be empty");
@@ -95,7 +92,7 @@ export async function editNote(noteId: string, body: string) {
     .where(eq(postNotes.id, noteId))
     .limit(1);
   if (!existing) throw new Error("Comment not found");
-  if (existing.authorUserId !== user.id) throw new Error("Forbidden");
+  if (existing.authorUserId !== ctx.user.id) throw new Error("Forbidden");
 
   const now = new Date();
   await db
@@ -107,8 +104,7 @@ export async function editNote(noteId: string, body: string) {
 }
 
 export async function deleteNote(noteId: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   const [existing] = await db
     .select({ postId: postNotes.postId, authorUserId: postNotes.authorUserId })
@@ -116,7 +112,7 @@ export async function deleteNote(noteId: string) {
     .where(eq(postNotes.id, noteId))
     .limit(1);
   if (!existing) throw new Error("Comment not found");
-  if (existing.authorUserId !== user.id) throw new Error("Forbidden");
+  if (existing.authorUserId !== ctx.user.id) throw new Error("Forbidden");
 
   await db.delete(postNotes).where(eq(postNotes.id, noteId));
 
