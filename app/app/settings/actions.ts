@@ -16,7 +16,8 @@ import { setChannelPublishMode, type PublishMode } from "@/lib/channel-state";
 import { AtpAgent } from "@atproto/api";
 import { startTelegramAuth, completeTelegramAuth } from "@/lib/publishers/telegram";
 import { upsertChannelProfile, refreshChannelProfile } from "@/lib/channels/profiles";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 
 const VALID_PUBLISH_MODES: readonly PublishMode[] = [
   "auto",

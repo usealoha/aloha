@@ -16,7 +16,8 @@ import {
 	syncChannelQuantity,
 } from "@/lib/billing/service";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 
 async function requireUserId(): Promise<string> {
 	const session = await auth();
