@@ -5,7 +5,13 @@ import { AvatarMenu } from "./avatar-menu";
 import { NotificationsBell } from "./notifications-bell";
 import type { CurrentUser } from "@/lib/current-user";
 
-export function AppTopBar({ user }: { user: CurrentUser }) {
+export function AppTopBar({
+  user,
+  role,
+}: {
+  user: CurrentUser;
+  role: import("@/lib/current-context").WorkspaceRole | null;
+}) {
   return (
     <div className="lg:hidden sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="flex items-center justify-between px-5 h-[60px]">
@@ -40,7 +46,7 @@ export function AppTopBar({ user }: { user: CurrentUser }) {
         </div>
       </div>
       <div className="px-4 pb-2">
-        <NavLinks />
+        <NavLinks role={role} />
       </div>
     </div>
   );

@@ -8,12 +8,22 @@ import { AvatarMenu } from "./avatar-menu";
 import { NavLinks } from "./nav-links";
 import { NotificationsBell } from "./notifications-bell";
 import { ThemeToggle } from "./theme-toggle";
+import { WorkspaceSwitcher } from "./workspace-switcher";
+import type { WorkspaceChoice } from "@/app/actions/workspace-switch";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const STORAGE_KEY = "aloha:sidebar:expanded";
 
-export function AppSidebar({ user }: { user: CurrentUser }) {
+export function AppSidebar({
+  user,
+  workspaces,
+  role,
+}: {
+  user: CurrentUser;
+  workspaces: WorkspaceChoice[];
+  role: import("@/lib/current-context").WorkspaceRole | null;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -77,8 +87,12 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
           </Link>
         </div>
 
+        <div className="px-3 pb-3">
+          <WorkspaceSwitcher initial={workspaces} collapsed={collapsed} />
+        </div>
+
         <nav className="flex-1 overflow-y-auto px-3">
-          <NavLinks variant="sidebar" collapsed={collapsed} />
+          <NavLinks variant="sidebar" collapsed={collapsed} role={role} />
         </nav>
 
         <div className="py-3 px-3 border-t border-border">

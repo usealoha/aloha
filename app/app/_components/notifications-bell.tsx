@@ -1,6 +1,16 @@
 "use client";
 
-import { Bell, CheckCircle2, AlertCircle, AlertTriangle, Inbox } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  AtSign,
+  Bell,
+  CheckCircle2,
+  Inbox,
+  MessageSquare,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import {
@@ -20,9 +30,20 @@ import {
   markNotificationRead,
 } from "./notifications-actions";
 
+type Kind =
+  | "post_published"
+  | "post_partial"
+  | "post_failed"
+  | "inbox_sync_failed"
+  | "post_submitted"
+  | "post_approved"
+  | "post_comment"
+  | "post_assigned"
+  | "post_mention";
+
 type Item = {
   id: string;
-  kind: "post_published" | "post_partial" | "post_failed" | "inbox_sync_failed";
+  kind: Kind;
   title: string;
   body: string | null;
   url: string | null;
@@ -30,19 +51,29 @@ type Item = {
   createdAt: string | Date;
 };
 
-const KIND_ICON = {
+const KIND_ICON: Record<Kind, React.ComponentType<{ className?: string }>> = {
   post_published: CheckCircle2,
   post_partial: AlertTriangle,
   post_failed: AlertCircle,
   inbox_sync_failed: Inbox,
-} as const;
+  post_submitted: UserCheck,
+  post_approved: Sparkles,
+  post_comment: MessageSquare,
+  post_assigned: UserCheck,
+  post_mention: AtSign,
+};
 
-const KIND_TINT = {
+const KIND_TINT: Record<Kind, string> = {
   post_published: "text-emerald-600",
   post_partial: "text-amber-600",
   post_failed: "text-rose-600",
   inbox_sync_failed: "text-amber-600",
-} as const;
+  post_submitted: "text-amber-700",
+  post_approved: "text-emerald-700",
+  post_comment: "text-ink/65",
+  post_assigned: "text-amber-700",
+  post_mention: "text-primary",
+};
 
 function timeAgo(d: Date): string {
   const secs = Math.max(1, Math.floor((Date.now() - d.getTime()) / 1000));

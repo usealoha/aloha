@@ -1,4 +1,6 @@
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
+import { listMyWorkspaces } from "@/app/actions/workspace-switch";
 import { routes } from "@/lib/routes";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
@@ -17,15 +19,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 		redirect(routes.onboarding.workspace);
 	}
 
+	const [workspaces, ctx] = await Promise.all([
+		listMyWorkspaces(),
+		getCurrentContext(),
+	]);
+	const role = ctx?.role ?? null;
+
 	return (
 		<ThemeProvider>
 			<Suspense fallback={null}>
 				<NavProgress />
 			</Suspense>
 			<div className="min-h-screen flex bg-background text-foreground">
-				<AppSidebar user={user} />
+				<AppSidebar user={user} workspaces={workspaces} role={role} />
 				<div className="flex-1 min-w-0 flex flex-col">
-					<AppTopBar user={user} />
+					<AppTopBar user={user} role={role} />
 					<main className="flex-1">
 						<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-10 lg:py-14">
 							{children}

@@ -24,11 +24,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { WorkspaceRole } from "@/lib/current-context";
+import { ROLES, hasRole } from "@/lib/workspaces/roles";
 
 type NavItem = {
   label: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
+  // Optional role gate — items without it are visible to every member.
+  // Mirrors server-side role guards on the corresponding pages/actions
+  // so nav hides what the user can't reach.
+  requires?: readonly WorkspaceRole[];
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -37,14 +43,24 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Posts", href: "/app/posts", icon: Newspaper },
   { label: "Calendar", href: "/app/calendar", icon: CalendarDays },
   { label: "Composer", href: "/app/composer", icon: PenSquare },
-  { label: "Campaigns", href: "/app/campaigns", icon: Megaphone },
+  {
+    label: "Campaigns",
+    href: "/app/campaigns",
+    icon: Megaphone,
+    requires: ROLES.ADMIN,
+  },
   { label: "Ideas", href: "/app/ideas", icon: Lightbulb },
   { label: "Library", href: "/app/library", icon: Images },
   { label: "Feeds", href: "/app/feeds", icon: Rss },
   { label: "Inbox", href: "/app/inbox", icon: Inbox },
   { label: "Audience", href: "/app/audience", icon: Users },
   { label: "Broadcasts", href: "/app/broadcasts", icon: Mail },
-  { label: "Automations", href: "/app/automations", icon: Workflow },
+  {
+    label: "Automations",
+    href: "/app/automations",
+    icon: Workflow,
+    requires: ROLES.ADMIN,
+  },
 ];
 
 type Variant = "horizontal" | "sidebar";
@@ -52,16 +68,21 @@ type Variant = "horizontal" | "sidebar";
 export function NavLinks({
   variant = "horizontal",
   collapsed = false,
+  role = null,
 }: {
   variant?: Variant;
   collapsed?: boolean;
+  role?: WorkspaceRole | null;
 }) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter(
+    (i) => !i.requires || hasRole(role, i.requires),
+  );
 
   if (variant === "sidebar") {
     return (
       <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map((i) => {
+        {items.map((i) => {
           const isActive =
             pathname === i.href || pathname.startsWith(`${i.href}/`);
           const Icon = i.icon;
@@ -111,7 +132,7 @@ export function NavLinks({
 
   return (
     <ul className="flex items-center gap-1 overflow-x-auto -mx-1 px-1">
-      {NAV_ITEMS.map((i) => {
+      {items.map((i) => {
         const isActive =
           pathname === i.href || pathname.startsWith(`${i.href}/`);
         const Icon = i.icon;
