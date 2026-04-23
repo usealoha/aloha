@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import {
   accounts,
   blueskyCredentials,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/inbox/reply-dm";
 
 export async function refreshInbox() {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
   const userId = ctx.user.id;
   const workspaceId = ctx.workspace.id;
 
@@ -95,7 +96,7 @@ export async function refreshInbox() {
 export async function markAsRead(messageId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   await db
     .update(inboxMessages)
@@ -116,7 +117,7 @@ export async function markAsRead(messageId: string) {
 export async function markConvoAsRead(threadId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   await db
     .update(inboxMessages)
@@ -134,7 +135,7 @@ export async function markConvoAsRead(threadId: string) {
 export async function markAllAsRead() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   await db
     .update(inboxMessages)
@@ -152,7 +153,7 @@ export async function markAllAsRead() {
 export async function sendReply(messageId: string, content: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const [message] = await db
     .select()

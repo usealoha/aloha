@@ -8,6 +8,7 @@ import { assets } from "@/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 export type LibraryAsset = {
   id: string;
   url: string;
@@ -51,10 +52,8 @@ export async function listLibraryAssets(limit = 60): Promise<LibraryAsset[]> {
 }
 
 export async function deleteGeneratedAssetAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.EDITOR);
+  const user = ctx.user;
   const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("id required");

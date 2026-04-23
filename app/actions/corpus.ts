@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { brandCorpus } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { disconnectNotion, syncNotionCorpus } from "@/lib/notion";
 import { requireMuseAccess } from "@/lib/billing/muse";
 
@@ -13,8 +14,8 @@ import { requireMuseAccess } from "@/lib/billing/muse";
 // sync stats land in `ai_jobs` once the sync uses the job queue; for now
 // they're visible in the console.
 export async function syncNotionAction() {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
   await requireMuseAccess(user.id);
   const result = await syncNotionCorpus(user.id);
   console.log("[notion] sync result", result);
@@ -22,10 +23,8 @@ export async function syncNotionAction() {
 }
 
 export async function disconnectNotionAction() {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
   const { workspace } = ctx;
   await requireMuseAccess(user.id);
   await disconnectNotion(user.id);

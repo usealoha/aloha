@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -47,7 +48,7 @@ function normalizeRecords(
 export async function addSendingDomain(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
@@ -98,7 +99,7 @@ export async function addSendingDomain(formData: FormData) {
 export async function updateSendingDomainTracking(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -141,7 +142,7 @@ export async function updateSendingDomainTracking(formData: FormData) {
 export async function verifySendingDomain(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -192,7 +193,7 @@ export async function verifySendingDomain(formData: FormData) {
 export async function deleteSendingDomain(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");

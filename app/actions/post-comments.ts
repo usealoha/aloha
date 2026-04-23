@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { postDeliveries, posts } from "@/db/schema";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { syncPostDeliveryComments } from "@/lib/posts/comments/sync";
 import { syncPostDeliveryMetrics } from "@/lib/posts/engagement/sync";
 import { and, eq } from "drizzle-orm";
@@ -14,7 +15,7 @@ import { revalidatePath } from "next/cache";
 // a fast one. Errors per call are swallowed into the failed count so a
 // single bad channel doesn't kill the whole refresh.
 export async function refreshPost(postId: string) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const [post] = await db
     .select({ id: posts.id })

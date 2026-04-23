@@ -21,6 +21,7 @@ import {
 import { requireMuseAccess } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { env } from "@/lib/env";
 
 const isKind = (v: unknown): v is CampaignKind =>
@@ -33,8 +34,8 @@ const parseStringList = (raw: string): string[] =>
     .filter(Boolean);
 
 export async function createCampaignAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
   await requireMuseAccess(user.id);
 
   const name = String(formData.get("name") ?? "").trim();
@@ -95,9 +96,8 @@ export async function createCampaignAction(formData: FormData) {
 // composer sidebar lights up the same way it does for Muse-drafted posts.
 // User tunes the time in composer.
 export async function acceptCampaignBeatsAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
 
   const campaignId = String(formData.get("campaignId") ?? "");
   const beatIds = formData
@@ -153,8 +153,8 @@ export async function acceptCampaignBeatsAction(formData: FormData) {
 }
 
 export async function regenerateCampaignBeatAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
   await requireMuseAccess(user.id);
 
   const campaignId = String(formData.get("campaignId") ?? "");
@@ -184,9 +184,8 @@ const qstashClient = new QStashClient({ token: env.QSTASH_TOKEN });
 // so nothing publishes. On resume we re-enqueue for any future-dated post
 // whose original QStash message has already fired-and-noop'd.
 export async function pauseCampaignAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");
@@ -226,9 +225,8 @@ export async function pauseCampaignAction(formData: FormData) {
 // at its preserved scheduledAt. Past-due posts stay as drafts — firing
 // them immediately would surprise the user.
 export async function resumeCampaignAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");
@@ -295,9 +293,8 @@ export async function resumeCampaignAction(formData: FormData) {
 // campaign row. Published posts are preserved — deleting a campaign
 // shouldn't wipe history. Irreversible; UI must confirm.
 export async function deleteCampaignAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");

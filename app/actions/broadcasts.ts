@@ -5,6 +5,7 @@ import { Client } from "@upstash/qstash";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -28,7 +29,7 @@ async function requireUserId() {
 export async function createBroadcastDraft() {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
@@ -55,7 +56,7 @@ export async function createBroadcastDraft() {
 export async function updateBroadcastDraft(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -110,7 +111,7 @@ export async function updateBroadcastDraft(formData: FormData) {
 export async function deleteBroadcast(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -136,7 +137,7 @@ export async function draftBroadcastWithMuse(formData: FormData): Promise<{
 }> {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
@@ -178,7 +179,7 @@ export async function draftBroadcastWithMuse(formData: FormData): Promise<{
 export async function sendBroadcastNow(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);

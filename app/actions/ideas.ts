@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { ideas, type PostMedia } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 const ALLOWED_MIMES = new Set([
   "image/jpeg",
   "image/png",
@@ -58,10 +59,8 @@ function parseTags(raw: string | null): string[] {
 }
 
 export async function createIdeaAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.EDITOR);
+  const user = ctx.user;
   const { workspace } = ctx;
 
   const body = String(formData.get("body") ?? "").trim();
@@ -85,10 +84,8 @@ export async function createIdeaAction(formData: FormData) {
 }
 
 export async function updateIdeaAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.EDITOR);
+  const user = ctx.user;
   const { workspace } = ctx;
 
   const id = String(formData.get("id") ?? "");
@@ -115,10 +112,8 @@ export async function updateIdeaAction(formData: FormData) {
 }
 
 export async function updateIdeaStatusAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.EDITOR);
+  const user = ctx.user;
   const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   const statusRaw = formData.get("status");
@@ -131,10 +126,8 @@ export async function updateIdeaStatusAction(formData: FormData) {
 }
 
 export async function deleteIdeaAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-  const ctx = await getCurrentContext();
-  if (!ctx) throw new Error("No workspace");
+  const ctx = await assertRole(ROLES.EDITOR);
+  const user = ctx.user;
   const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("id required");

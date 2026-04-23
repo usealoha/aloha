@@ -1,10 +1,14 @@
 "use server";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { postNotes, posts, users } from "@/db/schema";
+import { postNotes, posts, users, workspaceMembers } from "@/db/schema";
 import { requireContext } from "@/lib/current-context";
+import {
+  notifyPostCommentAdded,
+  notifyPostMentions,
+} from "@/lib/posts/review-notifications";
 
 export type PostNote = {
   id: string;
@@ -13,11 +17,37 @@ export type PostNote = {
   authorName: string | null;
   authorImage: string | null;
   body: string;
+  mentions: PostNoteMention[];
   createdAt: Date;
   updatedAt: Date;
   editedAt: Date | null;
   isMine: boolean;
 };
+
+export type PostNoteMention = {
+  userId: string;
+  name: string | null;
+  email: string;
+};
+
+// Lightweight directory for the comment composer's typeahead. Returns
+// every workspace member (including the current user — useful for
+// testing mentions on your own posts). Role isn't filtered because
+// "mention anyone on the team" is the product expectation.
+export async function listMentionableMembers(): Promise<PostNoteMention[]> {
+  const ctx = await requireContext();
+  const rows = await db
+    .select({
+      userId: workspaceMembers.userId,
+      name: users.name,
+      email: users.email,
+    })
+    .from(workspaceMembers)
+    .innerJoin(users, eq(users.id, workspaceMembers.userId))
+    .where(eq(workspaceMembers.workspaceId, ctx.workspace.id))
+    .orderBy(users.name);
+  return rows;
+}
 
 const MAX_BODY_LENGTH = 4000;
 
@@ -42,6 +72,7 @@ export async function listNotes(postId: string): Promise<PostNote[]> {
       authorName: users.name,
       authorImage: users.image,
       body: postNotes.body,
+      mentions: postNotes.mentions,
       createdAt: postNotes.createdAt,
       updatedAt: postNotes.updatedAt,
       editedAt: postNotes.editedAt,
@@ -51,13 +82,37 @@ export async function listNotes(postId: string): Promise<PostNote[]> {
     .where(eq(postNotes.postId, postId))
     .orderBy(asc(postNotes.createdAt));
 
+  // Resolve each note's mention ids to display objects in one roundtrip.
+  const allMentionIds = Array.from(
+    new Set(rows.flatMap((r) => r.mentions ?? [])),
+  );
+  const mentionMap = new Map<string, PostNoteMention>();
+  if (allMentionIds.length > 0) {
+    const mentionRows = await db
+      .select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+      })
+      .from(users)
+      .where(inArray(users.id, allMentionIds));
+    for (const m of mentionRows) mentionMap.set(m.userId, m);
+  }
+
   return rows.map((row) => ({
     ...row,
+    mentions: (row.mentions ?? [])
+      .map((id) => mentionMap.get(id))
+      .filter((m): m is PostNoteMention => Boolean(m)),
     isMine: row.authorUserId === ctx.user.id,
   }));
 }
 
-export async function addNote(postId: string, body: string) {
+export async function addNote(
+  postId: string,
+  body: string,
+  mentionUserIds: string[] = [],
+) {
   const ctx = await requireContext();
 
   const trimmed = body.trim();
@@ -68,10 +123,49 @@ export async function addNote(postId: string, body: string) {
 
   await assertPostAccess(postId, ctx.workspace.id);
 
+  // Validate mentions against the workspace membership list. Silently
+  // drop any id that isn't a member — keeps clients from inflating the
+  // mention list with random ids.
+  const uniqueIds = Array.from(new Set(mentionUserIds)).filter(Boolean);
+  let validatedMentions: string[] = [];
+  if (uniqueIds.length > 0) {
+    const memberRows = await db
+      .select({ userId: workspaceMembers.userId })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, ctx.workspace.id),
+          inArray(workspaceMembers.userId, uniqueIds),
+        ),
+      );
+    const memberSet = new Set(memberRows.map((r) => r.userId));
+    validatedMentions = uniqueIds.filter((id) => memberSet.has(id));
+  }
+
   const [row] = await db
     .insert(postNotes)
-    .values({ postId, authorUserId: ctx.user.id, body: trimmed })
+    .values({
+      postId,
+      authorUserId: ctx.user.id,
+      body: trimmed,
+      mentions: validatedMentions,
+    })
     .returning();
+
+  // Mentions fire first so notifyPostCommentAdded can skip the same
+  // users (avoid double-ping).
+  const mentionedNotified = await notifyPostMentions({
+    postId,
+    authorUserId: ctx.user.id,
+    body: trimmed,
+    mentionedUserIds: validatedMentions,
+  });
+  await notifyPostCommentAdded({
+    postId,
+    authorUserId: ctx.user.id,
+    body: trimmed,
+    excludeUserIds: mentionedNotified,
+  });
 
   revalidatePath(`/app/posts/${postId}`);
   return row;

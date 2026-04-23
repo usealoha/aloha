@@ -6,9 +6,11 @@ import { db } from "@/db";
 import { feedItems, feeds, ideas } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { subscribe, syncFeed, unsubscribe } from "@/lib/feeds";
 
 export async function subscribeToFeedAction(formData: FormData) {
+  await assertRole(ROLES.EDITOR);
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   const url = String(formData.get("url") ?? "").trim();
@@ -26,6 +28,14 @@ export async function subscribeToFeed(
   url: string,
   category?: string | null,
 ): Promise<SubscribeResult> {
+  try {
+    await assertRole(ROLES.EDITOR);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Not permitted",
+    };
+  }
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Not authenticated" };
   const trimmed = url.trim();
@@ -48,6 +58,7 @@ export async function subscribeToFeed(
 }
 
 export async function unsubscribeFeedAction(formData: FormData) {
+  await assertRole(ROLES.EDITOR);
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   const feedId = String(formData.get("feedId") ?? "");
@@ -57,6 +68,7 @@ export async function unsubscribeFeedAction(formData: FormData) {
 }
 
 export async function refreshFeedAction(formData: FormData) {
+  await assertRole(ROLES.EDITOR);
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   const ctx = await getCurrentContext();
@@ -76,6 +88,7 @@ export async function refreshFeedAction(formData: FormData) {
 }
 
 export async function markItemReadAction(formData: FormData) {
+  await assertRole(ROLES.EDITOR);
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   const ctx = await getCurrentContext();
@@ -103,6 +116,7 @@ export async function markItemReadAction(formData: FormData) {
 }
 
 export async function saveItemAsIdeaAction(formData: FormData) {
+  await assertRole(ROLES.EDITOR);
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   const ctx = await getCurrentContext();

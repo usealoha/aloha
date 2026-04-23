@@ -14,6 +14,7 @@ import {
   FONT_PAIRS,
 } from "@/lib/audience-templates/tokens";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { LINKS_PER_PAGE_LIMIT } from "@/lib/audience-limits";
 import { isCustomThemeEnabled } from "@/lib/billing/entitlements";
 import type { PageTheme } from "@/db/schema";
@@ -29,7 +30,7 @@ async function requireUserId() {
 export async function updatePage(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
 
@@ -66,7 +67,7 @@ export async function updatePage(formData: FormData) {
 export async function addLink(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
 
@@ -115,7 +116,7 @@ export async function addLink(formData: FormData) {
 export async function reorderLinks(orderedIds: string[]) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
 
@@ -155,7 +156,7 @@ export async function reorderLinks(orderedIds: string[]) {
 export async function updateLinkIcon(linkId: string, iconPresetId: string | null) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
 
@@ -185,7 +186,7 @@ export async function updateLinkIcon(linkId: string, iconPresetId: string | null
 export async function deleteLink(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -224,7 +225,7 @@ async function requireOwnedAsset(userId: string, assetId: string) {
 export async function setAvatarAsset(assetId: string | null) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({
@@ -246,7 +247,7 @@ export async function setAvatarAsset(assetId: string | null) {
 export async function setBackgroundAsset(assetId: string | null) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({
@@ -276,7 +277,7 @@ export async function setPageDesign(input: {
 }) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.EDITOR);
 
   const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/current-user";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { trainVoice, type VoiceSliders } from "@/lib/ai/voice";
 import { requireMuseAccess } from "@/lib/billing/muse";
 
@@ -22,8 +23,8 @@ function parsePerspective(v: unknown): VoiceSliders["perspective"] {
 }
 
 export async function trainVoiceAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
+  const ctx = await assertRole(ROLES.ADMIN);
+  const user = ctx.user;
   await requireMuseAccess(user.id);
 
   const sliders: VoiceSliders = {
