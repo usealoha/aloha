@@ -28,8 +28,10 @@ import {
 } from "@/app/actions/corpus";
 import { requestMuseAccessAction } from "@/app/actions/muse-access";
 import { loadAllChannelVoices, loadCurrentVoice } from "@/lib/ai/voice";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { getMuseAccessState } from "@/lib/billing/muse";
 import { FlashToast } from "@/components/ui/flash-toast";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
@@ -47,6 +49,9 @@ export default async function MuseSettingsPage() {
   const user = (await getCurrentUser())!;
   const ctx = (await getCurrentContext())!;
   const { workspace } = ctx;
+  if (!hasRole(ctx.role, ROLES.ADMIN)) {
+    redirect("/app/dashboard");
+  }
 
   const access = await getMuseAccessState(user.id);
   if (!access.granted) {

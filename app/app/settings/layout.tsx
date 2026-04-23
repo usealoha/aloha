@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
+import { getCurrentContext } from "@/lib/current-context";
 import { SettingsNav } from "./_components/settings-nav";
 
-export default function SettingsLayout({ children }: { children: ReactNode }) {
+export default async function SettingsLayout({ children }: { children: ReactNode }) {
+	const ctx = await getCurrentContext();
+	const role = ctx?.role ?? null;
 	return (
 		<div className="space-y-8">
 			<header>
@@ -18,7 +21,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
 				</p>
 			</header>
 
-			<SettingsNav />
+			<SettingsNav role={role} />
 
 			{children}
 		</div>

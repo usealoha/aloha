@@ -23,7 +23,9 @@ import {
   type EffectiveState,
   type PublishMode,
 } from "@/lib/channel-state";
+import { redirect } from "next/navigation";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 import { connectChannel, refreshChannelProfileAction, updateChannelPublishMode, notifyWhenAvailable } from "../actions";
@@ -277,6 +279,12 @@ export default async function ChannelsSettingsPage({
 }) {
   const ctx = (await getCurrentContext())!;
   const { user, workspace } = ctx;
+  if (!hasRole(ctx.role, ROLES.ADMIN)) {
+    // Non-admins don't need to see the channel management surface; send
+    // them somewhere they can actually do something. Server actions
+    // double-gate in case they URL-hop anyway.
+    redirect("/app/dashboard");
+  }
 
   const [rows, blueskyRows, mastodonRows, telegramRows, stateRows, notifyRows, profileRows] = await Promise.all([
     db

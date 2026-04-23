@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CreditCard, Plug, Sparkles, UserRound } from "lucide-react";
+import { Bell, CreditCard, Plug, Sparkles, Users, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { WorkspaceRole } from "@/lib/current-context";
+import { ROLES, hasRole } from "@/lib/workspaces/roles";
 
-const ITEMS = [
+type NavItem = {
+  href: string;
+  label: string;
+  caption: string;
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  requires?: readonly WorkspaceRole[];
+};
+
+const ITEMS: NavItem[] = [
   {
     href: "/app/settings/profile",
     label: "Profile",
@@ -17,12 +27,14 @@ const ITEMS = [
     label: "Channels",
     caption: "Connected accounts",
     Icon: Plug,
+    requires: ROLES.ADMIN,
   },
   {
     href: "/app/settings/muse",
     label: "Muse",
     caption: "Voice training",
     Icon: Sparkles,
+    requires: ROLES.ADMIN,
   },
   {
     href: "/app/settings/notifications",
@@ -31,18 +43,28 @@ const ITEMS = [
     Icon: Bell,
   },
   {
+    href: "/app/settings/members",
+    label: "Members",
+    caption: "Invites & roles",
+    Icon: Users,
+  },
+  {
     href: "/app/settings/billing",
     label: "Billing",
     caption: "Plan & invoices",
     Icon: CreditCard,
+    requires: ROLES.OWNER,
   },
 ];
 
-export function SettingsNav() {
+export function SettingsNav({ role }: { role: WorkspaceRole | null }) {
+  const items = ITEMS.filter(
+    (i) => !i.requires || hasRole(role, i.requires),
+  );
   const pathname = usePathname();
   const activeIndex = Math.max(
     0,
-    ITEMS.findIndex((i) => pathname === i.href || pathname.startsWith(i.href + "/")),
+    items.findIndex((i) => pathname === i.href || pathname.startsWith(i.href + "/")),
   );
 
   return (
@@ -52,7 +74,7 @@ export function SettingsNav() {
           role="tablist"
           className="flex items-stretch gap-1 overflow-x-auto -mb-px [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
-          {ITEMS.map((i, idx) => {
+          {items.map((i, idx) => {
             const isActive = idx === activeIndex;
             return (
               <li key={i.href} className="shrink-0">
@@ -104,7 +126,7 @@ export function SettingsNav() {
         </ul>
 
         <p className="hidden md:block shrink-0 pb-4 text-[10.5px] uppercase tracking-[0.24em] text-ink/40 font-medium">
-          {String(activeIndex + 1).padStart(2, "0")} / {String(ITEMS.length).padStart(2, "0")}
+          {String(activeIndex + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
         </p>
       </div>
     </nav>

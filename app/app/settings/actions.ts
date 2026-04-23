@@ -16,7 +16,7 @@ import { setChannelPublishMode, type PublishMode } from "@/lib/channel-state";
 import { AtpAgent } from "@atproto/api";
 import { startTelegramAuth, completeTelegramAuth } from "@/lib/publishers/telegram";
 import { upsertChannelProfile, refreshChannelProfile } from "@/lib/channels/profiles";
-import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 
 const VALID_PUBLISH_MODES: readonly PublishMode[] = [
   "auto",
@@ -54,13 +54,15 @@ async function requireUserId() {
   return session.user.id;
 }
 
-async function requireWorkspace() {
-  const ctx = await requireContext();
+async function requireWorkspace(
+  roles: readonly import("@/lib/current-context").WorkspaceRole[] = ROLES.ADMIN,
+) {
+  const ctx = await assertRole(roles);
   return { userId: ctx.user.id, workspaceId: ctx.workspace.id };
 }
 
 export async function updateProfile(formData: FormData) {
-  const { userId, workspaceId } = await requireWorkspace();
+  const { userId, workspaceId } = await requireWorkspace(ROLES.ANY);
 
   const name = String(formData.get("name") ?? "").trim() || null;
   const workspaceName =
@@ -597,7 +599,7 @@ export async function updateChannelPublishMode(formData: FormData) {
 }
 
 export async function updateNotificationPreferences(formData: FormData) {
-  const { userId, workspaceId } = await requireWorkspace();
+  const { userId, workspaceId } = await requireWorkspace(ROLES.ANY);
 
   await db
     .update(users)
@@ -616,7 +618,7 @@ export async function updateNotificationPreferences(formData: FormData) {
 // Stores their interest and emails them a confirmation. Subsequent clicks
 // for the same channel are no-ops (no duplicate confirmations).
 export async function notifyWhenAvailable(formData: FormData) {
-  const { userId, workspaceId } = await requireWorkspace();
+  const { userId, workspaceId } = await requireWorkspace(ROLES.ANY);
   const provider = String(formData.get("provider") ?? "");
   if (!provider) throw new Error("provider is required");
 

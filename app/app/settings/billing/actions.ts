@@ -16,6 +16,7 @@ import {
 	syncChannelQuantity,
 } from "@/lib/billing/service";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 
 async function requireUserId(): Promise<string> {
 	const session = await auth();
@@ -47,7 +48,7 @@ async function currentChannelCount(userId: string): Promise<number> {
 export async function startCheckout(formData: FormData) {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	const plan = (formData.get("plan") as "basic" | "bundle") ?? "basic";
@@ -63,7 +64,7 @@ export async function startCheckout(formData: FormData) {
 export async function toggleMuse(formData: FormData) {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	const enable = formData.get("enable") === "1";
@@ -74,7 +75,7 @@ export async function toggleMuse(formData: FormData) {
 export async function updateChannels(formData: FormData) {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	const channels = Math.max(1, Number(formData.get("channels") ?? 1));
@@ -85,7 +86,7 @@ export async function updateChannels(formData: FormData) {
 export async function cancelMyPlan() {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	await cancelSubscription(userId);
@@ -95,7 +96,7 @@ export async function cancelMyPlan() {
 export async function resumeMyPlan() {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	await resumeSubscription(userId);
@@ -110,7 +111,7 @@ export async function resumeMyPlan() {
 export async function applyChange(formData: FormData) {
 	const userId = await requireUserId();
 
-	const __ctx = await requireContext();
+	const __ctx = await assertRole(ROLES.OWNER);
 
 	const workspaceId = __ctx.workspace.id;
 	const channels = Math.max(1, Number(formData.get("channels") ?? 1));

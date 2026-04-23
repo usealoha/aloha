@@ -19,6 +19,7 @@ import { Sparkle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { FlashToast } from "@/components/ui/flash-toast";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { ChannelAdjuster } from "./_components/channel-adjuster";
 import { DangerZone } from "./_components/danger-zone";
 import { IntervalSwitch } from "./_components/interval-switch";
@@ -50,6 +51,9 @@ export default async function BillingPage() {
 	const userId = session.user.id;
 	const ctx = (await getCurrentContext())!;
 	const workspaceId = ctx.workspace.id;
+	if (!hasRole(ctx.role, ROLES.OWNER)) {
+		redirect("/app/dashboard");
+	}
 	const sub = await getLogicalSubscription(userId);
 	const flashToast = (
 		<FlashToast
