@@ -5,6 +5,8 @@ import { db } from "@/db";
 import {
   ideas,
   posts,
+  users,
+  workspaceMembers,
   type ChannelOverride,
   type DraftMeta,
   type PostMedia,
@@ -13,9 +15,15 @@ import { revalidatePath } from "next/cache";
 import { Client } from "@upstash/qstash";
 import { env } from "@/lib/env";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { unpublishPost } from "@/lib/unpublishers";
 import { publishPost } from "@/lib/publishers";
 import { assertTransition, type PostStatus } from "@/lib/posts/transitions";
+import {
+  notifyPostApproved,
+  notifyPostAssigned,
+  notifyPostSubmitted,
+} from "@/lib/posts/review-notifications";
 
 const qstashClient = new Client({
   token: env.QSTASH_TOKEN,
@@ -58,7 +66,7 @@ async function flipIdeaToDrafted(
 }
 
 export async function saveDraft(payload: ComposerPayload) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   try {
     const [row] = await db
@@ -97,7 +105,7 @@ export async function saveDraft(payload: ComposerPayload) {
 // time; the handler re-reads status + scheduledAt before firing, so older
 // messages from rescheduling no-op safely.
 export async function schedulePost(postId: string, scheduledAt: Date) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   if (scheduledAt.getTime() <= Date.now()) {
     throw new Error("Pick a future time to schedule for.");
@@ -143,7 +151,7 @@ export async function schedulePost(postId: string, scheduledAt: Date) {
 // it up inline. Requires the post to be in `approved` — strict one-step-
 // forward with the `scheduled → published` step collapsed into one call.
 export async function publishPostNow(postId: string) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const existing = await loadOwnedPost(postId, ctx.workspace.id);
   assertTransition(existing.status as PostStatus, "published");
@@ -178,7 +186,7 @@ export async function publishPostNow(postId: string) {
 // draft to receive further edits. For rescheduling a scheduled post, use
 // `reschedulePost`.
 export async function updatePost(postId: string, payload: ComposerPayload) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const existing = await loadOwnedPost(postId, ctx.workspace.id);
   if (existing.status !== "draft") {
@@ -221,7 +229,7 @@ export async function updatePost(postId: string, payload: ComposerPayload) {
 // still fire on their original time but no-op because the handler
 // re-checks status + scheduledAt.
 export async function reschedulePost(postId: string, scheduledAt: Date) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const [existing] = await db
     .select({
@@ -289,7 +297,7 @@ export async function deletePost(
   postId: string,
   mode: "local" | "remote",
 ) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
 
   const [existing] = await db
     .select({
@@ -344,7 +352,7 @@ export async function deletePost(
 // Permanently deletes a post that has already been soft deleted.
 // This is irreversible and removes the row completely from the database.
 export async function permanentDeletePost(postId: string) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
 
   const [existing] = await db
     .select({
@@ -386,7 +394,7 @@ export async function bulkDeletePosts(
   postIds: string[],
   mode: "local" | "permanent",
 ) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.ADMIN);
   if (postIds.length === 0) return { success: true, count: 0 };
 
   const owned = await db
@@ -469,11 +477,34 @@ function revalidatePostPaths(postId?: string) {
 // Move a draft into review. Strict one-step-forward transition. Stamps
 // who submitted it and when so the Kanban card / detail view can show
 // "Submitted for review by X · 2h ago" once workspaces exist.
-export async function submitForReview(postId: string) {
-  const ctx = await requireContext();
+export async function submitForReview(
+  postId: string,
+  assigneeId?: string | null,
+) {
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const existing = await loadOwnedPost(postId, ctx.workspace.id);
   assertTransition(existing.status as PostStatus, "in_review");
+
+  // Validate the assignee (if provided) is a reviewer+ in this workspace.
+  // Drop silently if not — the submit still succeeds, just unassigned.
+  let validatedAssigneeId: string | null = null;
+  if (assigneeId) {
+    const [member] = await db
+      .select({ role: workspaceMembers.role })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, ctx.workspace.id),
+          eq(workspaceMembers.userId, assigneeId),
+        ),
+      )
+      .limit(1);
+    const reviewerRoles = ["owner", "admin", "reviewer"];
+    if (member && reviewerRoles.includes(member.role)) {
+      validatedAssigneeId = assigneeId;
+    }
+  }
 
   const now = new Date();
   await db
@@ -482,9 +513,123 @@ export async function submitForReview(postId: string) {
       status: "in_review",
       submittedForReviewAt: now,
       submittedBy: ctx.user.id,
+      assignedReviewerId: validatedAssigneeId,
       updatedAt: now,
     })
     .where(eq(posts.id, postId));
+
+  // Fire-and-forget: notification failures shouldn't block the status
+  // transition. Errors are logged inside createNotification.
+  await notifyPostSubmitted({ postId, submittedBy: ctx.user.id });
+
+  revalidatePostPaths(postId);
+  return { success: true };
+}
+
+// Lists workspace members eligible to be assigned as reviewer on a
+// post. Used by the assignee picker on the post detail page.
+export type ReviewerOption = {
+  userId: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+};
+
+export async function listReviewerOptions(): Promise<ReviewerOption[]> {
+  const ctx = await assertRole(ROLES.EDITOR);
+  const rows = await db
+    .select({
+      userId: workspaceMembers.userId,
+      name: users.name,
+      email: users.email,
+      image: users.image,
+    })
+    .from(workspaceMembers)
+    .innerJoin(users, eq(users.id, workspaceMembers.userId))
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, ctx.workspace.id),
+        inArray(workspaceMembers.role, ["owner", "admin", "reviewer"]),
+      ),
+    )
+    .orderBy(users.name);
+  return rows.map((r) => ({
+    userId: r.userId,
+    name: r.name,
+    email: r.email,
+    image: r.image,
+  }));
+}
+
+// Assigns (or unassigns, with assigneeId=null) a post to a specific
+// reviewer. Anyone ADMIN+ or the current assignee can reassign; the
+// submitter (author) can also self-reassign to anyone in the reviewer
+// pool. Validation lives server-side in one place so UI can stay simple.
+export async function assignReviewer(
+  postId: string,
+  assigneeId: string | null,
+) {
+  const ctx = await assertRole(ROLES.EDITOR);
+
+  const [post] = await db
+    .select({
+      id: posts.id,
+      workspaceId: posts.workspaceId,
+      status: posts.status,
+      submittedBy: posts.submittedBy,
+      assignedReviewerId: posts.assignedReviewerId,
+    })
+    .from(posts)
+    .where(
+      and(eq(posts.id, postId), eq(posts.workspaceId, ctx.workspace.id)),
+    )
+    .limit(1);
+  if (!post) throw new Error("Post not found");
+
+  const canAssign =
+    ctx.role === "owner" ||
+    ctx.role === "admin" ||
+    ctx.user.id === post.submittedBy ||
+    ctx.user.id === post.assignedReviewerId;
+  if (!canAssign) {
+    throw new Error("You can't reassign this post.");
+  }
+
+  let validated: string | null = null;
+  if (assigneeId) {
+    const [member] = await db
+      .select({ role: workspaceMembers.role })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, ctx.workspace.id),
+          eq(workspaceMembers.userId, assigneeId),
+        ),
+      )
+      .limit(1);
+    const reviewerRoles = ["owner", "admin", "reviewer"];
+    if (!member || !reviewerRoles.includes(member.role)) {
+      throw new Error("Pick a reviewer who's a member of this workspace.");
+    }
+    validated = assigneeId;
+  }
+
+  if (post.assignedReviewerId === validated) {
+    return { success: true };
+  }
+
+  await db
+    .update(posts)
+    .set({ assignedReviewerId: validated, updatedAt: new Date() })
+    .where(eq(posts.id, postId));
+
+  if (validated) {
+    await notifyPostAssigned({
+      postId,
+      assignedBy: ctx.user.id,
+      assigneeId: validated,
+    });
+  }
 
   revalidatePostPaths(postId);
   return { success: true };
@@ -494,7 +639,7 @@ export async function submitForReview(postId: string) {
 // the post in `approved` state so the author can pick schedule-or-publish
 // from the composer.
 export async function approvePost(postId: string) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.REVIEWER);
 
   const existing = await loadOwnedPost(postId, ctx.workspace.id);
   assertTransition(existing.status as PostStatus, "approved");
@@ -510,6 +655,8 @@ export async function approvePost(postId: string) {
     })
     .where(eq(posts.id, postId));
 
+  await notifyPostApproved({ postId, approvedBy: ctx.user.id });
+
   revalidatePostPaths(postId);
   return { success: true };
 }
@@ -520,7 +667,7 @@ export async function approvePost(postId: string) {
 // the flow is always draft → in_review → approved, so after a reset the
 // author re-submits to advance again.
 export async function backToDraft(postId: string) {
-  const ctx = await requireContext();
+  const ctx = await assertRole(ROLES.EDITOR);
 
   const existing = await loadOwnedPost(postId, ctx.workspace.id);
   assertTransition(existing.status as PostStatus, "draft");
@@ -533,6 +680,7 @@ export async function backToDraft(postId: string) {
       submittedBy: null,
       approvedAt: null,
       approvedBy: null,
+      assignedReviewerId: null,
       updatedAt: new Date(),
     })
     .where(eq(posts.id, postId));
