@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/current-user";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { trainVoice, type VoiceSliders } from "@/lib/ai/voice";
 import { requireMuseAccess } from "@/lib/billing/muse";
 

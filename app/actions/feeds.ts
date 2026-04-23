@@ -6,7 +6,8 @@ import { db } from "@/db";
 import { feedItems, feeds, ideas } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { subscribe, syncFeed, unsubscribe } from "@/lib/feeds";
 
 export async function subscribeToFeedAction(formData: FormData) {

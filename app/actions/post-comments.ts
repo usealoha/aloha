@@ -3,7 +3,8 @@
 import { db } from "@/db";
 import { postDeliveries, posts } from "@/db/schema";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { syncPostDeliveryComments } from "@/lib/posts/comments/sync";
 import { syncPostDeliveryMetrics } from "@/lib/posts/engagement/sync";
 import { and, eq } from "drizzle-orm";

@@ -8,7 +8,8 @@ import { assets } from "@/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 export type LibraryAsset = {
   id: string;
   url: string;

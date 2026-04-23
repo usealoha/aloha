@@ -14,7 +14,8 @@ import {
   FONT_PAIRS,
 } from "@/lib/audience-templates/tokens";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { LINKS_PER_PAGE_LIMIT } from "@/lib/audience-limits";
 import { isCustomThemeEnabled } from "@/lib/billing/entitlements";
 import type { PageTheme } from "@/db/schema";

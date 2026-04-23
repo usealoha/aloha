@@ -6,7 +6,8 @@ import { db } from "@/db";
 import { brandCorpus } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { disconnectNotion, syncNotionCorpus } from "@/lib/notion";
 import { requireMuseAccess } from "@/lib/billing/muse";
 

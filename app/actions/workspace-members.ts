@@ -4,7 +4,8 @@ import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { users, workspaceMembers, workspaces } from "@/db/schema";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import type { WorkspaceRole } from "@/lib/current-context";
 
 const ASSIGNABLE_ROLES: readonly WorkspaceRole[] = [

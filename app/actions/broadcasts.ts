@@ -5,7 +5,8 @@ import { Client } from "@upstash/qstash";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 
 import { auth } from "@/auth";
 import { db } from "@/db";

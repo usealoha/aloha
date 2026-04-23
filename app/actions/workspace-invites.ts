@@ -12,7 +12,8 @@ import {
 } from "@/db/schema";
 import { sendEmail } from "@/lib/email/send";
 import { workspaceInviteEmail } from "@/lib/email/templates/workspace-invite";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import type { WorkspaceRole } from "@/lib/current-context";
 
 // 7-day expiry is the sweet spot: long enough to survive a weekend

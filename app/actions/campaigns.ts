@@ -21,7 +21,8 @@ import {
 import { requireMuseAccess } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import { env } from "@/lib/env";
 
 const isKind = (v: unknown): v is CampaignKind =>

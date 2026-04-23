@@ -3,7 +3,8 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { requireContext } from "@/lib/current-context";
-import { assertRole, ROLES } from "@/lib/workspaces/roles";
+import { ROLES } from "@/lib/workspaces/roles";
+import { assertRole } from "@/lib/workspaces/assert-role";
 import {
   accounts,
   blueskyCredentials,
