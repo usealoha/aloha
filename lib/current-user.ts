@@ -22,6 +22,8 @@ export const getCurrentUser = cache(async () => {
     role: user.role,
     timezone: user.timezone,
     onboardedAt: user.onboardedAt,
+    activeWorkspaceId: user.activeWorkspaceId,
+    activeWorkspaceRole: user.activeWorkspaceRole,
   };
 });
 

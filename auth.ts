@@ -9,6 +9,8 @@ import {
   sessions,
   users,
   verificationTokens,
+  workspaceMembers,
+  workspaces,
 } from "./db/schema";
 import { and, eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -32,6 +34,58 @@ const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+// Shared loader used by both the sign-in and refresh branches of the
+// JWT callback. Pulls the user row + their active-workspace membership
+// role so the JWT can answer "who is this, which workspace are they in,
+// and what can they do there?" without a DB hit on every request.
+async function loadUserJwtFields(userId: string) {
+  return db
+    .select({
+      name: users.name,
+      email: users.email,
+      image: users.image,
+      workspaceName: users.workspaceName,
+      role: users.role,
+      timezone: users.timezone,
+      onboardedAt: users.onboardedAt,
+      activeWorkspaceId: users.activeWorkspaceId,
+      activeWorkspaceRole: workspaceMembers.role,
+    })
+    .from(users)
+    .leftJoin(
+      workspaces,
+      eq(workspaces.id, users.activeWorkspaceId),
+    )
+    .leftJoin(
+      workspaceMembers,
+      and(
+        eq(workspaceMembers.workspaceId, users.activeWorkspaceId),
+        eq(workspaceMembers.userId, users.id),
+      ),
+    )
+    .where(eq(users.id, userId))
+    .limit(1);
+}
+
+type UserRow = Awaited<ReturnType<typeof loadUserJwtFields>>[number];
+
+function applyUserRowToToken(
+  token: Record<string, unknown>,
+  row: UserRow,
+): void {
+  token.name = row.name;
+  if (row.email != null) token.email = row.email;
+  token.picture = row.image;
+  token.workspaceName = row.workspaceName;
+  token.role = row.role;
+  token.timezone = row.timezone;
+  token.onboardedAt = row.onboardedAt
+    ? row.onboardedAt.toISOString()
+    : null;
+  token.activeWorkspaceId = row.activeWorkspaceId;
+  token.activeWorkspaceRole = row.activeWorkspaceRole;
+}
 
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
@@ -341,61 +395,20 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (user?.id) {
         token.sub = user.id;
-        const [row] = await db
-          .select({
-            name: users.name,
-            email: users.email,
-            image: users.image,
-            workspaceName: users.workspaceName,
-            role: users.role,
-            timezone: users.timezone,
-            onboardedAt: users.onboardedAt,
-          })
-          .from(users)
-          .where(eq(users.id, user.id))
-          .limit(1);
-        if (row) {
-          token.name = row.name;
-          token.email = row.email;
-          token.picture = row.image;
-          token.workspaceName = row.workspaceName;
-          token.role = row.role;
-          token.timezone = row.timezone;
-          token.onboardedAt = row.onboardedAt
-            ? row.onboardedAt.toISOString()
-            : null;
-        }
+        const [row] = await loadUserJwtFields(user.id);
+        if (row) applyUserRowToToken(token, row);
       }
 
       // Refresh path. Runs when:
-      //  - `trigger === "update"` (server action called unstable_update), or
-      //  - the token predates the fields we now stash in the JWT (migration
-      //    for users whose session cookie was issued before this deploy —
-      //    they'd otherwise look "not onboarded" and get bounced).
-      const needsBackfill = token.sub && !("onboardedAt" in token);
+      //  - `trigger === "update"` (server action called unstable_update,
+      //    e.g., after switching workspaces or finishing onboarding), or
+      //  - the token predates the fields we now stash in the JWT.
+      const needsBackfill =
+        token.sub &&
+        (!("onboardedAt" in token) || !("activeWorkspaceId" in token));
       if ((trigger === "update" && token.sub) || needsBackfill) {
-        const [row] = await db
-          .select({
-            name: users.name,
-            image: users.image,
-            workspaceName: users.workspaceName,
-            role: users.role,
-            timezone: users.timezone,
-            onboardedAt: users.onboardedAt,
-          })
-          .from(users)
-          .where(eq(users.id, token.sub!))
-          .limit(1);
-        if (row) {
-          token.name = row.name;
-          token.picture = row.image;
-          token.workspaceName = row.workspaceName;
-          token.role = row.role;
-          token.timezone = row.timezone;
-          token.onboardedAt = row.onboardedAt
-            ? row.onboardedAt.toISOString()
-            : null;
-        }
+        const [row] = await loadUserJwtFields(token.sub!);
+        if (row) applyUserRowToToken(token, row);
         // Avoid unused-var warning; session payload is ignored by design.
         void session;
       }

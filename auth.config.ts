@@ -26,6 +26,14 @@ export default {
           role?: "solo" | "creator" | "team" | "agency" | "nonprofit" | null;
           timezone?: string | null;
           onboardedAt?: string | null;
+          activeWorkspaceId?: string | null;
+          activeWorkspaceRole?:
+            | "owner"
+            | "admin"
+            | "editor"
+            | "reviewer"
+            | "viewer"
+            | null;
         };
         session.user.id = token.sub;
         session.user.name = (token.name as string | null) ?? null;
@@ -38,6 +46,8 @@ export default {
         session.user.onboardedAt = t.onboardedAt
           ? new Date(t.onboardedAt)
           : null;
+        session.user.activeWorkspaceId = t.activeWorkspaceId ?? null;
+        session.user.activeWorkspaceRole = t.activeWorkspaceRole ?? null;
       }
       return session;
     },
