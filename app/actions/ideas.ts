@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { ideas, type PostMedia } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
-
+import { getCurrentContext } from "@/lib/current-context";
 const ALLOWED_MIMES = new Set([
   "image/jpeg",
   "image/png",
@@ -60,6 +60,9 @@ function parseTags(raw: string | null): string[] {
 export async function createIdeaAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
 
   const body = String(formData.get("body") ?? "").trim();
   if (!body) throw new Error("Idea body is required.");
@@ -69,7 +72,8 @@ export async function createIdeaAction(formData: FormData) {
   const media = parseMedia(String(formData.get("media") ?? ""));
 
   await db.insert(ideas).values({
-    userId: user.id,
+    createdByUserId: user.id,
+    workspaceId: workspace.id,
     source: url ? "url_clip" : "manual",
     sourceUrl: url,
     title,
@@ -83,6 +87,9 @@ export async function createIdeaAction(formData: FormData) {
 export async function updateIdeaAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
 
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("id required");
@@ -103,28 +110,34 @@ export async function updateIdeaAction(formData: FormData) {
       media,
       updatedAt: new Date(),
     })
-    .where(and(eq(ideas.id, id), eq(ideas.userId, user.id)));
+    .where(and(eq(ideas.id, id), eq(ideas.workspaceId, workspace.id)));
   revalidatePath("/app/ideas");
 }
 
 export async function updateIdeaStatusAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   const statusRaw = formData.get("status");
   if (!id || !isStatus(statusRaw)) throw new Error("Invalid params");
   await db
     .update(ideas)
     .set({ status: statusRaw, updatedAt: new Date() })
-    .where(and(eq(ideas.id, id), eq(ideas.userId, user.id)));
+    .where(and(eq(ideas.id, id), eq(ideas.workspaceId, workspace.id)));
   revalidatePath("/app/ideas");
 }
 
 export async function deleteIdeaAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("id required");
-  await db.delete(ideas).where(and(eq(ideas.id, id), eq(ideas.userId, user.id)));
+  await db.delete(ideas).where(and(eq(ideas.id, id), eq(ideas.workspaceId, workspace.id)));
   revalidatePath("/app/ideas");
 }

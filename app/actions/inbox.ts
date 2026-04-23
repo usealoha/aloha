@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
+import { requireContext } from "@/lib/current-context";
 import {
   accounts,
   blueskyCredentials,
@@ -25,10 +26,9 @@ import {
 } from "@/lib/inbox/reply-dm";
 
 export async function refreshInbox() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-
-  const userId = session.user.id;
+  const ctx = await requireContext();
+  const userId = ctx.user.id;
+  const workspaceId = ctx.workspace.id;
 
   // Detect which platforms are connected by hitting every credential table
   // in parallel. Each syncInbox call handles its own fetcher errors
@@ -38,32 +38,32 @@ export async function refreshInbox() {
       db
         .select({ id: blueskyCredentials.id })
         .from(blueskyCredentials)
-        .where(eq(blueskyCredentials.userId, userId))
+        .where(eq(blueskyCredentials.workspaceId, workspaceId))
         .limit(1),
       db
         .select({ provider: accounts.provider })
         .from(accounts)
-        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "twitter")))
+        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "twitter")))
         .limit(1),
       db
         .select({ id: mastodonCredentials.id })
         .from(mastodonCredentials)
-        .where(eq(mastodonCredentials.userId, userId))
+        .where(eq(mastodonCredentials.workspaceId, workspaceId))
         .limit(1),
       db
         .select({ id: telegramCredentials.id })
         .from(telegramCredentials)
-        .where(eq(telegramCredentials.userId, userId))
+        .where(eq(telegramCredentials.workspaceId, workspaceId))
         .limit(1),
       db
         .select({ provider: accounts.provider })
         .from(accounts)
-        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "instagram")))
+        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "instagram")))
         .limit(1),
       db
         .select({ provider: accounts.provider })
         .from(accounts)
-        .where(and(eq(accounts.userId, userId), eq(accounts.provider, "facebook")))
+        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "facebook")))
         .limit(1),
     ]);
 
@@ -95,6 +95,7 @@ export async function refreshInbox() {
 export async function markAsRead(messageId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   await db
     .update(inboxMessages)
@@ -102,7 +103,7 @@ export async function markAsRead(messageId: string) {
     .where(
       and(
         eq(inboxMessages.id, messageId),
-        eq(inboxMessages.userId, session.user.id),
+        eq(inboxMessages.workspaceId, ctx.workspace.id),
       ),
     );
 
@@ -115,13 +116,14 @@ export async function markAsRead(messageId: string) {
 export async function markConvoAsRead(threadId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   await db
     .update(inboxMessages)
     .set({ isRead: true, updatedAt: new Date() })
     .where(
       and(
-        eq(inboxMessages.userId, session.user.id),
+        eq(inboxMessages.workspaceId, ctx.workspace.id),
         eq(inboxMessages.threadId, threadId),
         eq(inboxMessages.reason, "dm"),
         eq(inboxMessages.isRead, false),
@@ -132,13 +134,14 @@ export async function markConvoAsRead(threadId: string) {
 export async function markAllAsRead() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   await db
     .update(inboxMessages)
     .set({ isRead: true, updatedAt: new Date() })
     .where(
       and(
-        eq(inboxMessages.userId, session.user.id),
+        eq(inboxMessages.workspaceId, ctx.workspace.id),
         eq(inboxMessages.isRead, false),
       ),
     );
@@ -149,6 +152,7 @@ export async function markAllAsRead() {
 export async function sendReply(messageId: string, content: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  const ctx = await requireContext();
 
   const [message] = await db
     .select()
@@ -156,7 +160,7 @@ export async function sendReply(messageId: string, content: string) {
     .where(
       and(
         eq(inboxMessages.id, messageId),
-        eq(inboxMessages.userId, session.user.id),
+        eq(inboxMessages.workspaceId, ctx.workspace.id),
       ),
     )
     .limit(1);

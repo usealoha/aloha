@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { feedItems, feeds, ideas } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { subscribe, syncFeed, unsubscribe } from "@/lib/feeds";
 
 export async function subscribeToFeedAction(formData: FormData) {
@@ -58,13 +59,16 @@ export async function unsubscribeFeedAction(formData: FormData) {
 export async function refreshFeedAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const feedId = String(formData.get("feedId") ?? "");
   if (!feedId) throw new Error("feedId required");
   // Ownership check: only sync the user's own feeds.
   const [row] = await db
     .select({ id: feeds.id })
     .from(feeds)
-    .where(and(eq(feeds.id, feedId), eq(feeds.userId, user.id)))
+    .where(and(eq(feeds.id, feedId), eq(feeds.workspaceId, workspace.id)))
     .limit(1);
   if (!row) throw new Error("Feed not found");
   await syncFeed(feedId);
@@ -74,6 +78,9 @@ export async function refreshFeedAction(formData: FormData) {
 export async function markItemReadAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const itemId = String(formData.get("itemId") ?? "");
   const read = String(formData.get("read") ?? "true") === "true";
   if (!itemId) throw new Error("itemId required");
@@ -84,7 +91,7 @@ export async function markItemReadAction(formData: FormData) {
     .select({ id: feedItems.id })
     .from(feedItems)
     .innerJoin(feeds, eq(feedItems.feedId, feeds.id))
-    .where(and(eq(feedItems.id, itemId), eq(feeds.userId, user.id)))
+    .where(and(eq(feedItems.id, itemId), eq(feeds.workspaceId, workspace.id)))
     .limit(1);
   if (!owned) throw new Error("Item not found");
 
@@ -98,24 +105,28 @@ export async function markItemReadAction(formData: FormData) {
 export async function saveItemAsIdeaAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const itemId = String(formData.get("itemId") ?? "");
   if (!itemId) throw new Error("itemId required");
 
-  // Load the item + verify ownership via join on feeds.userId.
+  // Load the item + verify ownership via join on feeds.workspaceId.
   const [item] = await db
     .select({
       id: feedItems.id,
       title: feedItems.title,
       summary: feedItems.summary,
       url: feedItems.url,
-      feedUserId: feeds.userId,
+      feedWorkspaceId: feeds.workspaceId,
       savedAsIdeaId: feedItems.savedAsIdeaId,
     })
     .from(feedItems)
     .innerJoin(feeds, eq(feedItems.feedId, feeds.id))
     .where(eq(feedItems.id, itemId))
     .limit(1);
-  if (!item || item.feedUserId !== user.id) throw new Error("Item not found");
+  if (!item || item.feedWorkspaceId !== workspace.id)
+    throw new Error("Item not found");
   if (item.savedAsIdeaId) {
     revalidatePath("/app/feeds");
     return;
@@ -124,7 +135,8 @@ export async function saveItemAsIdeaAction(formData: FormData) {
   const [idea] = await db
     .insert(ideas)
     .values({
-      userId: user.id,
+      createdByUserId: user.id,
+      workspaceId: workspace.id,
       source: "feed",
       sourceId: item.id,
       sourceUrl: item.url,

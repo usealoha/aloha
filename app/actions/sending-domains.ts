@@ -4,6 +4,7 @@ import "server-only";
 import { Resend } from "resend";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireContext } from "@/lib/current-context";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -45,6 +46,10 @@ function normalizeRecords(
 
 export async function addSendingDomain(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
   const domain = String(formData.get("domain") ?? "")
     .trim()
@@ -58,7 +63,7 @@ export async function addSendingDomain(formData: FormData) {
 
   const existing = await db.query.sendingDomains.findFirst({
     where: and(
-      eq(sendingDomains.userId, userId),
+      eq(sendingDomains.workspaceId, workspaceId),
       eq(sendingDomains.domain, domain),
     ),
   });
@@ -78,7 +83,8 @@ export async function addSendingDomain(formData: FormData) {
   }
 
   await db.insert(sendingDomains).values({
-    userId,
+    createdByUserId: userId,
+    workspaceId,
     domain,
     resendDomainId: data.id,
     status: mapStatus(data.status),
@@ -91,11 +97,15 @@ export async function addSendingDomain(formData: FormData) {
 
 export async function updateSendingDomainTracking(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
 
   const row = await db.query.sendingDomains.findFirst({
-    where: and(eq(sendingDomains.id, id), eq(sendingDomains.userId, userId)),
+    where: and(eq(sendingDomains.id, id), eq(sendingDomains.workspaceId, workspaceId)),
   });
   if (!row) throw new Error("Domain not found.");
   if (!row.resendDomainId) {
@@ -130,11 +140,15 @@ export async function updateSendingDomainTracking(formData: FormData) {
 
 export async function verifySendingDomain(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const row = await db.query.sendingDomains.findFirst({
-    where: and(eq(sendingDomains.id, id), eq(sendingDomains.userId, userId)),
+    where: and(eq(sendingDomains.id, id), eq(sendingDomains.workspaceId, workspaceId)),
   });
   if (!row) throw new Error("Domain not found.");
   if (!row.resendDomainId) {
@@ -177,11 +191,15 @@ export async function verifySendingDomain(formData: FormData) {
 
 export async function deleteSendingDomain(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const row = await db.query.sendingDomains.findFirst({
-    where: and(eq(sendingDomains.id, id), eq(sendingDomains.userId, userId)),
+    where: and(eq(sendingDomains.id, id), eq(sendingDomains.workspaceId, workspaceId)),
   });
   if (!row) return;
 

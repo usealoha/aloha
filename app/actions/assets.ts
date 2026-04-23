@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { assets } from "@/db/schema";
 import { env } from "@/lib/env";
 import { getCurrentUser } from "@/lib/current-user";
-
+import { getCurrentContext } from "@/lib/current-context";
 export type LibraryAsset = {
   id: string;
   url: string;
@@ -23,6 +23,9 @@ export type LibraryAsset = {
 export async function listLibraryAssets(limit = 60): Promise<LibraryAsset[]> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
 
   const rows = await db
     .select({
@@ -37,7 +40,7 @@ export async function listLibraryAssets(limit = 60): Promise<LibraryAsset[]> {
       createdAt: assets.createdAt,
     })
     .from(assets)
-    .where(eq(assets.userId, user.id))
+    .where(eq(assets.workspaceId, workspace.id))
     .orderBy(desc(assets.createdAt))
     .limit(limit);
 
@@ -50,19 +53,22 @@ export async function listLibraryAssets(limit = 60): Promise<LibraryAsset[]> {
 export async function deleteGeneratedAssetAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("id required");
 
   const [row] = await db
     .select({ url: assets.url, source: assets.source })
     .from(assets)
-    .where(and(eq(assets.id, id), eq(assets.userId, user.id)))
+    .where(and(eq(assets.id, id), eq(assets.workspaceId, workspace.id)))
     .limit(1);
   if (!row) return;
 
   await db
     .delete(assets)
-    .where(and(eq(assets.id, id), eq(assets.userId, user.id)));
+    .where(and(eq(assets.id, id), eq(assets.workspaceId, workspace.id)));
 
   if (row.source === "generated" || row.source === "upload") {
     try {

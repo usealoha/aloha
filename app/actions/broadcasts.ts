@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { Client } from "@upstash/qstash";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireContext } from "@/lib/current-context";
 
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -26,6 +27,10 @@ async function requireUserId() {
 
 export async function createBroadcastDraft() {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
 
   // Seed `fromAddress` with a placeholder. User picks a verified domain in
@@ -35,7 +40,8 @@ export async function createBroadcastDraft() {
   const [row] = await db
     .insert(broadcasts)
     .values({
-      userId,
+      createdByUserId: userId,
+      workspaceId,
       subject: "",
       body: "",
       fromAddress: "",
@@ -48,11 +54,15 @@ export async function createBroadcastDraft() {
 
 export async function updateBroadcastDraft(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
 
   const row = await db.query.broadcasts.findFirst({
-    where: and(eq(broadcasts.id, id), eq(broadcasts.userId, userId)),
+    where: and(eq(broadcasts.id, id), eq(broadcasts.workspaceId, workspaceId)),
   });
   if (!row) throw new Error("Broadcast not found");
   if (row.status !== "draft") {
@@ -72,7 +82,7 @@ export async function updateBroadcastDraft(formData: FormData) {
     const domain = await db.query.sendingDomains.findFirst({
       where: and(
         eq(sendingDomains.id, sendingDomainId),
-        eq(sendingDomains.userId, userId),
+        eq(sendingDomains.workspaceId, workspaceId),
       ),
     });
     if (!domain) throw new Error("Pick a domain you own.");
@@ -99,11 +109,15 @@ export async function updateBroadcastDraft(formData: FormData) {
 
 export async function deleteBroadcast(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const row = await db.query.broadcasts.findFirst({
-    where: and(eq(broadcasts.id, id), eq(broadcasts.userId, userId)),
+    where: and(eq(broadcasts.id, id), eq(broadcasts.workspaceId, workspaceId)),
   });
   if (!row) return;
   if (row.status !== "draft") {
@@ -121,6 +135,10 @@ export async function draftBroadcastWithMuse(formData: FormData): Promise<{
   body: string;
 }> {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
   await requireMuseAccess(userId);
   const id = String(formData.get("id") ?? "");
@@ -129,7 +147,7 @@ export async function draftBroadcastWithMuse(formData: FormData): Promise<{
   if (!brief) throw new Error("Tell Muse what the email is about.");
 
   const row = await db.query.broadcasts.findFirst({
-    where: and(eq(broadcasts.id, id), eq(broadcasts.userId, userId)),
+    where: and(eq(broadcasts.id, id), eq(broadcasts.workspaceId, workspaceId)),
   });
   if (!row) throw new Error("Broadcast not found");
   if (row.status !== "draft") {
@@ -159,12 +177,16 @@ export async function draftBroadcastWithMuse(formData: FormData): Promise<{
 
 export async function sendBroadcastNow(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   await requireBroadcastEntitlement(userId);
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
 
   const row = await db.query.broadcasts.findFirst({
-    where: and(eq(broadcasts.id, id), eq(broadcasts.userId, userId)),
+    where: and(eq(broadcasts.id, id), eq(broadcasts.workspaceId, workspaceId)),
   });
   if (!row) throw new Error("Broadcast not found");
   if (row.status !== "draft") {
@@ -185,7 +207,7 @@ export async function sendBroadcastNow(formData: FormData) {
   const domain = await db.query.sendingDomains.findFirst({
     where: and(
       eq(sendingDomains.id, row.sendingDomainId),
-      eq(sendingDomains.userId, userId),
+      eq(sendingDomains.workspaceId, workspaceId),
     ),
   });
   if (!domain || domain.status !== "verified") {
@@ -198,7 +220,7 @@ export async function sendBroadcastNow(formData: FormData) {
     .select({ id: subscribers.id })
     .from(subscribers)
     .where(
-      and(eq(subscribers.userId, userId), isNull(subscribers.unsubscribedAt)),
+      and(eq(subscribers.workspaceId, workspaceId), isNull(subscribers.unsubscribedAt)),
     )
     .limit(1);
   if (eligible.length === 0) {

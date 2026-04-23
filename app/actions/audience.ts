@@ -13,6 +13,7 @@ import {
   BACKGROUND_PRESETS,
   FONT_PAIRS,
 } from "@/lib/audience-templates/tokens";
+import { requireContext } from "@/lib/current-context";
 import { LINKS_PER_PAGE_LIMIT } from "@/lib/audience-limits";
 import { isCustomThemeEnabled } from "@/lib/billing/entitlements";
 import type { PageTheme } from "@/db/schema";
@@ -28,6 +29,10 @@ async function requireUserId() {
 export async function updatePage(formData: FormData) {
   const userId = await requireUserId();
 
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
+
   const slug = String(formData.get("slug") ?? "")
     .trim()
     .toLowerCase();
@@ -41,7 +46,7 @@ export async function updatePage(formData: FormData) {
   }
 
   const existing = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
 
   if (existing) {
@@ -50,7 +55,7 @@ export async function updatePage(formData: FormData) {
       .set({ slug, title, bio, updatedAt: new Date() })
       .where(eq(pages.id, existing.id));
   } else {
-    await db.insert(pages).values({ userId, slug, title, bio });
+    await db.insert(pages).values({ createdByUserId: userId, workspaceId, slug, title, bio });
   }
 
   revalidatePath("/app/audience");
@@ -60,6 +65,10 @@ export async function updatePage(formData: FormData) {
 
 export async function addLink(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
 
   const title = String(formData.get("title") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
@@ -72,7 +81,7 @@ export async function addLink(formData: FormData) {
   }
 
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) {
     throw new Error("Set up your public page first, then add links.");
@@ -106,8 +115,12 @@ export async function addLink(formData: FormData) {
 export async function reorderLinks(orderedIds: string[]) {
   const userId = await requireUserId();
 
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
+
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) throw new Error("No page to reorder.");
 
@@ -142,8 +155,12 @@ export async function reorderLinks(orderedIds: string[]) {
 export async function updateLinkIcon(linkId: string, iconPresetId: string | null) {
   const userId = await requireUserId();
 
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
+
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) throw new Error("No page.");
 
@@ -167,11 +184,15 @@ export async function updateLinkIcon(linkId: string, iconPresetId: string | null
 
 export async function deleteLink(formData: FormData) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) return;
 
@@ -184,8 +205,17 @@ export async function deleteLink(formData: FormData) {
 }
 
 async function requireOwnedAsset(userId: string, assetId: string) {
+  // Asset scoping rides on the owner's current workspace. Resolved inline
+  // so the helper keeps its lean (userId, assetId) signature.
+  const { users } = await import("@/db/schema");
+  const [userRow] = await db
+    .select({ workspaceId: users.activeWorkspaceId })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!userRow?.workspaceId) throw new Error("Asset not found.");
   const asset = await db.query.assets.findFirst({
-    where: and(eq(assets.id, assetId), eq(assets.userId, userId)),
+    where: and(eq(assets.id, assetId), eq(assets.workspaceId, userRow.workspaceId)),
   });
   if (!asset) throw new Error("Asset not found.");
   return asset;
@@ -193,8 +223,12 @@ async function requireOwnedAsset(userId: string, assetId: string) {
 
 export async function setAvatarAsset(assetId: string | null) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) throw new Error("Set up your page first.");
 
@@ -211,8 +245,12 @@ export async function setAvatarAsset(assetId: string | null) {
 
 export async function setBackgroundAsset(assetId: string | null) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) throw new Error("Set up your page first.");
 
@@ -237,8 +275,12 @@ export async function setPageDesign(input: {
   theme: PageTheme | null;
 }) {
   const userId = await requireUserId();
+
+  const __ctx = await requireContext();
+
+  const workspaceId = __ctx.workspace.id;
   const page = await db.query.pages.findFirst({
-    where: eq(pages.userId, userId),
+    where: eq(pages.workspaceId, workspaceId),
   });
   if (!page) throw new Error("Set up your page first.");
 
@@ -285,10 +327,15 @@ export async function setPageDesign(input: {
 
 export async function subscribe(data: { email: string; userId: string }) {
   try {
+    const { requireActiveWorkspaceId } = await import(
+      "@/lib/workspaces/resolve"
+    );
+    const workspaceId = await requireActiveWorkspaceId(data.userId);
     const [row] = await db
       .insert(subscribers)
       .values({
-        userId: data.userId,
+        createdByUserId: data.userId,
+        workspaceId,
         email: data.email,
         tags: ["lead", "public-page"],
       })

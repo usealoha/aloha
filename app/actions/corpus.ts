@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { brandCorpus } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentContext } from "@/lib/current-context";
 import { disconnectNotion, syncNotionCorpus } from "@/lib/notion";
 import { requireMuseAccess } from "@/lib/billing/muse";
 
@@ -23,13 +24,16 @@ export async function syncNotionAction() {
 export async function disconnectNotionAction() {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await getCurrentContext();
+  if (!ctx) throw new Error("No workspace");
+  const { workspace } = ctx;
   await requireMuseAccess(user.id);
   await disconnectNotion(user.id);
   // Also purge corpus rows sourced from Notion; they're stale now.
   await db
     .delete(brandCorpus)
     .where(
-      and(eq(brandCorpus.userId, user.id), eq(brandCorpus.source, "notion")),
+      and(eq(brandCorpus.workspaceId, workspace.id), eq(brandCorpus.source, "notion")),
     );
   revalidatePath("/app/settings/muse");
 }

@@ -20,6 +20,7 @@ import {
 } from "@/lib/ai/campaign";
 import { requireMuseAccess } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
+import { requireContext } from "@/lib/current-context";
 import { env } from "@/lib/env";
 
 const isKind = (v: unknown): v is CampaignKind =>
@@ -96,6 +97,7 @@ export async function createCampaignAction(formData: FormData) {
 export async function acceptCampaignBeatsAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await requireContext();
 
   const campaignId = String(formData.get("campaignId") ?? "");
   const beatIds = formData
@@ -132,7 +134,8 @@ export async function acceptCampaignBeatsAction(formData: FormData) {
     const [post] = await db
       .insert(posts)
       .values({
-        userId: user.id,
+        createdByUserId: user.id,
+        workspaceId: ctx.workspace.id,
         content,
         platforms: [beat.channel],
         status: "draft",
@@ -183,6 +186,7 @@ const qstashClient = new QStashClient({ token: env.QSTASH_TOKEN });
 export async function pauseCampaignAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await requireContext();
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");
@@ -190,7 +194,7 @@ export async function pauseCampaignAction(formData: FormData) {
   const [row] = await db
     .select({ id: campaigns.id })
     .from(campaigns)
-    .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)))
+    .where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, ctx.workspace.id)))
     .limit(1);
   if (!row) throw new Error("Campaign not found.");
 
@@ -200,7 +204,7 @@ export async function pauseCampaignAction(formData: FormData) {
     .where(
       and(
         eq(posts.campaignId, campaignId),
-        eq(posts.userId, user.id),
+        eq(posts.workspaceId, ctx.workspace.id),
         eq(posts.status, "scheduled"),
       ),
     );
@@ -224,6 +228,7 @@ export async function pauseCampaignAction(formData: FormData) {
 export async function resumeCampaignAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await requireContext();
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");
@@ -231,7 +236,7 @@ export async function resumeCampaignAction(formData: FormData) {
   const [row] = await db
     .select({ id: campaigns.id })
     .from(campaigns)
-    .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)))
+    .where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, ctx.workspace.id)))
     .limit(1);
   if (!row) throw new Error("Campaign not found.");
 
@@ -242,7 +247,7 @@ export async function resumeCampaignAction(formData: FormData) {
     .where(
       and(
         eq(posts.campaignId, campaignId),
-        eq(posts.userId, user.id),
+        eq(posts.workspaceId, ctx.workspace.id),
         eq(posts.status, "draft"),
         isNotNull(posts.scheduledAt),
         gt(posts.scheduledAt, now),
@@ -254,7 +259,7 @@ export async function resumeCampaignAction(formData: FormData) {
     await db
       .update(posts)
       .set({ status: "scheduled", updatedAt: now })
-      .where(and(eq(posts.userId, user.id), inArray(posts.id, ids)));
+      .where(and(eq(posts.workspaceId, ctx.workspace.id), inArray(posts.id, ids)));
 
     for (const r of resumable) {
       if (!r.scheduledAt) continue;
@@ -292,6 +297,7 @@ export async function resumeCampaignAction(formData: FormData) {
 export async function deleteCampaignAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  const ctx = await requireContext();
 
   const campaignId = String(formData.get("campaignId") ?? "");
   if (!campaignId) throw new Error("campaignId required");
@@ -299,7 +305,7 @@ export async function deleteCampaignAction(formData: FormData) {
   const [row] = await db
     .select({ id: campaigns.id })
     .from(campaigns)
-    .where(and(eq(campaigns.id, campaignId), eq(campaigns.userId, user.id)))
+    .where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, ctx.workspace.id)))
     .limit(1);
   if (!row) throw new Error("Campaign not found.");
 
@@ -310,7 +316,7 @@ export async function deleteCampaignAction(formData: FormData) {
     .where(
       and(
         eq(posts.campaignId, campaignId),
-        eq(posts.userId, user.id),
+        eq(posts.workspaceId, ctx.workspace.id),
         inArray(posts.status, ["draft", "scheduled", "failed"]),
       ),
     );
