@@ -3,6 +3,8 @@ import { automations } from "@/db/schema";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
+import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { desc, eq } from "drizzle-orm";
 import { Clock, Lock, Pencil, Plus, Workflow, Zap } from "lucide-react";
@@ -36,6 +38,9 @@ export default async function AutomationsPage({
 	const user = (await getCurrentUser())!;
 
 	const ctx = (await getCurrentContext())!;
+	if (!hasRole(ctx.role, ROLES.ADMIN)) {
+		redirect("/app/dashboard");
+	}
 
 	const { workspace } = ctx;
 	const museAccess = await hasMuseInviteEntitlement(user.id);

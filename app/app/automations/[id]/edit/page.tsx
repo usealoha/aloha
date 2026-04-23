@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { automations } from "@/db/schema";
 import { getCurrentUser } from "@/lib/current-user";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { Builder, type BuilderStepValues } from "../../_components/builder";
 import {
   TEMPLATES,
@@ -25,6 +26,9 @@ export default async function EditAutomationPage({
   if (!user) redirect("/auth/signin");
   const ctx = await getCurrentContext();
   if (!ctx) redirect("/auth/signin");
+  if (!hasRole(ctx.role, ROLES.ADMIN)) {
+    redirect("/app/dashboard");
+  }
   const { workspace } = ctx;
 
   const [row] = await db

@@ -15,6 +15,7 @@ import {
   type ConfigField,
 } from "./_lib/templates";
 import { requireContext } from "@/lib/current-context";
+import { assertRole, ROLES } from "@/lib/workspaces/roles";
 import { requireMuseAccess } from "@/lib/billing/muse";
 import { resolveSteps } from "./_lib/steps";
 import { handlerFor } from "./_lib/handler-map";
@@ -112,7 +113,7 @@ function parsePayload(formData: FormData): BuilderPayload {
 export async function createAutomationFromBuilder(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const kind = String(formData.get("kind") ?? "") as AutomationKind;
@@ -147,7 +148,7 @@ export async function createAutomationFromBuilder(formData: FormData) {
 export async function updateAutomationFromBuilder(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -205,7 +206,7 @@ export async function updateAutomationFromBuilder(formData: FormData) {
 export async function toggleAutomation(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -268,7 +269,7 @@ export async function simulateRun(formData: FormData) {
   if (process.env.NODE_ENV === "production") return;
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
@@ -314,7 +315,7 @@ export async function simulateRun(formData: FormData) {
 export async function deleteAutomation(formData: FormData) {
   const userId = await requireUserId();
 
-  const __ctx = await requireContext();
+  const __ctx = await assertRole(ROLES.ADMIN);
 
   const workspaceId = __ctx.workspace.id;
   const id = String(formData.get("id") ?? "");
