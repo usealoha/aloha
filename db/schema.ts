@@ -199,12 +199,28 @@ export const posts = pgTable("posts", {
   // with alt hooks and rationale. Null for manual drafts.
   draftMeta: jsonb("draftMeta").$type<DraftMeta>(),
   status: text("status", {
-    enum: ["draft", "scheduled", "published", "failed", "deleted"],
+    enum: [
+      "draft",
+      "in_review",
+      "approved",
+      "scheduled",
+      "published",
+      "failed",
+      "deleted",
+    ],
   })
     .default("draft")
     .notNull(),
   scheduledAt: timestamp("scheduledAt"),
   publishedAt: timestamp("publishedAt"),
+  submittedForReviewAt: timestamp("submittedForReviewAt"),
+  submittedBy: uuid("submittedBy").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: uuid("approvedBy").references(() => users.id, {
+    onDelete: "set null",
+  }),
   // When the composer was seeded from an idea (via ?idea= URL), we stamp
   // the source here so the idea can be flipped to `drafted` + we keep
   // provenance. Set-null on idea delete so orphaned posts survive.
@@ -1295,6 +1311,28 @@ export const postComments = pgTable(
       table.rootRemoteId,
     ),
   ],
+);
+
+// Internal review comments on a post. Distinct from `postComments` (which
+// stores fetched platform replies). Surfaced in the UI as "Comments" on the
+// post detail + composer. Not tied to status — leaveable at any stage. Edits
+// bump `editedAt` so the UI can badge "edited".
+export const postNotes = pgTable(
+  "post_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    postId: uuid("postId")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    authorUserId: uuid("authorUserId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    editedAt: timestamp("editedAt"),
+  },
+  (table) => [index("post_notes_post").on(table.postId, table.createdAt)],
 );
 
 // Admin panel operators. Completely separate from `users` — no shared

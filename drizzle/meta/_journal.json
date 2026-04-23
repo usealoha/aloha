@@ -85,6 +85,20 @@
       "when": 1776882198576,
       "tag": "0011_first_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776923636943,
+      "tag": "0012_bent_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776923927995,
+      "tag": "0013_amusing_spitfire",
+      "breakpoints": true
     }
   ]
 }
