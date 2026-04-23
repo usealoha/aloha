@@ -21,14 +21,14 @@ async function callDelete(
 }
 
 export async function unpublishFromThreads(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	let account = await getFreshToken(args.userId, "threads");
+	let account = await getFreshToken(args.workspaceId, "threads");
 	let res = await callDelete(account, args.remotePostId);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "threads");
+		account = await forceRefresh(args.workspaceId, "threads");
 		res = await callDelete(account, args.remotePostId);
 	}
 

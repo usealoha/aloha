@@ -19,14 +19,14 @@ async function callDelete(
 }
 
 export async function unpublishFromPinterest(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	let account = await getFreshToken(args.userId, "pinterest");
+	let account = await getFreshToken(args.workspaceId, "pinterest");
 	let res = await callDelete(account, args.remotePostId);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "pinterest");
+		account = await forceRefresh(args.workspaceId, "pinterest");
 		res = await callDelete(account, args.remotePostId);
 	}
 

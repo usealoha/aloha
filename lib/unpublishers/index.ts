@@ -38,7 +38,7 @@ type UnpublisherKey =
 
 const UNPUBLISHERS: Record<
 	UnpublisherKey,
-	(args: { userId: string; remotePostId: string }) => Promise<void>
+	(args: { workspaceId: string; remotePostId: string }) => Promise<void>
 > = {
 	twitter: unpublishFromX,
 	linkedin: unpublishFromLinkedIn,
@@ -112,7 +112,7 @@ export async function unpublishPost(postId: string): Promise<UnpublishSummary> {
 		try {
 			const unpublisher = UNPUBLISHERS[delivery.platform];
 			await unpublisher({
-				userId: post.createdByUserId,
+				workspaceId: post.workspaceId,
 				remotePostId: delivery.remotePostId,
 			});
 			await db

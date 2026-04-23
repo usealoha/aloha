@@ -28,18 +28,18 @@ async function callDelete(
 }
 
 export async function unpublishFromReddit(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
 	const fullname = args.remotePostId.startsWith("t3_")
 		? args.remotePostId
 		: `t3_${args.remotePostId}`;
 
-	let account = await getFreshToken(args.userId, "reddit");
+	let account = await getFreshToken(args.workspaceId, "reddit");
 	let res = await callDelete(account, fullname);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "reddit");
+		account = await forceRefresh(args.workspaceId, "reddit");
 		res = await callDelete(account, fullname);
 	}
 

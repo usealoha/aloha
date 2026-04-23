@@ -11,7 +11,7 @@
 import { PublishError } from "@/lib/publishers/errors";
 
 export async function unpublishFromInstagram(_args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
 	throw new PublishError(

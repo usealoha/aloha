@@ -7,10 +7,10 @@ import { PublishError, categorizeHttpStatus } from "@/lib/publishers/errors";
 import { getMastodonCredentials } from "@/lib/publishers/mastodon";
 
 export async function unpublishFromMastodon(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	const credentials = await getMastodonCredentials(args.userId);
+	const credentials = await getMastodonCredentials(args.workspaceId);
 	const url = `${credentials.instanceUrl.replace(/\/$/, "")}/api/v1/statuses/${args.remotePostId}`;
 	const res = await fetch(url, {
 		method: "DELETE",

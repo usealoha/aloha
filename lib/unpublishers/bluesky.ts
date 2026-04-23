@@ -9,10 +9,10 @@ import {
 } from "@/lib/publishers/bluesky";
 
 export async function unpublishFromBluesky(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	const credentials = await getBlueskyCredentials(args.userId);
+	const credentials = await getBlueskyCredentials(args.workspaceId);
 	const agent = await createSession(credentials);
 
 	const did = agent.session?.did ?? credentials.did;

@@ -23,14 +23,14 @@ async function callDeleteTweet(
 }
 
 export async function unpublishFromX(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	let account = await getFreshToken(args.userId, "twitter");
+	let account = await getFreshToken(args.workspaceId, "twitter");
 	let res = await callDeleteTweet(account, args.remotePostId);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "twitter");
+		account = await forceRefresh(args.workspaceId, "twitter");
 		res = await callDeleteTweet(account, args.remotePostId);
 	}
 

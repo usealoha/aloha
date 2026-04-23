@@ -26,14 +26,14 @@ async function callDelete(
 }
 
 export async function unpublishFromLinkedIn(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	let account = await getFreshToken(args.userId, "linkedin");
+	let account = await getFreshToken(args.workspaceId, "linkedin");
 	let res = await callDelete(account, args.remotePostId);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "linkedin");
+		account = await forceRefresh(args.workspaceId, "linkedin");
 		res = await callDelete(account, args.remotePostId);
 	}
 

@@ -51,15 +51,15 @@ async function callDelete(
 }
 
 export async function unpublishFromFacebook(args: {
-	userId: string;
+	workspaceId: string;
 	remotePostId: string;
 }): Promise<void> {
-	let account = await getFreshToken(args.userId, "facebook");
+	let account = await getFreshToken(args.workspaceId, "facebook");
 	let pageToken = await getPageToken(account);
 	let res = await callDelete(pageToken, args.remotePostId);
 
 	if (res.status === 401) {
-		account = await forceRefresh(args.userId, "facebook");
+		account = await forceRefresh(args.workspaceId, "facebook");
 		pageToken = await getPageToken(account);
 		res = await callDelete(pageToken, args.remotePostId);
 	}
