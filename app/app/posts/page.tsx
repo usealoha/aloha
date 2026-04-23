@@ -7,6 +7,7 @@ import {
 	telegramCredentials,
 } from "@/db/schema";
 import { getCurrentContext } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { cn } from "@/lib/utils";
 import { FilterTabs } from "@/components/ui/filter-tabs";
@@ -132,6 +133,7 @@ export default async function PostsPage({
 	const ctx = (await getCurrentContext())!;
 	const { user, workspace } = ctx;
 	const tz = workspace.timezone ?? user.timezone ?? "UTC";
+	const canDelete = hasRole(ctx.role, ROLES.ADMIN);
 
 	const params = await searchParams;
 	const filter: StatusFilter = STATUSES.includes(
@@ -141,6 +143,9 @@ export default async function PostsPage({
 		: "all";
 	const view: "list" | "board" =
 		first(params.view) === "board" ? "board" : "list";
+	// `?assignee=me` filters Kanban cards to those assigned to the viewer.
+	// Only meaningful in board view; list view ignores it.
+	const assigneeFilter = first(params.assignee) === "me";
 
 	// Parse selected channels from URL
 	const selectedChannels = parseChannels(params.channels);
@@ -158,6 +163,9 @@ export default async function PostsPage({
 		if (channelCondition) {
 			where.push(channelCondition);
 		}
+	}
+	if (view === "board" && assigneeFilter) {
+		where.push(eq(posts.assignedReviewerId, user.id));
 	}
 
 	// Counts are filtered by channels (if selected) but cover all statuses,
@@ -249,14 +257,20 @@ export default async function PostsPage({
 		status?: StatusFilter;
 		channels?: string[];
 		view?: "list" | "board";
+		assignee?: "me" | null;
 	}) => {
 		const sp = new URLSearchParams();
 		const s = opts.status ?? filter;
 		const c = opts.channels ?? selectedChannels;
 		const v = opts.view ?? view;
+		const a =
+			opts.assignee === undefined
+				? (assigneeFilter ? "me" : null)
+				: opts.assignee;
 		if (s !== "all") sp.set("status", s);
 		if (c.length > 0) sp.set("channels", c.join(","));
 		if (v === "board") sp.set("view", "board");
+		if (a === "me") sp.set("assignee", "me");
 		const qs = sp.toString();
 		return qs ? `/app/posts?${qs}` : "/app/posts";
 	};
@@ -273,6 +287,9 @@ export default async function PostsPage({
 	const clearChannelsHref = () => withParams({ channels: [] });
 
 	const viewHref = (v: "list" | "board") => withParams({ view: v });
+
+	const assigneeToggleHref = () =>
+		withParams({ assignee: assigneeFilter ? null : "me" });
 
 	return (
 		<div className="space-y-10">
@@ -347,9 +364,22 @@ export default async function PostsPage({
 
 			<div className="flex items-center justify-between gap-4 flex-wrap">
 				{view === "board" ? (
-					<span className="text-[12px] text-ink/60">
-						Drag a post between columns to move it through review.
-					</span>
+					<div className="flex items-center gap-3 flex-wrap">
+						<span className="text-[12px] text-ink/60">
+							Drag a post between columns to move it through review.
+						</span>
+						<Link
+							href={assigneeToggleHref()}
+							className={cn(
+								"inline-flex items-center gap-1.5 h-7 px-3 rounded-full border text-[11.5px] font-medium transition-colors",
+								assigneeFilter
+									? "bg-ink text-background border-ink"
+									: "bg-background text-ink/65 border-border hover:border-ink/30 hover:text-ink",
+							)}
+						>
+							Assigned to me
+						</Link>
+					</div>
 				) : (
 					<FilterTabs
 						activeKey={filter}
@@ -444,7 +474,12 @@ export default async function PostsPage({
 			) : view === "board" ? (
 				<PostsBoard rows={rows} tz={tz} />
 			) : (
-				<PostsList rows={rows} tz={tz} filter={filter} />
+				<PostsList
+				rows={rows}
+				tz={tz}
+				filter={filter}
+				canDelete={canDelete}
+			/>
 			)}
 		</div>
 	);

@@ -16,8 +16,8 @@ import type { ChannelProfileView } from "@/components/channel-identity";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
 import type { PostStatus } from "@/lib/posts/transitions";
-import { listNotes } from "@/app/actions/post-notes";
-import type { PostNote } from "@/app/actions/post-notes";
+import { listMentionableMembers, listNotes } from "@/app/actions/post-notes";
+import type { PostNote, PostNoteMention } from "@/app/actions/post-notes";
 import { Composer } from "./_components/composer";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +83,7 @@ export default async function ComposerPage({
   let sourceIdeaId: string | null = null;
   let sourceIdeaTitle: string | null = null;
   let initialNotes: PostNote[] = [];
+  let mentionableMembers: PostNoteMention[] = [];
 
   if (postId) {
     // Load the post for editing. Ownership-checked. Scheduled-time stays
@@ -127,7 +128,10 @@ export default async function ComposerPage({
       if (idea) {
         sourceIdeaTitle = idea.title ?? idea.body.slice(0, 60);
       }
-      initialNotes = await listNotes(post.id);
+      [initialNotes, mentionableMembers] = await Promise.all([
+        listNotes(post.id),
+        listMentionableMembers(),
+      ]);
     }
   } else if (ideaId) {
     const [idea] = await db
@@ -152,6 +156,7 @@ export default async function ComposerPage({
         image: user.image,
         workspaceName: user.workspaceName,
         timezone,
+        workspaceRole: ctx.role,
       }}
       connectedProviders={connectedProviders}
       channelProfiles={channelProfilesById}
@@ -169,6 +174,7 @@ export default async function ComposerPage({
       sourceIdeaId={sourceIdeaId}
       sourceIdeaTitle={sourceIdeaTitle}
       initialNotes={initialNotes}
+      mentionableMembers={mentionableMembers}
     />
   );
 }

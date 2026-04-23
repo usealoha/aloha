@@ -27,6 +27,9 @@ type Props = {
 		| "failed"
 		| "deleted";
 	platforms: string[];
+	// Role gate — deletion is admin-or-above server-side; mirror here so
+	// the menu button hides entirely for editors/reviewers/viewers.
+	canDelete: boolean;
 };
 
 type ConfirmState =
@@ -34,11 +37,18 @@ type ConfirmState =
 	| { type: "permanent" }
 	| null;
 
-export function PostRowActions({ postId, status, platforms }: Props) {
+export function PostRowActions({
+	postId,
+	status,
+	platforms,
+	canDelete,
+}: Props) {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
+
+	if (!canDelete) return null;
 
 	const canDeleteFromPlatform = status === "published";
 	const isDeleted = status === "deleted";

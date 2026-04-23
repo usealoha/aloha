@@ -27,7 +27,10 @@ import { RefreshRepliesButton } from "./_components/refresh-replies-button";
 import { RescheduleButton } from "./_components/reschedule-button";
 import { PostPreviewCard } from "@/components/post-preview-card";
 import { PostNotes } from "@/components/post-notes";
-import { listNotes } from "@/app/actions/post-notes";
+import { listMentionableMembers, listNotes } from "@/app/actions/post-notes";
+import { listReviewerOptions } from "@/app/actions/posts";
+import { ReviewerPicker } from "./_components/reviewer-picker";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -177,7 +180,23 @@ export default async function PostDetailPage({
 
   const publishedLabel = formatDateTime(post.publishedAt, tz);
 
-  const notes = await listNotes(post.id);
+  const [notes, reviewerOptions, mentionableMembers] = await Promise.all([
+    listNotes(post.id),
+    listReviewerOptions(),
+    listMentionableMembers(),
+  ]);
+
+  // Reviewer picker shows when the post is in an assignable stage. Server
+  // action re-validates permission on click; UI just decides visibility.
+  const showReviewerPicker =
+    post.status === "in_review" ||
+    post.status === "approved" ||
+    post.status === "draft";
+  const canAssignReviewer =
+    showReviewerPicker &&
+    (hasRole(ctx.role, ROLES.ADMIN) ||
+      ctx.user.id === post.submittedBy ||
+      ctx.user.id === post.assignedReviewerId);
 
   return (
     <div className="space-y-8">
@@ -216,6 +235,15 @@ export default async function PostDetailPage({
                 {publishedLabel}
               </span>
             )}
+            {showReviewerPicker ? (
+              <ReviewerPicker
+                postId={post.id}
+                reviewers={reviewerOptions}
+                assignedUserId={post.assignedReviewerId ?? null}
+                viewerUserId={ctx.user.id}
+                canAssign={canAssignReviewer}
+              />
+            ) : null}
           </div>
           <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.05] tracking-[-0.02em] text-ink font-normal">
             Post<span className="text-primary font-light">.</span>
@@ -324,7 +352,11 @@ export default async function PostDetailPage({
         </section>
       )}
 
-      <PostNotes postId={post.id} initialNotes={notes} />
+      <PostNotes
+        postId={post.id}
+        initialNotes={notes}
+        members={mentionableMembers}
+      />
         </div>
 
         {/* Right column — sticky preview */}

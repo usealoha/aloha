@@ -22,7 +22,7 @@ import {
 	type ComposerAction,
 } from "@/lib/posts/actions-available";
 import type { PostStatus } from "@/lib/posts/transitions";
-import type { PostNote } from "@/app/actions/post-notes";
+import type { PostNote, PostNoteMention } from "@/app/actions/post-notes";
 import { PostNotes } from "@/components/post-notes";
 import {
 	BlueskyIcon,
@@ -122,6 +122,13 @@ type Author = {
 	image: string | null;
 	workspaceName: string | null;
 	timezone: string;
+	workspaceRole:
+		| "owner"
+		| "admin"
+		| "editor"
+		| "reviewer"
+		| "viewer"
+		| null;
 };
 
 export type Platform = {
@@ -233,6 +240,7 @@ export function Composer({
 	sourceIdeaId = null,
 	sourceIdeaTitle = null,
 	initialNotes = [],
+	mentionableMembers = [],
 }: {
 	author: Author;
 	connectedProviders: string[];
@@ -251,6 +259,7 @@ export function Composer({
 	sourceIdeaId?: string | null;
 	sourceIdeaTitle?: string | null;
 	initialNotes?: PostNote[];
+	mentionableMembers?: PostNoteMention[];
 }) {
 	const router = useRouter();
 	const [baseContent, setBaseContent] = useState(initialContent);
@@ -262,7 +271,7 @@ export function Composer({
 	// draft, Schedule, Publish) stay live via the availableActions set.
 	const isReadOnly = !isEditable(initialStatus);
 	const allowedActions = new Set<ComposerAction>(
-		availableActions(initialStatus),
+		availableActions(initialStatus, author.workspaceRole),
 	);
 	const canAct = (action: ComposerAction) => allowedActions.has(action);
 	// datetime-local strings are tz-less wall-clock. We always treat them as
@@ -1700,7 +1709,11 @@ export function Composer({
 
 			{editingPostId ? (
 				<div className="max-w-3xl">
-					<PostNotes postId={editingPostId} initialNotes={initialNotes} />
+					<PostNotes
+					postId={editingPostId}
+					initialNotes={initialNotes}
+					members={mentionableMembers}
+				/>
 				</div>
 			) : null}
 		</div>

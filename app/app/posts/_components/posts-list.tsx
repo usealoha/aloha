@@ -74,10 +74,12 @@ export function PostsList({
 	rows,
 	tz,
 	filter,
+	canDelete,
 }: {
 	rows: Row[];
 	tz: string;
 	filter: string;
+	canDelete: boolean;
 }) {
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [confirmOpen, setConfirmOpen] = useState(false);
@@ -163,14 +165,16 @@ export function PostsList({
 							<X className="w-3.5 h-3.5" />
 							Clear
 						</button>
-						<button
-							type="button"
-							onClick={() => setConfirmOpen(true)}
-							className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-destructive text-white text-[12px] font-medium hover:bg-destructive/90 transition-colors"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							{mode === "permanent" ? "Delete permanently" : "Delete"}
-						</button>
+						{canDelete ? (
+							<button
+								type="button"
+								onClick={() => setConfirmOpen(true)}
+								className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-destructive text-white text-[12px] font-medium hover:bg-destructive/90 transition-colors"
+							>
+								<Trash2 className="w-3.5 h-3.5" />
+								{mode === "permanent" ? "Delete permanently" : "Delete"}
+							</button>
+						) : null}
 					</div>
 				)}
 			</div>
@@ -267,6 +271,7 @@ export function PostsList({
 											| "deleted"
 									}
 									platforms={p.platforms}
+									canDelete={canDelete}
 								/>
 							</div>
 						</li>
