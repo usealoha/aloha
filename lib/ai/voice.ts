@@ -310,6 +310,7 @@ async function loadCorpusSamples(
       .from(platformContentCache)
       .where(inArray(platformContentCache.id, ids));
   }
+  const workspaceId = await requireActiveWorkspaceId(userId);
   return db
     .select({
       id: platformContentCache.id,
@@ -317,7 +318,7 @@ async function loadCorpusSamples(
       content: platformContentCache.content,
     })
     .from(platformContentCache)
-    .where(eq(platformContentCache.userId, userId))
+    .where(eq(platformContentCache.workspaceId, workspaceId))
     .limit(AUTO_SAMPLE_LIMIT);
 }
 

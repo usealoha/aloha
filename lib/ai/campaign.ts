@@ -375,6 +375,7 @@ async function loadUserIdeas(userId: string) {
 // publishing next.
 async function loadPastHighPerformers(userId: string, channels: string[]) {
   if (channels.length === 0) return [];
+  const workspaceId = await requireActiveWorkspaceId(userId);
   const rankScore = sql<number>`
     COALESCE(
       NULLIF(${platformInsights.metrics}->>'impressions', '')::bigint,
@@ -396,7 +397,7 @@ async function loadPastHighPerformers(userId: string, channels: string[]) {
     .innerJoin(
       platformContentCache,
       and(
-        eq(platformInsights.userId, platformContentCache.userId),
+        eq(platformInsights.workspaceId, platformContentCache.workspaceId),
         eq(platformInsights.platform, platformContentCache.platform),
         eq(
           platformInsights.remotePostId,
@@ -406,7 +407,7 @@ async function loadPastHighPerformers(userId: string, channels: string[]) {
     )
     .where(
       and(
-        eq(platformInsights.userId, userId),
+        eq(platformInsights.workspaceId, workspaceId),
         inArray(platformInsights.platform, channels),
       ),
     )
