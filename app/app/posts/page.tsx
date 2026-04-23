@@ -15,8 +15,10 @@ import {
 	AlertCircle,
 	CheckCircle2,
 	Clock,
+	Columns3,
 	FileText,
 	Filter,
+	List,
 	PenSquare,
 	Sparkles,
 	Trash2,
@@ -25,13 +27,34 @@ import {
 import Link from "next/link";
 import { CHANNEL_ICONS, CHANNEL_LABELS } from "@/components/channel-chip";
 import { PostsList } from "./_components/posts-list";
+import { PostsBoard } from "./_components/posts-board";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const STATUSES = ["all", "draft", "scheduled", "published", "failed", "deleted"] as const;
+const STATUSES = [
+	"all",
+	"draft",
+	"in_review",
+	"approved",
+	"scheduled",
+	"published",
+	"failed",
+	"deleted",
+] as const;
 type StatusFilter = (typeof STATUSES)[number];
+
+// Columns rendered in the Kanban board, in left-to-right order. `deleted`
+// stays out — deleted posts only show in the dedicated list tab.
+const BOARD_COLUMNS = [
+	"draft",
+	"in_review",
+	"approved",
+	"scheduled",
+	"published",
+	"failed",
+] as const;
 
 // Parse channels from URL param - can be single or multiple
 function parseChannels(value: string | string[] | undefined): string[] {
@@ -65,6 +88,16 @@ const STATUS_META: Record<
 		label: "Draft",
 		icon: FileText,
 		badgeClass: "bg-muted text-ink/70",
+	},
+	in_review: {
+		label: "In review",
+		icon: Clock,
+		badgeClass: "bg-amber-100 text-amber-900",
+	},
+	approved: {
+		label: "Approved",
+		icon: CheckCircle2,
+		badgeClass: "bg-emerald-100 text-emerald-900",
 	},
 	scheduled: {
 		label: "Scheduled",
@@ -105,18 +138,19 @@ export default async function PostsPage({
 	)
 		? (first(params.status) as StatusFilter)
 		: "all";
+	const view: "list" | "board" =
+		first(params.view) === "board" ? "board" : "list";
 
 	// Parse selected channels from URL
 	const selectedChannels = parseChannels(params.channels);
 
-	// Build query conditions
+	// Build query conditions. Board view ignores the status filter — it
+	// renders one column per status — but still hides deleted posts.
 	const where = [eq(posts.userId, user.id)];
-	if (filter !== "all") {
-		where.push(eq(posts.status, filter));
-	} else {
-		// "all" is an active-posts view — hide tombstones of remotely-deleted
-		// posts so the list doesn't get cluttered with history.
+	if (view === "board" || filter === "all") {
 		where.push(sql`${posts.status} != 'deleted'`);
+	} else {
+		where.push(eq(posts.status, filter));
 	}
 	if (selectedChannels.length > 0) {
 		const channelCondition = arrayOverlaps(posts.platforms, selectedChannels);
@@ -178,7 +212,7 @@ export default async function PostsPage({
 			.from(posts)
 			.where(and(...where))
 			.orderBy(desc(posts.updatedAt))
-			.limit(100),
+			.limit(view === "board" ? 300 : 100),
 		db
 			.select({
 				status: posts.status,
@@ -210,37 +244,34 @@ export default async function PostsPage({
 	const countBy = (s: StatusFilter) =>
 		s === "all" ? totalActiveCount : (countByStatus[s] ?? 0);
 
-	// Build URLs that preserve channel selection when switching status tabs
-	const buildStatusHref = (status: StatusFilter) => {
+	const withParams = (opts: {
+		status?: StatusFilter;
+		channels?: string[];
+		view?: "list" | "board";
+	}) => {
 		const sp = new URLSearchParams();
-		if (status !== "all") sp.set("status", status);
-		if (selectedChannels.length > 0) sp.set("channels", selectedChannels.join(","));
+		const s = opts.status ?? filter;
+		const c = opts.channels ?? selectedChannels;
+		const v = opts.view ?? view;
+		if (s !== "all") sp.set("status", s);
+		if (c.length > 0) sp.set("channels", c.join(","));
+		if (v === "board") sp.set("view", "board");
 		const qs = sp.toString();
 		return qs ? `/app/posts?${qs}` : "/app/posts";
 	};
 
-	// Toggle channel selection
-	const buildChannelToggleHref = (channel: string) => {
-		const sp = new URLSearchParams();
-		if (filter !== "all") sp.set("status", filter);
+	const buildStatusHref = (status: StatusFilter) => withParams({ status });
 
+	const buildChannelToggleHref = (channel: string) => {
 		const newChannels = selectedChannels.includes(channel)
 			? selectedChannels.filter((c) => c !== channel)
 			: [...selectedChannels, channel];
-
-		if (newChannels.length > 0) sp.set("channels", newChannels.join(","));
-
-		const qs = sp.toString();
-		return qs ? `/app/posts?${qs}` : "/app/posts";
+		return withParams({ channels: newChannels });
 	};
 
-	// Clear all channel filters
-	const clearChannelsHref = () => {
-		const sp = new URLSearchParams();
-		if (filter !== "all") sp.set("status", filter);
-		const qs = sp.toString();
-		return qs ? `/app/posts?${qs}` : "/app/posts";
-	};
+	const clearChannelsHref = () => withParams({ channels: [] });
+
+	const viewHref = (v: "list" | "board") => withParams({ view: v });
 
 	return (
 		<div className="space-y-10">
@@ -313,15 +344,49 @@ export default async function PostsPage({
 				</div>
 			)}
 
-			<FilterTabs
-				activeKey={filter}
-				items={STATUSES.map((s) => ({
-					key: s,
-					label: s === "all" ? "All" : STATUS_META[s].label,
-					href: buildStatusHref(s),
-					count: countBy(s),
-				}))}
-			/>
+			<div className="flex items-center justify-between gap-4 flex-wrap">
+				{view === "board" ? (
+					<span className="text-[12px] text-ink/60">
+						Drag a post between columns to move it through review.
+					</span>
+				) : (
+					<FilterTabs
+						activeKey={filter}
+						items={STATUSES.map((s) => ({
+							key: s,
+							label: s === "all" ? "All" : STATUS_META[s].label,
+							href: buildStatusHref(s),
+							count: countBy(s),
+						}))}
+					/>
+				)}
+				<div className="inline-flex rounded-full border border-border bg-background-elev p-0.5">
+					<Link
+						href={viewHref("list")}
+						className={cn(
+							"inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-colors",
+							view === "list"
+								? "bg-ink text-background"
+								: "text-ink/65 hover:text-ink",
+						)}
+					>
+						<List className="w-3.5 h-3.5" />
+						List
+					</Link>
+					<Link
+						href={viewHref("board")}
+						className={cn(
+							"inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-colors",
+							view === "board"
+								? "bg-ink text-background"
+								: "text-ink/65 hover:text-ink",
+						)}
+					>
+						<Columns3 className="w-3.5 h-3.5" />
+						Board
+					</Link>
+				</div>
+			</div>
 
 			{/* Deleted posts disclaimer */}
 			{filter === "deleted" && (
@@ -375,6 +440,8 @@ export default async function PostsPage({
 						</Link>
 					)}
 				</div>
+			) : view === "board" ? (
+				<PostsBoard rows={rows} tz={tz} />
 			) : (
 				<PostsList rows={rows} tz={tz} filter={filter} />
 			)}
