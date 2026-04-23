@@ -5,6 +5,7 @@ import {
   generations,
   featureAccess,
   channelNotifications,
+  workspaces,
 } from "@/db/schema";
 import { sql, and, isNull, isNotNull, desc } from "drizzle-orm";
 import Link from "next/link";
@@ -19,6 +20,7 @@ import {
 async function getStats() {
   const [
     [userCount],
+    [workspaceCount],
     [postCount],
     [genAgg],
     [pendingReq],
@@ -26,6 +28,7 @@ async function getStats() {
     topChannels,
   ] = await Promise.all([
     db.select({ c: sql<number>`count(*)::int` }).from(users),
+    db.select({ c: sql<number>`count(*)::int` }).from(workspaces),
     db.select({ c: sql<number>`count(*)::int` }).from(posts),
     db
       .select({
@@ -52,6 +55,7 @@ async function getStats() {
   ]);
   return {
     users: userCount.c,
+    workspaces: workspaceCount.c,
     posts: postCount.c,
     generations: genAgg.c,
     aiCostUsd: Number(genAgg.cost) / 1_000_000,
@@ -91,11 +95,16 @@ export default async function AdminOverviewPage() {
 
       <section>
         <SectionHeader eyebrow="At a glance" title="Platform numbers" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <StatCard
             label="Users"
             value={stats.users.toLocaleString()}
             hint="total signups"
+          />
+          <StatCard
+            label="Workspaces"
+            value={stats.workspaces.toLocaleString()}
+            hint="tenants"
           />
           <StatCard
             label="Posts"
