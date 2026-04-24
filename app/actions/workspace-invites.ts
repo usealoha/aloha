@@ -14,6 +14,7 @@ import { sendEmail } from "@/lib/email/send";
 import { workspaceInviteEmail } from "@/lib/email/templates/workspace-invite";
 import { ROLES } from "@/lib/workspaces/roles";
 import { assertRole } from "@/lib/workspaces/assert-role";
+import { assertActive } from "@/lib/workspaces/assert-active";
 import type { WorkspaceRole } from "@/lib/current-context";
 import { getWorkspaceMemberEntitlement } from "@/lib/billing/workspace-limits";
 
@@ -70,7 +71,7 @@ export async function listPendingInvites(): Promise<PendingInvite[]> {
 }
 
 export async function sendWorkspaceInvite(formData: FormData) {
-  const ctx = await assertRole(ROLES.ADMIN);
+  const ctx = await assertActive(ROLES.ADMIN);
 
   const email = String(formData.get("email") ?? "")
     .trim()

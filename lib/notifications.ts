@@ -11,7 +11,8 @@ export type NotificationKind =
   | "post_approved"
   | "post_comment"
   | "post_assigned"
-  | "post_mention";
+  | "post_mention"
+  | "workspace_frozen";
 
 type CreateArgs = {
   userId: string;

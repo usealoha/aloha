@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { AppSidebar } from "./_components/app-sidebar";
 import { AppTopBar } from "./_components/app-top-bar";
+import { FrozenBanner } from "./_components/frozen-banner";
 import { NavProgress } from "./_components/nav-progress";
 import { ThemeProvider } from "./_components/theme-provider";
 
@@ -41,6 +42,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 				/>
 				<div className="flex-1 min-w-0 flex flex-col">
 					<AppTopBar user={user} role={role} />
+					{ctx?.workspace.frozenAt ? (
+						<FrozenBanner isOwner={ctx.user.id === ctx.workspace.ownerUserId} />
+					) : null}
 					<main className="flex-1">
 						<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-10 lg:py-14">
 							{children}

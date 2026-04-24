@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Inbox,
   MessageSquare,
+  Snowflake,
   Sparkles,
   UserCheck,
 } from "lucide-react";
@@ -39,7 +40,8 @@ type Kind =
   | "post_approved"
   | "post_comment"
   | "post_assigned"
-  | "post_mention";
+  | "post_mention"
+  | "workspace_frozen";
 
 type Item = {
   id: string;
@@ -61,6 +63,7 @@ const KIND_ICON: Record<Kind, React.ComponentType<{ className?: string }>> = {
   post_comment: MessageSquare,
   post_assigned: UserCheck,
   post_mention: AtSign,
+  workspace_frozen: Snowflake,
 };
 
 const KIND_TINT: Record<Kind, string> = {
@@ -73,6 +76,7 @@ const KIND_TINT: Record<Kind, string> = {
   post_comment: "text-ink/65",
   post_assigned: "text-amber-700",
   post_mention: "text-primary",
+  workspace_frozen: "text-rose-600",
 };
 
 function timeAgo(d: Date): string {
