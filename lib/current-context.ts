@@ -20,6 +20,11 @@ export type CurrentContext = {
     timezone: string | null;
     role: string | null;
     polarCustomerId: string | null;
+    // Set when the quota reconciler has frozen this workspace because
+    // the owner is over their workspace add-on seat allowance. Frozen
+    // workspaces are read-only: publish/invite mutations throw; data
+    // stays visible so the owner can delete it or re-buy the seat.
+    frozenAt: Date | null;
   };
   role: WorkspaceRole;
 };
@@ -48,6 +53,7 @@ export const getCurrentContext = cache(
         timezone: workspaces.timezone,
         workspaceRole: workspaces.role,
         polarCustomerId: workspaces.polarCustomerId,
+        frozenAt: workspaces.frozenAt,
         memberRole: workspaceMembers.role,
       })
       .from(users)
@@ -73,6 +79,7 @@ export const getCurrentContext = cache(
         timezone: row.timezone ?? user.timezone ?? null,
         role: row.workspaceRole,
         polarCustomerId: row.polarCustomerId,
+        frozenAt: row.frozenAt ?? null,
       },
       role: row.memberRole as WorkspaceRole,
     };
