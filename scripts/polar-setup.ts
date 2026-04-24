@@ -3,17 +3,28 @@
 //
 // What it does:
 //   1. Looks up existing products by name and skips ones that exist.
-//   2. Creates the 4 products (Basic monthly/yearly, Muse monthly/yearly)
-//      with seat-based GRADUATED tiers matching lib/billing/pricing.ts.
-//   3. Registers a webhook endpoint at ${APP_URL}/api/webhooks/polar
+//   2. Creates the base-plan products (Basic monthly/yearly, Bundle
+//      monthly/yearly) with seat-based GRADUATED tiers matching
+//      lib/billing/pricing.ts.
+//   3. Creates the add-on products (workspace_addon, member_addon) with
+//      flat per-seat pricing using a single graduated tier with an
+//      unlimited ceiling.
+//   4. Registers a webhook endpoint at ${APP_URL}/api/webhooks/polar
 //      (skipped if one already points at the same URL).
-//   4. Prints the env vars to paste into .env.local.
+//   5. Prints the env vars to paste into .env.local.
 //
 // Re-running is safe: existing products + webhooks are detected and reused.
 
 import "dotenv/config";
 import { Polar } from "@polar-sh/sdk";
-import { ANNUAL_DISCOUNT, BANDS } from "../lib/billing/pricing.js";
+import {
+	ANNUAL_DISCOUNT,
+	BANDS,
+	MEMBER_ADDON_MONTHLY_USD,
+	MEMBER_ADDON_YEARLY_USD,
+	WORKSPACE_ADDON_MONTHLY_USD,
+	WORKSPACE_ADDON_YEARLY_USD,
+} from "../lib/billing/pricing.js";
 
 const accessToken = process.env.POLAR_ACCESS_TOKEN;
 if (!accessToken) {
@@ -29,24 +40,93 @@ const organizationId = process.env.POLAR_ORGANIZATION_ID || undefined;
 
 const polar = new Polar({ accessToken, server });
 
-type Slot = "basic_month" | "basic_year" | "bundle_month" | "bundle_year";
+type Slot =
+	| "basic_month"
+	| "basic_year"
+	| "bundle_month"
+	| "bundle_year"
+	| "workspace_addon_month"
+	| "workspace_addon_year"
+	| "member_addon_month"
+	| "member_addon_year";
+
+type ProductPlan =
+	| "basic"
+	| "bundle"
+	| "workspace_addon"
+	| "member_addon";
 
 const PRODUCT_DEFS: Array<{
 	slot: Slot;
 	name: string;
-	plan: "basic" | "bundle";
+	description: string;
+	plan: ProductPlan;
 	interval: "month" | "year";
 }> = [
-	{ slot: "basic_month", name: "Aloha Basic — Monthly", plan: "basic", interval: "month" },
-	{ slot: "basic_year", name: "Aloha Basic — Yearly", plan: "basic", interval: "year" },
-	{ slot: "bundle_month", name: "Aloha Basic + Muse — Monthly", plan: "bundle", interval: "month" },
-	{ slot: "bundle_year", name: "Aloha Basic + Muse — Yearly", plan: "bundle", interval: "year" },
+	{
+		slot: "basic_month",
+		name: "Aloha Basic — Monthly",
+		description: "Aloha scheduling, calendar, and the AI companion.",
+		plan: "basic",
+		interval: "month",
+	},
+	{
+		slot: "basic_year",
+		name: "Aloha Basic — Yearly",
+		description: "Aloha scheduling, calendar, and the AI companion.",
+		plan: "basic",
+		interval: "year",
+	},
+	{
+		slot: "bundle_month",
+		name: "Aloha Basic + Muse — Monthly",
+		description: "Aloha scheduling + Muse — style-trained AI voice and advanced campaigns.",
+		plan: "bundle",
+		interval: "month",
+	},
+	{
+		slot: "bundle_year",
+		name: "Aloha Basic + Muse — Yearly",
+		description: "Aloha scheduling + Muse — style-trained AI voice and advanced campaigns.",
+		plan: "bundle",
+		interval: "year",
+	},
+	{
+		slot: "workspace_addon_month",
+		name: "Aloha Workspace — Monthly",
+		description:
+			"Extra tenant workspace. Each seat includes +3 channels and +3 member slots.",
+		plan: "workspace_addon",
+		interval: "month",
+	},
+	{
+		slot: "workspace_addon_year",
+		name: "Aloha Workspace — Yearly",
+		description:
+			"Extra tenant workspace. Each seat includes +3 channels and +3 member slots.",
+		plan: "workspace_addon",
+		interval: "year",
+	},
+	{
+		slot: "member_addon_month",
+		name: "Aloha Member Seat — Monthly",
+		description: "Additional member seat on a single workspace, beyond the included allowance.",
+		plan: "member_addon",
+		interval: "month",
+	},
+	{
+		slot: "member_addon_year",
+		name: "Aloha Member Seat — Yearly",
+		description: "Additional member seat on a single workspace, beyond the included allowance.",
+		plan: "member_addon",
+		interval: "year",
+	},
 ];
 
-function tiersFor(plan: "basic" | "bundle", interval: "month" | "year") {
+// Base-plan graduated tiers match the BANDS in lib/billing/pricing.ts.
+function baseTiers(plan: "basic" | "bundle", interval: "month" | "year") {
 	const yearlyMultiplier = interval === "year" ? 12 * (1 - ANNUAL_DISCOUNT) : 1;
 	return BANDS.map((b, i) => {
-		// Bundle = Basic + Muse combined price, since they stack at the same quantity.
 		const perSeat = plan === "bundle" ? b.basic + b.muse : b.basic;
 		const dollars = perSeat * yearlyMultiplier;
 		return {
@@ -55,6 +135,27 @@ function tiersFor(plan: "basic" | "bundle", interval: "month" | "year") {
 			pricePerSeat: Math.round(dollars * 100), // cents
 		};
 	});
+}
+
+// Add-on tiers: single tier with unlimited ceiling so seat quantity
+// scales without re-provisioning. Polar still requires the graduated
+// tier shape even when there's only one band.
+function addonTiers(plan: "workspace_addon" | "member_addon", interval: "month" | "year") {
+	const dollars =
+		plan === "workspace_addon"
+			? interval === "year"
+				? WORKSPACE_ADDON_YEARLY_USD
+				: WORKSPACE_ADDON_MONTHLY_USD
+			: interval === "year"
+				? MEMBER_ADDON_YEARLY_USD
+				: MEMBER_ADDON_MONTHLY_USD;
+	return [
+		{
+			minSeats: 1,
+			maxSeats: null,
+			pricePerSeat: Math.round(dollars * 100), // cents
+		},
+	];
 }
 
 async function findProductByName(name: string) {
@@ -78,12 +179,14 @@ async function ensureProduct(def: (typeof PRODUCT_DEFS)[number]) {
 		return existing.id;
 	}
 
+	const tiers =
+		def.plan === "basic" || def.plan === "bundle"
+			? baseTiers(def.plan, def.interval)
+			: addonTiers(def.plan, def.interval);
+
 	const created = await polar.products.create({
 		name: def.name,
-		description:
-			def.plan === "basic"
-				? "Aloha scheduling, calendar, and the AI companion."
-				: "Aloha scheduling + Muse — style-trained AI voice and advanced campaigns.",
+		description: def.description,
 		recurringInterval: def.interval,
 		organizationId,
 		prices: [
@@ -92,7 +195,7 @@ async function ensureProduct(def: (typeof PRODUCT_DEFS)[number]) {
 				priceCurrency: "usd",
 				seatTiers: {
 					seatTierType: "graduated",
-					tiers: tiersFor(def.plan, def.interval),
+					tiers,
 				},
 			},
 		],
@@ -156,6 +259,14 @@ function printEnvBlock(ids: Partial<Record<Slot, string>>) {
 	if (ids.basic_year) console.log(`POLAR_PRODUCT_BASIC_YEAR=${ids.basic_year}`);
 	if (ids.bundle_month) console.log(`POLAR_PRODUCT_BUNDLE_MONTH=${ids.bundle_month}`);
 	if (ids.bundle_year) console.log(`POLAR_PRODUCT_BUNDLE_YEAR=${ids.bundle_year}`);
+	if (ids.workspace_addon_month)
+		console.log(`POLAR_PRODUCT_WORKSPACE_ADDON_MONTH=${ids.workspace_addon_month}`);
+	if (ids.workspace_addon_year)
+		console.log(`POLAR_PRODUCT_WORKSPACE_ADDON_YEAR=${ids.workspace_addon_year}`);
+	if (ids.member_addon_month)
+		console.log(`POLAR_PRODUCT_MEMBER_ADDON_MONTH=${ids.member_addon_month}`);
+	if (ids.member_addon_year)
+		console.log(`POLAR_PRODUCT_MEMBER_ADDON_YEAR=${ids.member_addon_year}`);
 }
 
 async function main() {
