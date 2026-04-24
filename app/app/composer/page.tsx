@@ -1,4 +1,5 @@
 import { and, eq, notInArray } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
@@ -103,6 +104,7 @@ export default async function ComposerPage({
           scheduledAt: posts.scheduledAt,
           sourceIdeaId: posts.sourceIdeaId,
           draftMeta: posts.draftMeta,
+          studioMode: posts.studioMode,
         })
         .from(posts)
         .where(and(eq(posts.id, postId), eq(posts.workspaceId, workspace.id)))
@@ -116,6 +118,12 @@ export default async function ComposerPage({
     ]);
     const [post] = postRows;
     const [idea] = ideaRows;
+    // Studio-mode drafts (including scheduled ones being re-opened for
+    // edit) belong in the Studio route, not the flat composer. Redirect
+    // before rendering so the URL is canonical.
+    if (post?.studioMode) {
+      redirect(`/app/composer/${post.id}/studio`);
+    }
     if (post) {
       editingPostId = post.id;
       initialContent = post.content;
