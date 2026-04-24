@@ -1,8 +1,17 @@
 "use client";
 
-import { ArrowRight, Sparkle } from "lucide-react";
+import { ArrowRight, Building2, Minus, Plus, Sparkle, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { BANDS, bandFor, calcMonthly } from "@/lib/billing/pricing";
+import {
+	ANNUAL_DISCOUNT,
+	BANDS,
+	MEMBER_ADDON_MONTHLY_USD,
+	WORKSPACE_ADDON_CHANNELS_INCLUDED,
+	WORKSPACE_ADDON_MEMBERS_INCLUDED,
+	WORKSPACE_ADDON_MONTHLY_USD,
+	bandFor,
+	calcMonthly,
+} from "@/lib/billing/pricing";
 
 function formatMoney(n: number) {
 	const rounded = Math.round(n * 100) / 100;
@@ -13,6 +22,8 @@ type CalculatorProps = {
 	initialChannels?: number;
 	initialMuse?: boolean;
 	initialAnnual?: boolean;
+	initialWorkspaces?: number;
+	initialMembers?: number;
 	submitLabel?: string;
 };
 
@@ -20,15 +31,23 @@ export function PricingCalculator({
 	initialChannels = 5,
 	initialMuse = true,
 	initialAnnual = true,
+	initialWorkspaces = 0,
+	initialMembers = 0,
 	submitLabel,
 }: CalculatorProps = {}) {
 	const [channels, setChannels] = useState(initialChannels);
 	const [muse, setMuse] = useState(initialMuse);
 	const [annual, setAnnual] = useState(initialAnnual);
+	const [extraWorkspaces, setExtraWorkspaces] = useState(initialWorkspaces);
+	const [extraMembers, setExtraMembers] = useState(initialMembers);
 
 	const bill = useMemo(() => calcMonthly(channels), [channels]);
-	const monthly = muse ? bill.withMuse : bill.basic;
-	const effective = annual ? monthly * 0.8 : monthly;
+	const baseMonthly = muse ? bill.withMuse : bill.basic;
+	const addonMonthly =
+		extraWorkspaces * WORKSPACE_ADDON_MONTHLY_USD +
+		extraMembers * MEMBER_ADDON_MONTHLY_USD;
+	const monthly = baseMonthly + addonMonthly;
+	const effective = annual ? monthly * (1 - ANNUAL_DISCOUNT) : monthly;
 	const yearly = effective * 12;
 	const savings = annual ? monthly * 12 - yearly : 0;
 	const nextBand = bandFor(channels + 1);
@@ -180,6 +199,29 @@ export function PricingCalculator({
 					</div>
 				</div>
 
+				{/* extras — workspaces + members, stackable add-ons for agencies */}
+				<div className="pt-6 border-t border-border">
+					<p className="text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/55 mb-4">
+						Team & tenants (optional)
+					</p>
+					<div className="grid md:grid-cols-2 gap-3">
+						<Stepper
+							icon={<Building2 className="w-3.5 h-3.5" />}
+							label="Extra workspaces"
+							sub={`+$${WORKSPACE_ADDON_MONTHLY_USD}/mo each · includes ${WORKSPACE_ADDON_CHANNELS_INCLUDED} channels & ${WORKSPACE_ADDON_MEMBERS_INCLUDED} members`}
+							value={extraWorkspaces}
+							onChange={(v) => setExtraWorkspaces(Math.max(0, v))}
+						/>
+						<Stepper
+							icon={<Users className="w-3.5 h-3.5" />}
+							label="Extra members"
+							sub={`+$${MEMBER_ADDON_MONTHLY_USD}/mo each · beyond the 5 included`}
+							value={extraMembers}
+							onChange={(v) => setExtraMembers(Math.max(0, v))}
+						/>
+					</div>
+				</div>
+
 				{/* breakdown */}
 				<div className="pt-6 border-t border-border grid grid-cols-2 gap-6">
 					<div>
@@ -214,6 +256,44 @@ export function PricingCalculator({
 							style-trained voice + advanced campaigns
 						</p>
 					</div>
+					{extraWorkspaces > 0 ? (
+						<div>
+							<p className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-ink/55 mb-1 inline-flex items-center gap-1.5">
+								<Building2 className="w-3 h-3" /> Extra workspaces
+							</p>
+							<p className="font-display text-[28px] tracking-[-0.01em]">
+								$
+								{formatMoney(
+									extraWorkspaces * WORKSPACE_ADDON_MONTHLY_USD,
+								)}
+								<span className="text-[15px] text-ink/50 font-mono ml-1.5">
+									/ mo
+								</span>
+							</p>
+							<p className="mt-1 text-[11.5px] text-ink/55">
+								{extraWorkspaces} × ${WORKSPACE_ADDON_MONTHLY_USD}
+							</p>
+						</div>
+					) : null}
+					{extraMembers > 0 ? (
+						<div>
+							<p className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-ink/55 mb-1 inline-flex items-center gap-1.5">
+								<Users className="w-3 h-3" /> Extra members
+							</p>
+							<p className="font-display text-[28px] tracking-[-0.01em]">
+								$
+								{formatMoney(
+									extraMembers * MEMBER_ADDON_MONTHLY_USD,
+								)}
+								<span className="text-[15px] text-ink/50 font-mono ml-1.5">
+									/ mo
+								</span>
+							</p>
+							<p className="mt-1 text-[11.5px] text-ink/55">
+								{extraMembers} × ${MEMBER_ADDON_MONTHLY_USD}
+							</p>
+						</div>
+					) : null}
 				</div>
 
 				{/* next channel */}
@@ -253,6 +333,11 @@ export function PricingCalculator({
 							<ArrowRight className="w-4 h-4" />
 						</button>
 					</form>
+					{extraWorkspaces > 0 || extraMembers > 0 ? (
+						<p className="mt-3 text-[11.5px] text-ink/55 font-mono text-center">
+							Add workspace & member seats from billing after checkout.
+						</p>
+					) : null}
 				</div>
 			</div>
 
@@ -302,5 +387,57 @@ function isBandActive(channels: number, bandIndex: number) {
 	if (channels === 0) return false;
 	const band = BANDS[bandIndex];
 	return channels >= band.from;
+}
+
+// Minus/plus counter for add-on quantities. Stays zero-aware — the
+// decrement button disables at zero so users can't dip negative.
+function Stepper({
+	icon,
+	label,
+	sub,
+	value,
+	onChange,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	sub: string;
+	value: number;
+	onChange: (v: number) => void;
+}) {
+	return (
+		<div className="rounded-2xl border border-border bg-background-elev p-4 flex items-center gap-3">
+			<span className="grid place-items-center w-8 h-8 rounded-full bg-peach-100/70 text-ink shrink-0">
+				{icon}
+			</span>
+			<div className="min-w-0 flex-1">
+				<p className="text-[13px] font-medium text-ink">{label}</p>
+				<p className="text-[11.5px] text-ink/55 leading-snug mt-0.5">
+					{sub}
+				</p>
+			</div>
+			<div className="flex items-center gap-2 shrink-0">
+				<button
+					type="button"
+					onClick={() => onChange(value - 1)}
+					disabled={value === 0}
+					aria-label={`Decrement ${label}`}
+					className="grid place-items-center w-8 h-8 rounded-full border border-border text-ink/70 hover:text-ink hover:border-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+				>
+					<Minus className="w-3.5 h-3.5" />
+				</button>
+				<span className="font-display text-[18px] tracking-[-0.01em] tabular-nums w-6 text-center">
+					{value}
+				</span>
+				<button
+					type="button"
+					onClick={() => onChange(value + 1)}
+					aria-label={`Increment ${label}`}
+					className="grid place-items-center w-8 h-8 rounded-full border border-border text-ink/70 hover:text-ink hover:border-ink transition-colors"
+				>
+					<Plus className="w-3.5 h-3.5" />
+				</button>
+			</div>
+		</div>
+	);
 }
 
