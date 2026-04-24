@@ -103,6 +103,13 @@ export const workspaces = pgTable("workspaces", {
   // Billing customer pointer. Moves from `users.polarCustomerId` to here in
   // Slice 2.7; kept nullable until then so backfill can populate it lazily.
   polarCustomerId: text("polarCustomerId").unique(),
+  // Non-null when the workspace is in read-only "frozen" state — set by
+  // the quota reconciler when the owner has more workspaces than their
+  // current add-on seat count allows (e.g. after canceling add-on seats,
+  // or a past_due subscription churning into revoked). Frozen workspaces
+  // remain visible but block publish/invite mutations. Cleared when the
+  // owner either deletes enough workspaces or buys back the seats.
+  frozenAt: timestamp("frozenAt", { mode: "date" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -188,10 +195,21 @@ export const subscriptions = pgTable("subscriptions", {
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   polarSubscriptionId: text("polarSubscriptionId").notNull().unique(),
-  // Which product family this subscription is on. "basic" = Basic-only,
-  // "bundle" = Basic+Muse combined. Switching between these is a product
-  // migration on the same Polar subscription — no second checkout.
-  productKey: text("productKey", { enum: ["basic", "bundle"] }).notNull(),
+  // Which product family this subscription is on.
+  //   "basic"           — Basic-only base plan. Seats = channels.
+  //   "bundle"          — Basic+Muse combined base plan. Seats = channels.
+  //                       Switching basic↔bundle is a product migration on
+  //                       the same Polar subscription — no second checkout.
+  //   "workspace_addon" — Flat-priced add-on ($25/mo or $250/yr per seat).
+  //                       Seats = number of extra workspaces beyond the 1
+  //                       that the base plan includes. Each seat also
+  //                       includes +3 channels and +3 member slots.
+  //   "member_addon"    — Per-workspace add-on ($3/mo or $30/yr per seat).
+  //                       Seats = extra member slots beyond the per-workspace
+  //                       included allowance (5 base + 3 × workspace_addon).
+  productKey: text("productKey", {
+    enum: ["basic", "bundle", "workspace_addon", "member_addon"],
+  }).notNull(),
   status: text("status", {
     enum: [
       "incomplete",
@@ -1419,6 +1437,10 @@ export const notifications = pgTable("notifications", {
       // post_comment so the mentioned party gets a louder signal than
       // a general thread ping.
       "post_mention",
+      // Fires when a workspace is frozen by the quota reconciler (owner
+      // is over their workspace-addon seat allowance). Targets the
+      // workspace owner; url deep-links to /app/settings/billing.
+      "workspace_frozen",
     ],
   }).notNull(),
   title: text("title").notNull(),
