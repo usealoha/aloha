@@ -19,6 +19,7 @@ import type { PostStatus } from "@/lib/posts/transitions";
 import { listMentionableMembers, listNotes } from "@/app/actions/post-notes";
 import type { PostNote, PostNoteMention } from "@/app/actions/post-notes";
 import { Composer } from "./_components/composer";
+import { markdownToPlain } from "@/lib/markdown";
 
 export const dynamic = "force-dynamic";
 
@@ -126,7 +127,7 @@ export default async function ComposerPage({
       initialDraftMeta = post.draftMeta ?? null;
       sourceIdeaId = post.sourceIdeaId;
       if (idea) {
-        sourceIdeaTitle = idea.title ?? idea.body.slice(0, 60);
+        sourceIdeaTitle = idea.title ?? markdownToPlain(idea.body).slice(0, 60);
       }
       [initialNotes, mentionableMembers] = await Promise.all([
         listNotes(post.id),
@@ -140,9 +141,10 @@ export default async function ComposerPage({
       .where(and(eq(ideas.id, ideaId), eq(ideas.workspaceId, workspace.id)))
       .limit(1);
     if (idea) {
-      initialContent = idea.body;
+      const plainBody = markdownToPlain(idea.body);
+      initialContent = plainBody;
       sourceIdeaId = idea.id;
-      sourceIdeaTitle = idea.title ?? idea.body.slice(0, 60);
+      sourceIdeaTitle = idea.title ?? plainBody.slice(0, 60);
     }
   }
 
