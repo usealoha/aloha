@@ -63,7 +63,7 @@ export default async function NewWorkspacePage() {
 							Back
 						</Link>
 						<Link
-							href="/app/settings/billing"
+							href="/app/settings/billing#workspaces"
 							className="inline-flex items-center h-10 px-5 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary transition-colors"
 						>
 							Upgrade

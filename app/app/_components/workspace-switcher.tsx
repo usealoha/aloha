@@ -166,7 +166,7 @@ export function WorkspaceSwitcher({
 						</Link>
 					) : (
 						<Link
-							href="/app/settings/billing"
+							href="/app/settings/billing#workspaces"
 							onClick={() => setOpen(false)}
 							className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-ink/70 hover:text-ink hover:bg-muted/60 transition-colors"
 							title="Free plan is limited to one workspace"

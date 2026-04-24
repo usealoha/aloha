@@ -65,7 +65,7 @@ export default async function MembersSettingsPage() {
 								</p>
 							</div>
 							<Link
-								href="/app/settings/billing"
+								href="/app/settings/billing#members"
 								className="inline-flex items-center h-9 px-4 rounded-full bg-ink text-background text-[12.5px] font-medium hover:bg-primary transition-colors shrink-0"
 							>
 								Upgrade
