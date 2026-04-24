@@ -16,7 +16,8 @@ import { db } from "@/db";
 import { ideas, type PostMedia } from "@/db/schema";
 import { updateIdeaStatusAction } from "@/app/actions/ideas";
 import { DeleteIdeaButton } from "./_components/delete-confirm";
-import { IdeaDialog } from "./_components/idea-dialog";
+import { IdeaPanel } from "./_components/idea-panel";
+import { MarkdownView } from "@/components/ui/markdown-view";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import { PendingSubmitButton } from "@/components/ui/pending-submit";
 import { getCurrentUser } from "@/lib/current-user";
@@ -89,7 +90,7 @@ export default async function IdeasPage({
           </p>
         </div>
         <div className="flex items-center">
-          <IdeaDialog />
+          <IdeaPanel />
         </div>
       </header>
 
@@ -245,14 +246,16 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
         </p>
       ) : null}
 
-      <p
+      <MarkdownView
+        compact
+        clamp={idea.title ? 6 : 8}
         className={cn(
-          "text-[13.5px] text-ink/80 leading-[1.55] whitespace-pre-wrap",
+          "text-ink/80",
           idea.title ? "" : "font-medium text-ink",
         )}
       >
         {idea.body}
-      </p>
+      </MarkdownView>
 
       {idea.media && idea.media.length > 0 ? (
         <ul
@@ -323,7 +326,7 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
         ) : null}
 
         {!isArchived ? (
-          <IdeaDialog
+          <IdeaPanel
             idea={{
               id: idea.id,
               body: idea.body,
@@ -340,7 +343,7 @@ function IdeaCard({ idea }: { idea: IdeaRow }) {
               <Pencil className="w-3.5 h-3.5" />
               Edit
             </span>
-          </IdeaDialog>
+          </IdeaPanel>
         ) : null}
 
         {!isArchived ? (

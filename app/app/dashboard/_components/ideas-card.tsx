@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Lightbulb } from "lucide-react";
+import { markdownToPlain } from "@/lib/markdown";
 
 interface IdeasCardProps {
 	newCount: number;
@@ -42,7 +43,7 @@ export function IdeasCard({
 							>
 								<Lightbulb className="w-3.5 h-3.5 mt-[3px] text-primary shrink-0" />
 								<span className="line-clamp-2 leading-[1.4]">
-									{idea.title ?? idea.body}
+									{idea.title ?? markdownToPlain(idea.body)}
 								</span>
 							</Link>
 						</li>
