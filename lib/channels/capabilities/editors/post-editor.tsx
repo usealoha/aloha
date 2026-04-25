@@ -30,74 +30,66 @@ export function makePostEditor(options: {
     disabled,
   }: FormEditorProps) {
     const { text, media, spoilerText } = readPostPayload(payload);
-    const remaining = maxChars - text.length;
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col h-full">
         {contentWarning ? (
-          <label className="flex flex-col gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-              {contentWarning.label}
-            </span>
-            <input
-              type="text"
-              value={spoilerText ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...payload,
-                  text,
-                  media,
-                  spoilerText: e.target.value,
-                } satisfies PostPayload)
-              }
-              disabled={disabled}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-[14px] text-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
-              placeholder={contentWarning.placeholder ?? "Optional"}
-            />
-          </label>
-        ) : null}
-        <label className="flex flex-col gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-            {label}
-          </span>
-          <textarea
-            value={text}
+          <input
+            type="text"
+            value={spoilerText ?? ""}
             onChange={(e) =>
               onChange({
                 ...payload,
-                text: e.target.value,
+                text,
                 media,
+                spoilerText: e.target.value,
               } satisfies PostPayload)
             }
             disabled={disabled}
-            rows={maxChars > 1000 ? 14 : 6}
-            className="w-full rounded-2xl border border-border bg-background p-3 text-[14.5px] leading-[1.55] text-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
-            placeholder={placeholder}
-          />
-        </label>
-        {maxMedia > 0 ? (
-          <MediaPicker
-            media={media}
-            onChange={(next) =>
-              onChange({ ...payload, text, media: next } satisfies PostPayload)
-            }
-            max={maxMedia}
-            accept={acceptMedia}
-            disabled={disabled}
+            className="w-full bg-transparent border-0 border-b border-border px-0 py-2 text-[13px] text-ink/80 focus:outline-none focus:border-ink placeholder:text-ink/35 disabled:opacity-60 mb-3"
+            placeholder={contentWarning.placeholder ?? contentWarning.label}
           />
         ) : null}
-        <div className="flex items-center justify-end text-[12px] text-ink/55">
-          <span
-            className={
-              remaining < 0
-                ? "text-red-600"
-                : remaining < 20
-                  ? "text-amber-600"
-                  : undefined
-            }
-          >
-            {remaining}
-          </span>
-        </div>
+        <textarea
+          value={text}
+          onChange={(e) =>
+            onChange({
+              ...payload,
+              text: e.target.value,
+              media,
+            } satisfies PostPayload)
+          }
+          disabled={disabled}
+          rows={maxChars > 1000 ? 18 : 10}
+          className="flex-1 w-full bg-transparent border-0 px-0 py-0 text-[15.5px] leading-[1.6] text-ink resize-none focus:outline-none focus:ring-0 placeholder:text-ink/35 disabled:opacity-60"
+          placeholder={placeholder}
+          aria-label={label}
+        />
+        {/*
+          Attach + character/word count live in the Studio shell footer
+          now (StudioEditorFooter) so the editor stays a clean canvas and
+          the footers match compose visually.
+
+          Attached media thumbnails still need to render somewhere — the
+          shell-level footer only houses controls, not previews. Render
+          them inline above the canvas footer when present.
+        */}
+        {maxMedia > 0 && media.length > 0 ? (
+          <div className="pt-3 border-t border-border/60">
+            <MediaPicker
+              media={media}
+              onChange={(next) =>
+                onChange({
+                  ...payload,
+                  text,
+                  media: next,
+                } satisfies PostPayload)
+              }
+              max={maxMedia}
+              accept={acceptMedia}
+              disabled={disabled}
+            />
+          </div>
+        ) : null}
       </div>
     );
   };

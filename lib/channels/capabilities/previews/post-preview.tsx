@@ -14,6 +14,7 @@ export function makePostPreview(channel: string) {
         profile={profile}
         content={text}
         media={media}
+        articleClassName="max-w-none"
       />
     );
   };
