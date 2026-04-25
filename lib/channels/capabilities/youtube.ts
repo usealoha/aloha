@@ -1,16 +1,10 @@
 import type { PostMedia, StudioPayload } from "@/db/schema";
-import { publishToYouTube } from "@/lib/publishers/youtube";
 import {
-  makeShortEditor,
   readShortPayload,
   type ShortPayload,
-} from "./editors/short-editor";
-import { makeShortPreview } from "./previews/short-preview";
+} from "./editors/short-payload";
 import { mediaExportFiles } from "./export-helpers";
 import type { ChannelCapability } from "./types";
-
-const YouTubeShortEditor = makeShortEditor({ descriptionMax: 5000 });
-const YouTubeShortPreview = makeShortPreview("youtube");
 
 const youtube: ChannelCapability = {
   channel: "youtube",
@@ -37,28 +31,10 @@ const youtube: ChannelCapability = {
         const text = [title, description].filter(Boolean).join("\n\n");
         return { text, media: video };
       },
-      publish: async ({ workspaceId, payload }) => {
-        const { title, description, video } = readShortPayload(payload);
-        if (video.length === 0) {
-          throw new Error("Shorts need a video.");
-        }
-        if (!title.trim()) {
-          throw new Error("Give your Short a title.");
-        }
-        return publishToYouTube({
-          workspaceId,
-          text: description,
-          title,
-          description,
-          media: video,
-        });
-      },
       exportPayload: (payload) => {
         const { title, video } = readShortPayload(payload);
         return mediaExportFiles(video, title ? `youtube-${title}` : "youtube-short");
       },
-      Editor: YouTubeShortEditor,
-      Preview: YouTubeShortPreview,
     },
   ],
 };
