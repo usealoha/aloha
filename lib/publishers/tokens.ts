@@ -349,7 +349,7 @@ async function refreshYouTube(workspaceId: string, refreshToken: string) {
 // token, or the refresh call fails.
 export async function getFreshToken(
 	workspaceId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube" | "tiktok",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
@@ -408,7 +408,7 @@ export async function getFreshToken(
 // when the stored expires_at says "still valid" but the provider disagrees.
 export async function forceRefresh(
 	workspaceId: string,
-	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube",
+	provider: "linkedin" | "twitter" | "medium" | "bluesky" | "facebook" | "instagram" | "threads" | "reddit" | "pinterest" | "youtube" | "tiktok",
 ): Promise<ProviderAccount> {
 	if (provider === "bluesky") {
 		throw new PublishError(
