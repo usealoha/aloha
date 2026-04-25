@@ -2,26 +2,19 @@
 
 import { FileText } from "lucide-react";
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import {
+  readDocumentPayload,
+  type DocumentPayload,
+} from "./document-payload";
 
-export type DocumentPayload = {
-  title: string;
-  caption: string;
-  document: PostMedia[];
-};
+export {
+  readDocumentPayload,
+  type DocumentPayload,
+} from "./document-payload";
 
 const TITLE_MAX = 100;
 const CAPTION_MAX = 3000;
-
-export function readDocumentPayload(payload: StudioPayload): DocumentPayload {
-  const title = typeof payload.title === "string" ? payload.title : "";
-  const caption = typeof payload.caption === "string" ? payload.caption : "";
-  const document = Array.isArray(payload.document)
-    ? (payload.document as PostMedia[])
-    : [];
-  return { title, caption, document };
-}
 
 export function DocumentEditor({
   payload,

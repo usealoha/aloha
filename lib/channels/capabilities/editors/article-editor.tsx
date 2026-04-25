@@ -1,26 +1,16 @@
 "use client";
 
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import {
+  readArticlePayload,
+  type ArticlePayload,
+} from "./article-payload";
 
-// Article editor. Shared across long-form channels (Medium, and later
-// LinkedIn Article / Ghost / Hashnode). Title and body are separate
-// first-class fields; body is markdown.
-export type ArticlePayload = {
-  title: string;
-  body: string;
-  media: PostMedia[];
-};
-
-export function readArticlePayload(payload: StudioPayload): ArticlePayload {
-  const title = typeof payload.title === "string" ? payload.title : "";
-  const body = typeof payload.body === "string" ? payload.body : "";
-  const media = Array.isArray(payload.media)
-    ? (payload.media as PostMedia[])
-    : [];
-  return { title, body, media };
-}
+export {
+  readArticlePayload,
+  type ArticlePayload,
+} from "./article-payload";
 
 export function makeArticleEditor(options: {
   titlePlaceholder?: string;
