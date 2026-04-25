@@ -2,54 +2,27 @@
 
 import { Link as LinkIcon } from "lucide-react";
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import { RedditFields } from "./reddit-fields";
 import {
-  readRedditMeta,
-  RedditFields,
-  type RedditPostingMeta,
-} from "./reddit-fields";
+  readRedditLinkPayload,
+  readRedditMediaPayload,
+  readRedditTextPayload,
+  type RedditLinkPayload,
+  type RedditMediaPayload,
+  type RedditTextPayload,
+} from "./reddit-payload";
+
+export {
+  readRedditLinkPayload,
+  readRedditMediaPayload,
+  readRedditTextPayload,
+  type RedditLinkPayload,
+  type RedditMediaPayload,
+  type RedditTextPayload,
+} from "./reddit-payload";
 
 const TITLE_MAX = 300;
-
-export type RedditTextPayload = RedditPostingMeta & {
-  title: string;
-  body: string;
-};
-
-export type RedditLinkPayload = RedditPostingMeta & {
-  title: string;
-  link: string;
-};
-
-export type RedditMediaPayload = RedditPostingMeta & {
-  title: string;
-  media: PostMedia[];
-};
-
-export function readRedditTextPayload(p: StudioPayload): RedditTextPayload {
-  return {
-    ...readRedditMeta(p),
-    title: typeof p.title === "string" ? p.title : "",
-    body: typeof p.body === "string" ? p.body : "",
-  };
-}
-
-export function readRedditLinkPayload(p: StudioPayload): RedditLinkPayload {
-  return {
-    ...readRedditMeta(p),
-    title: typeof p.title === "string" ? p.title : "",
-    link: typeof p.link === "string" ? p.link : "",
-  };
-}
-
-export function readRedditMediaPayload(p: StudioPayload): RedditMediaPayload {
-  return {
-    ...readRedditMeta(p),
-    title: typeof p.title === "string" ? p.title : "",
-    media: Array.isArray(p.media) ? (p.media as PostMedia[]) : [],
-  };
-}
 
 function TitleField({
   value,
