@@ -2,29 +2,13 @@
 
 import { Link as LinkIcon } from "lucide-react";
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import { readPinPayload, type PinPayload } from "./pin-payload";
 
-export type PinPayload = {
-  title: string;
-  description: string;
-  link: string;
-  media: PostMedia[];
-};
+export { readPinPayload, type PinPayload } from "./pin-payload";
 
 const TITLE_MAX = 100;
 const DESC_MAX = 500;
-
-export function readPinPayload(payload: StudioPayload): PinPayload {
-  const title = typeof payload.title === "string" ? payload.title : "";
-  const description =
-    typeof payload.description === "string" ? payload.description : "";
-  const link = typeof payload.link === "string" ? payload.link : "";
-  const media = Array.isArray(payload.media)
-    ? (payload.media as PostMedia[])
-    : [];
-  return { title, description, link, media };
-}
 
 export function PinEditor({ payload, onChange, disabled }: FormEditorProps) {
   const { title, description, link, media } = readPinPayload(payload);
