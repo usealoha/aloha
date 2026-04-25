@@ -1213,7 +1213,7 @@ export function Composer({
 
 					<aside className="lg:col-span-5 p-4 lg:p-5 flex flex-col gap-4 h-full">
 						{activePlatform ? (
-							<div className="flex flex-col gap-2 w-fit">
+							<div className="flex flex-col gap-2 w-full">
 								{hasCapability(activePlatform.id) && !isReadOnly ? (
 									<button
 										type="button"
@@ -1233,6 +1233,7 @@ export function Composer({
 										handle={activePlatform.handle}
 										content={effectiveContent(activePlatform.id)}
 										media={baseMedia}
+										articleClassName="max-w-none"
 									/>
 								</div>
 							</div>
@@ -1421,7 +1422,7 @@ export function Composer({
 					{/* Second footer: Assist — Muse / Variants / Fan out / Score / Import / Image / Library */}
 					{isReadOnly ? null : museAccess ? (
 					<TooltipProvider delay={250}>
-						<div className="flex items-center gap-1 px-3 py-2 border-t border-border bg-muted/50 overflow-x-auto">
+						<div className="flex items-center gap-1 px-3 py-2 border-t border-primary/20 bg-primary-soft/60 overflow-x-auto">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 px-2 shrink-0">
 								Assist
 							</p>
@@ -1567,7 +1568,7 @@ export function Composer({
 					)}
 
 						{museAccess && activeDrawer && !isReadOnly ? (
-							<div className="border-t border-border bg-muted/30">
+							<div className="border-t border-primary/15 bg-primary-soft/80">
 								{activeDrawer === "muse" ? (
 									<div className="px-5 py-4 lg:px-6 lg:py-5 space-y-3">
 										<div className="flex items-center gap-2 text-[12px] text-ink/65">
