@@ -1,19 +1,10 @@
 "use client";
 
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import { readStoryPayload, type StoryPayload } from "./story-payload";
 
-export type StoryPayload = {
-  media: PostMedia[];
-};
-
-export function readStoryPayload(payload: StudioPayload): StoryPayload {
-  const media = Array.isArray(payload.media)
-    ? (payload.media as PostMedia[])
-    : [];
-  return { media };
-}
+export { readStoryPayload, type StoryPayload } from "./story-payload";
 
 export function StoryEditor({ payload, onChange, disabled }: FormEditorProps) {
   const { media } = readStoryPayload(payload);

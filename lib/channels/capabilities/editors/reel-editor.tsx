@@ -1,26 +1,12 @@
 "use client";
 
 import { MediaPicker } from "@/components/media-picker";
-import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { FormEditorProps } from "@/lib/channels/capabilities/types";
+import { readReelPayload, type ReelPayload } from "./reel-payload";
 
-export type ReelPayload = {
-  caption: string;
-  video: PostMedia[];
-  shareToFeed: boolean;
-};
+export { readReelPayload, type ReelPayload } from "./reel-payload";
 
 const CAPTION_MAX = 2200;
-
-export function readReelPayload(payload: StudioPayload): ReelPayload {
-  const caption = typeof payload.caption === "string" ? payload.caption : "";
-  const video = Array.isArray(payload.video)
-    ? (payload.video as PostMedia[])
-    : [];
-  const shareToFeed =
-    typeof payload.shareToFeed === "boolean" ? payload.shareToFeed : true;
-  return { caption, video, shareToFeed };
-}
 
 export function ReelEditor({ payload, onChange, disabled }: FormEditorProps) {
   const { caption, video, shareToFeed } = readReelPayload(payload);
