@@ -1,41 +1,33 @@
 import type { PostMedia, StudioPayload } from "@/db/schema";
 import { publishToX, publishXPoll, publishXThread } from "@/lib/publishers/x";
 import {
-  makeXPostEditor,
-  readXPostPayload,
-  XPostEditor,
-  type XPostPayload,
-} from "./editors/x-post-editor";
+  makePostEditor,
+  readPostPayload,
+  type PostPayload,
+} from "./editors/post-editor";
 import {
-  readXThreadPayload,
-  XThreadEditor,
-  type XThreadPart,
-  type XThreadPayload,
-} from "./editors/x-thread-editor";
+  joinThreadParts,
+  makeThreadEditor,
+  readThreadPayload,
+  splitIntoThreadParts,
+  type ThreadPayload,
+} from "./editors/thread-editor";
 import {
   readXPollPayload,
   XPollEditor,
   type XPollPayload,
 } from "./editors/x-poll-editor";
 import { XPollPreview } from "./previews/x-poll-preview";
-import { XPostPreview } from "./previews/x-post-preview";
-import { XThreadPreview } from "./previews/x-thread-preview";
+import { makePostPreview } from "./previews/post-preview";
+import { makeThreadPreview } from "./previews/thread-preview";
+import { mediaExportFiles } from "./export-helpers";
 import type { ChannelCapability } from "./types";
 
-// Split body on blank lines into thread parts. A blank line is a more
-// explicit "new post" signal than a single newline — tweets routinely
-// span multiple lines (lists, quotes), so splitting on \n\n keeps those
-// intact while still recognising an author's structural break.
-function splitIntoParts(content: string): XThreadPart[] {
-  const chunks = content
-    .split(/\n{2,}/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (chunks.length === 0) {
-    return [{ text: "", media: [] }];
-  }
-  return chunks.map((text) => ({ text, media: [] }));
-}
+const XPostPreview = makePostPreview("twitter");
+const XThreadPreview = makeThreadPreview("twitter");
+const XPostEditor = makePostEditor({ maxChars: 280, label: "Post" });
+const XLongEditor = makePostEditor({ maxChars: 25000, label: "Long post" });
+const XThreadEditor = makeThreadEditor({ maxChars: 280, maxMediaPerPart: 4 });
 
 const twitter: ChannelCapability = {
   channel: "twitter",
@@ -45,17 +37,19 @@ const twitter: ChannelCapability = {
       label: "Post",
       limits: { maxChars: 280, maxMedia: 4 },
       hydrate: ({ content, media }): StudioPayload => {
-        const payload: XPostPayload = { text: content, media };
+        const payload: PostPayload = { text: content, media };
         return payload as unknown as StudioPayload;
       },
       flatten: (payload): { text: string; media: PostMedia[] } => {
-        const { text, media } = readXPostPayload(payload);
+        const { text, media } = readPostPayload(payload);
         return { text, media };
       },
       publish: async ({ workspaceId, payload }) => {
-        const { text, media } = readXPostPayload(payload);
+        const { text, media } = readPostPayload(payload);
         return publishToX({ workspaceId, text, media });
       },
+      exportPayload: (payload) =>
+        mediaExportFiles(readPostPayload(payload).media, "x-post"),
       Editor: XPostEditor,
       Preview: XPostPreview,
     },
@@ -67,18 +61,20 @@ const twitter: ChannelCapability = {
       // up as invalid_content — surfaced to the user as a publish failure.
       limits: { maxChars: 25000, maxMedia: 4 },
       hydrate: ({ content, media }): StudioPayload => {
-        const payload: XPostPayload = { text: content, media };
+        const payload: PostPayload = { text: content, media };
         return payload as unknown as StudioPayload;
       },
       flatten: (payload): { text: string; media: PostMedia[] } => {
-        const { text, media } = readXPostPayload(payload);
+        const { text, media } = readPostPayload(payload);
         return { text, media };
       },
       publish: async ({ workspaceId, payload }) => {
-        const { text, media } = readXPostPayload(payload);
+        const { text, media } = readPostPayload(payload);
         return publishToX({ workspaceId, text, media });
       },
-      Editor: makeXPostEditor({ maxChars: 25000, label: "Long post" }),
+      exportPayload: (payload) =>
+        mediaExportFiles(readPostPayload(payload).media, "x-longpost"),
+      Editor: XLongEditor,
       Preview: XPostPreview,
     },
     {
@@ -86,26 +82,24 @@ const twitter: ChannelCapability = {
       label: "Thread",
       limits: { maxChars: 280, maxMedia: 4 },
       hydrate: ({ content, media }): StudioPayload => {
-        const parts = splitIntoParts(content);
+        const parts = splitIntoThreadParts(content);
         // Attach existing media to the first part so we don't silently drop
         // it when the user enters thread mode from a post with an image.
         if (parts[0] && media.length > 0) parts[0].media = media;
-        const payload: XThreadPayload = { parts };
+        const payload: ThreadPayload = { parts };
         return payload as unknown as StudioPayload;
       },
       flatten: (payload): { text: string; media: PostMedia[] } => {
-        const { parts } = readXThreadPayload(payload);
-        const text = parts
-          .map((p) => p.text.trim())
-          .filter(Boolean)
-          .join("\n\n");
+        const { parts } = readThreadPayload(payload);
         // When flattening back to Compose, only the first part's media
         // survives — the flat model is one content + one media list.
-        const media = parts[0]?.media ?? [];
-        return { text, media };
+        return {
+          text: joinThreadParts(parts),
+          media: parts[0]?.media ?? [],
+        };
       },
       publish: async ({ workspaceId, payload }) => {
-        const { parts } = readXThreadPayload(payload);
+        const { parts } = readThreadPayload(payload);
         const nonEmpty = parts.filter((p) => p.text.trim().length > 0);
         if (nonEmpty.length === 1) {
           // Degenerate thread = just a post; avoid unnecessary reply chain.
@@ -116,6 +110,12 @@ const twitter: ChannelCapability = {
           });
         }
         return publishXThread({ workspaceId, parts: nonEmpty });
+      },
+      exportPayload: (payload) => {
+        const { parts } = readThreadPayload(payload);
+        return parts.flatMap((p, i) =>
+          mediaExportFiles(p.media, `x-thread-part-${i + 1}`),
+        );
       },
       Editor: XThreadEditor,
       Preview: XThreadPreview,
