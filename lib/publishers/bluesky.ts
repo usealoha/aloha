@@ -75,6 +75,10 @@ async function createPost(
 	agent: AtpAgent,
 	text: string,
 	images: Array<{ blob: BlobRef; alt: string }>,
+	reply?: {
+		root: { uri: string; cid: string };
+		parent: { uri: string; cid: string };
+	},
 ): Promise<{ uri: string; cid: string }> {
 	const embed = images.length > 0
 		? {
@@ -89,6 +93,7 @@ async function createPost(
 	const result = await agent.post({
 		text,
 		embed,
+		...(reply ? { reply } : {}),
 	});
 
 	return {
@@ -122,6 +127,59 @@ export async function publishToBluesky(args: {
 	// since bsky.app only understands that short form.
 	return {
 		remotePostId: uri,
+		remoteUrl: `https://bsky.app/profile/${credentials.handle}/post/${rkey}`,
+	};
+}
+
+// Post a connected thread on Bluesky. Each part replies to the previous,
+// with `root` pointing at the thread head per AT Protocol conventions.
+// On mid-thread failure, delete everything posted so far.
+export async function publishBlueskyThread(args: {
+	workspaceId: string;
+	parts: { text: string; media?: PostMedia[] }[];
+}): Promise<BlueskyPostResult> {
+	if (args.parts.length === 0) {
+		throw new PublishError("invalid_content", "Thread has no parts");
+	}
+	const credentials = await getBlueskyCredentials(args.workspaceId);
+	const agent = await createSession(credentials);
+
+	const posted: { uri: string }[] = [];
+	let root: { uri: string; cid: string } | undefined;
+	let parent: { uri: string; cid: string } | undefined;
+	let headUri: string | undefined;
+
+	for (let i = 0; i < args.parts.length; i++) {
+		const part = args.parts[i];
+		try {
+			const images: Array<{ blob: BlobRef; alt: string }> = [];
+			for (const m of part.media ?? []) {
+				images.push(await uploadImage(agent, m));
+			}
+			const replyRef = root && parent ? { root, parent } : undefined;
+			const { uri, cid } = await createPost(agent, part.text, images, replyRef);
+			posted.push({ uri });
+			if (!root) {
+				root = { uri, cid };
+				headUri = uri;
+			}
+			parent = { uri, cid };
+		} catch (err) {
+			// Compensate: delete anything we already posted (latest-first).
+			for (const p of posted.slice().reverse()) {
+				try {
+					await agent.deletePost(p.uri);
+				} catch {
+					// swallow — compensation is opportunistic
+				}
+			}
+			throw err;
+		}
+	}
+
+	const rkey = headUri!.split("/").pop() ?? headUri!;
+	return {
+		remotePostId: headUri!,
 		remoteUrl: `https://bsky.app/profile/${credentials.handle}/post/${rkey}`,
 	};
 }
