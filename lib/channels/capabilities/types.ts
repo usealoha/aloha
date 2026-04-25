@@ -55,6 +55,13 @@ export type FormPreviewProps = {
 
 export type FormPreview = ComponentType<FormPreviewProps>;
 
+// What an export produces. Either a remote file the browser fetches by
+// URL (typical for media uploads), or a synthesized blob built from the
+// payload itself (Medium markdown, etc.).
+export type ExportFile =
+  | { kind: "url"; name: string; url: string }
+  | { kind: "blob"; name: string; content: string; mimeType: string };
+
 export type PostForm = {
   id: PostFormId;
   label: string;
@@ -67,6 +74,10 @@ export type PostForm = {
   hydrate: (args: { content: string; media: PostMedia[] }) => StudioPayload;
   // Publisher adapter for this form. Invoked by the dispatcher.
   publish: (args: PublishArgs) => Promise<PublishResult>;
+  // Studio "Export" affordance. Returning an empty array (or omitting
+  // this method) hides the button. Forms without media + non-markdown
+  // bodies typically leave this undefined.
+  exportPayload?: (payload: StudioPayload) => ExportFile[];
   // React editor component rendered inside the Studio shell.
   Editor: FormEditor;
   // React preview component rendered alongside the editor.
