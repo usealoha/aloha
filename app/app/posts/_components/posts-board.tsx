@@ -14,14 +14,7 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import {
-	AlertCircle,
-	CheckCircle2,
-	Clock,
-	FileText,
-	Sparkles,
-	Zap,
-} from "lucide-react";
+// (icons no longer needed in column headers — using a colored dot instead)
 import { toast } from "sonner";
 import {
 	approvePost,
@@ -51,40 +44,14 @@ type Row = {
 const COLUMNS: {
 	key: PostStatus;
 	label: string;
-	icon: React.ComponentType<{ className?: string }>;
-	accent: string;
+	dot: string;
 }[] = [
-	{ key: "draft", label: "Draft", icon: FileText, accent: "text-ink/60" },
-	{
-		key: "in_review",
-		label: "In review",
-		icon: Clock,
-		accent: "text-amber-700",
-	},
-	{
-		key: "approved",
-		label: "Approved",
-		icon: Sparkles,
-		accent: "text-emerald-700",
-	},
-	{
-		key: "scheduled",
-		label: "Scheduled",
-		icon: Clock,
-		accent: "text-primary",
-	},
-	{
-		key: "published",
-		label: "Published",
-		icon: CheckCircle2,
-		accent: "text-ink/70",
-	},
-	{
-		key: "failed",
-		label: "Failed",
-		icon: AlertCircle,
-		accent: "text-destructive",
-	},
+	{ key: "draft", label: "Draft", dot: "bg-border-strong" },
+	{ key: "in_review", label: "In review", dot: "bg-peach-300" },
+	{ key: "approved", label: "Approved", dot: "bg-primary" },
+	{ key: "scheduled", label: "Scheduled", dot: "bg-peach-400" },
+	{ key: "published", label: "Published", dot: "bg-ink" },
+	{ key: "failed", label: "Failed", dot: "bg-destructive" },
 ];
 
 export function PostsBoard({ rows, tz }: { rows: Row[]; tz: string }) {
@@ -198,18 +165,21 @@ export function PostsBoard({ rows, tz }: { rows: Row[]; tz: string }) {
 			onDragEnd={handleDragEnd}
 			onDragCancel={() => setDraggingId(null)}
 		>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-				{COLUMNS.map((col) => (
-					<BoardColumn
-						key={col.key}
-						column={col}
-						rows={grouped.get(col.key) ?? []}
-						tz={tz}
-						draggingRowStatus={
-							draggingRow ? (draggingRow.status as PostStatus) : null
-						}
-					/>
-				))}
+			<div className="overflow-x-auto -mx-4 px-4 pb-2 h-full min-h-[360px]">
+				<div className="flex gap-3 min-w-max h-full">
+					{COLUMNS.map((col) => (
+						<div key={col.key} className="w-[320px] shrink-0 h-full">
+							<BoardColumn
+								column={col}
+								rows={grouped.get(col.key) ?? []}
+								tz={tz}
+								draggingRowStatus={
+									draggingRow ? (draggingRow.status as PostStatus) : null
+								}
+							/>
+						</div>
+					))}
+				</div>
 			</div>
 
 			<DragOverlay>
@@ -231,7 +201,6 @@ function BoardColumn({
 	draggingRowStatus: PostStatus | null;
 }) {
 	const { isOver, setNodeRef } = useDroppable({ id: column.key });
-	const Icon = column.icon;
 	const isValidDropTarget =
 		draggingRowStatus !== null &&
 		draggingRowStatus !== column.key &&
@@ -241,27 +210,30 @@ function BoardColumn({
 		<div
 			ref={setNodeRef}
 			className={cn(
-				"flex flex-col min-h-[360px] rounded-xl border bg-background-elev transition-colors",
+				"flex flex-col h-full rounded-xl border bg-background-elev transition-colors",
 				isOver && isValidDropTarget
-					? "border-ink bg-peach-50"
+					? "border-ink"
 					: draggingRowStatus && !isValidDropTarget
-						? "border-border opacity-50"
+						? "border-border opacity-60"
 						: "border-border",
 			)}
 		>
-			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
-				<Icon className={cn("w-3.5 h-3.5", column.accent)} />
-				<span className="text-[12px] font-semibold text-ink">
+			<div className="flex items-center gap-2 px-3.5 py-2.5">
+				<span
+					className={cn("h-2 w-2 rounded-full shrink-0", column.dot)}
+					aria-hidden
+				/>
+				<span className="text-[12.5px] font-medium text-ink">
 					{column.label}
 				</span>
-				<span className="text-[11px] text-ink/50 tabular-nums">
+				<span className="ml-auto text-[11px] text-ink/45 tabular-nums">
 					{rows.length}
 				</span>
 			</div>
-			<div className="flex-1 p-2 space-y-2 overflow-y-auto">
+			<div className="flex-1 min-h-0 p-2 pt-0 space-y-2 overflow-y-auto">
 				{rows.length === 0 ? (
-					<p className="text-[11px] text-ink/40 text-center py-6">
-						No posts.
+					<p className="text-[11.5px] text-ink/40 text-center py-6">
+						Empty
 					</p>
 				) : (
 					rows.map((row) => <DraggableCard key={row.id} row={row} tz={tz} />)
@@ -359,4 +331,3 @@ function timestampLabel(row: Row, tz: string): string {
 	return fmt(row.createdAt);
 }
 
-void Zap;
