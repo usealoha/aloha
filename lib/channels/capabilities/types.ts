@@ -72,15 +72,17 @@ export type PostForm = {
   flatten: (payload: StudioPayload) => { text: string; media: PostMedia[] };
   // Seed payload from the current draft body when entering Studio.
   hydrate: (args: { content: string; media: PostMedia[] }) => StudioPayload;
-  // Publisher adapter for this form. Invoked by the dispatcher.
-  publish: (args: PublishArgs) => Promise<PublishResult>;
   // Studio "Export" affordance. Returning an empty array (or omitting
   // this method) hides the button. Forms without media + non-markdown
   // bodies typically leave this undefined.
   exportPayload?: (payload: StudioPayload) => ExportFile[];
-  // React editor component rendered inside the Studio shell.
+};
+
+// View pair for a form. Lives in a separate "use client" registry so the
+// server-safe `PostForm` data above never references React components and
+// can be imported from server actions without invoking client factories.
+export type FormView = {
   Editor: FormEditor;
-  // React preview component rendered alongside the editor.
   Preview: FormPreview;
 };
 
