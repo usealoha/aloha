@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
 import { channelProfiles, posts } from "@/db/schema";
+import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getCurrentContext } from "@/lib/current-context";
 import { getCapability } from "@/lib/channels/capabilities";
 import type { PostStatus } from "@/lib/posts/transitions";
@@ -51,20 +52,23 @@ export default async function StudioPage({
     redirect(`/app/composer?post=${draftId}`);
   }
 
-  const profile = await db
-    .select({
-      displayName: channelProfiles.displayName,
-      handle: channelProfiles.handle,
-      avatarUrl: channelProfiles.avatarUrl,
-    })
-    .from(channelProfiles)
-    .where(
-      and(
-        eq(channelProfiles.workspaceId, workspace.id),
-        eq(channelProfiles.channel, post.studioMode.channel),
-      ),
-    )
-    .limit(1);
+  const [profile, museAccess] = await Promise.all([
+    db
+      .select({
+        displayName: channelProfiles.displayName,
+        handle: channelProfiles.handle,
+        avatarUrl: channelProfiles.avatarUrl,
+      })
+      .from(channelProfiles)
+      .where(
+        and(
+          eq(channelProfiles.workspaceId, workspace.id),
+          eq(channelProfiles.channel, post.studioMode.channel),
+        ),
+      )
+      .limit(1),
+    hasMuseInviteEntitlement(user.id),
+  ]);
 
   return (
     <StudioShell
@@ -81,6 +85,7 @@ export default async function StudioPage({
         name: user.name ?? user.email.split("@")[0],
         image: user.image,
       }}
+      museAccess={museAccess}
     />
   );
 }

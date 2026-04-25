@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Download, Loader2, Send } from "lucide-react";
+import { Download, Loader2, LogOut, Save, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -14,15 +14,20 @@ import {
   saveStudioPayload,
   switchStudioForm,
 } from "@/app/actions/studio";
+import { CHANNEL_ICONS, channelLabel } from "@/components/channel-chip";
+import { CHANNEL_ACCENT } from "@/components/post-preview-card";
 import { SchedulePopover } from "@/components/schedule-popover";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getCapability } from "@/lib/channels/capabilities";
 import { getFormView } from "@/lib/channels/capabilities/views";
+import { readPostPayload } from "@/lib/channels/capabilities/editors/post-payload";
 import { downloadExportFiles } from "@/lib/studio/download";
-import type { StudioPayload } from "@/db/schema";
+import type { PostMedia, StudioPayload } from "@/db/schema";
 import type { PostStatus } from "@/lib/posts/transitions";
 import { tzLocalInputToUtcDate, utcIsoToTzLocalInput } from "@/lib/tz";
 import { cn } from "@/lib/utils";
+import { StudioAssistFooter } from "./studio-assist-footer";
+import { StudioEditorFooter } from "./studio-editor-footer";
 
 type ProfileView = {
   displayName: string | null;
@@ -41,6 +46,7 @@ export function StudioShell({
   timezone,
   profile,
   author,
+  museAccess,
 }: {
   postId: string;
   channel: string;
@@ -52,6 +58,7 @@ export function StudioShell({
   timezone: string;
   profile: ProfileView;
   author: { name: string; image: string | null };
+  museAccess: boolean;
 }) {
   const router = useRouter();
   const [payload, setPayload] = useState<StudioPayload>(initialPayload);
@@ -191,36 +198,43 @@ export function StudioShell({
 
   const isReadOnly = status !== "draft";
 
+  const ChannelIcon = CHANNEL_ICONS[channel];
+  const headerAccent = CHANNEL_ACCENT[channel] ?? "bg-ink text-background";
+  // Action chip in the header — translucent over the channel color, fixed
+  // height so every button (incl. the SchedulePopover trigger) reads as one
+  // size.
+  const headerBtn =
+    "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12.5px] font-medium transition-colors disabled:opacity-50 border border-white/15";
+  const primaryBtn =
+    "inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-white text-ink text-[12.5px] font-semibold hover:bg-white/90 transition-colors disabled:opacity-50";
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-background">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setShowExit(true)}
-            disabled={isSaving || isPublishing}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-muted/60 transition-colors disabled:opacity-50"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Exit Studio
-          </button>
-          <div className="text-[13px] text-ink/70">
-            <span className="font-semibold text-ink">{channel}</span>
+    <div className="absolute inset-0 flex flex-col bg-background overflow-y-auto">
+      <header className={cn("w-full", headerAccent)}>
+        <div className="max-w-[1320px] mx-auto flex items-center justify-between gap-4 px-6 lg:px-10 py-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {ChannelIcon ? (
+            <ChannelIcon className="w-5 h-5 shrink-0" />
+          ) : null}
+          <div className="text-[13.5px] min-w-0 truncate">
+            <span className="font-semibold">{channelLabel(channel)}</span>
             {profile?.handle ? (
-              <span className="text-ink/55"> · {profile.handle}</span>
+              <span className="opacity-75"> · {profile.handle}</span>
             ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={persist}
             disabled={isSaving || isReadOnly}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-muted/60 transition-colors disabled:opacity-50"
+            className={headerBtn}
           >
             {isSaving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : null}
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
             Save
           </button>
           {form.exportPayload ? (
@@ -233,7 +247,7 @@ export function StudioShell({
                   ? "Download media / content for manual upload"
                   : "Nothing to export yet"
               }
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-muted/60 transition-colors disabled:opacity-50"
+              className={headerBtn}
             >
               {isExporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -256,53 +270,70 @@ export function StudioShell({
               confirmLabel={status === "scheduled" ? "Reschedule" : "Schedule"}
               idleLabel={status === "scheduled" ? "Reschedule" : "Schedule"}
               allowClear={status !== "scheduled"}
+              triggerClassName={headerBtn}
+              triggerActiveClassName="bg-white/30 text-white"
+              triggerIdleClassName="bg-white/15 hover:bg-white/25 text-white"
             />
           ) : null}
           <button
             type="button"
             onClick={handlePublish}
             disabled={isPublishing || isReadOnly}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink text-background px-3 py-1.5 text-[12px] font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
+            className={primaryBtn}
           >
             <Send className="w-3.5 h-3.5" />
             Publish
           </button>
+          <span className="h-6 w-px bg-white/20 mx-1" aria-hidden />
+          <button
+            type="button"
+            onClick={() => setShowExit(true)}
+            disabled={isSaving || isPublishing}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-[12.5px] font-medium border border-white/15 transition-colors disabled:opacity-50"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Exit
+          </button>
+        </div>
         </div>
       </header>
 
       {availableForms.length > 1 ? (
-        <nav className="flex items-center gap-1 px-6 py-2 border-b border-border">
-          {availableForms.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => handleSwitchForm(f.id)}
-              disabled={isSaving || isReadOnly}
-              className={cn(
-                "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
-                f.id === currentForm
-                  ? "bg-ink text-background"
-                  : "text-ink/70 hover:bg-muted/60",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+        <nav className="border-b border-border">
+          <div className="max-w-[1320px] mx-auto flex items-center gap-1 px-6 lg:px-10 py-2">
+            {availableForms.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => handleSwitchForm(f.id)}
+                disabled={isSaving || isReadOnly}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
+                  f.id === currentForm
+                    ? "bg-ink text-background"
+                    : "text-ink/70 hover:bg-muted/60",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </nav>
       ) : null}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0">
-        <section className="p-6 border-r border-border">
+      <div className="flex-1 w-full max-w-[1320px] mx-auto px-6 lg:px-10 py-6 flex flex-col lg:flex-row gap-6 lg:gap-0">
+        <section className="flex-1 lg:basis-2/3 min-w-0 flex flex-col lg:pr-6">
           <Editor
             payload={payload}
             onChange={setPayload}
             disabled={isReadOnly}
           />
         </section>
-        <section className="p-6 bg-background/60">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55 mb-3">
-            Preview
-          </p>
+        <div
+          aria-hidden
+          className="hidden lg:block w-px bg-border self-stretch"
+        />
+        <section className="flex-1 lg:basis-1/3 min-w-0 flex flex-col lg:pl-6 lg:sticky lg:top-6 self-start w-full">
           <Preview
             payload={payload}
             profile={profile}
@@ -310,6 +341,46 @@ export function StudioShell({
           />
         </section>
       </div>
+
+      {(() => {
+        // Both footers operate on the standard PostPayload shape
+        // (text + media). Forms with a different payload shape — article
+        // body, document URL, etc. — opt out entirely.
+        const { text, media } = readPostPayload(payload);
+        const hasTextField = "text" in (payload as object);
+        if (!hasTextField) return null;
+        const maxChars = form.limits?.maxChars ?? Infinity;
+        const maxMedia = form.limits?.maxMedia ?? 0;
+        const setText = (t: string) =>
+          setPayload({ ...payload, text: t, media } as StudioPayload);
+        const setMedia = (m: PostMedia[]) =>
+          setPayload({ ...payload, text, media: m } as StudioPayload);
+        return (
+          <>
+            <StudioEditorFooter
+              channel={channel}
+              channelName={channelLabel(channel)}
+              text={text}
+              media={media}
+              maxChars={maxChars}
+              maxMedia={maxMedia}
+              disabled={isReadOnly}
+              onTextChange={setText}
+              onMediaChange={setMedia}
+            />
+            <StudioAssistFooter
+              channel={channel}
+              museAccess={museAccess}
+              text={text}
+              media={media}
+              maxMedia={maxMedia}
+              disabled={isReadOnly}
+              onTextChange={setText}
+              onMediaChange={setMedia}
+            />
+          </>
+        );
+      })()}
 
       <ConfirmDialog
         isOpen={showExit}
