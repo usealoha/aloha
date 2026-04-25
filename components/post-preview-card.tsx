@@ -19,7 +19,7 @@ import type { PostMedia } from "@/db/schema";
 
 // Platform-specific visual accent for the small channel chip on the card
 // header. Unknown channels fall back to the ink chip.
-const CHANNEL_ACCENT: Record<string, string> = {
+export const CHANNEL_ACCENT: Record<string, string> = {
   twitter: "bg-ink text-background",
   x: "bg-ink text-background",
   linkedin: "bg-[#0a66c2] text-white",

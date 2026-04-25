@@ -32,6 +32,9 @@ export function SchedulePopover({
   confirmLabel = "Schedule",
   idleLabel = "Schedule",
   allowClear = true,
+  triggerClassName,
+  triggerActiveClassName,
+  triggerIdleClassName,
 }: {
   // `scheduledAt` is a "YYYY-MM-DDTHH:mm" wall-clock string in `timezone`.
   scheduledAt: string;
@@ -50,6 +53,11 @@ export function SchedulePopover({
   // Whether the "Clear" button is shown (hidden on reschedule — you can't
   // un-schedule a scheduled post from here).
   allowClear?: boolean;
+  // Override the trigger pill styling — used by Studio to match the
+  // channel-themed header button row.
+  triggerClassName?: string;
+  triggerActiveClassName?: string;
+  triggerIdleClassName?: string;
 }) {
   const selectedDate = scheduledAt
     ? (() => {
@@ -115,10 +123,13 @@ export function SchedulePopover({
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-1.5 h-10 px-4 rounded-full border text-[13px] font-medium transition-colors",
+              triggerClassName ??
+                "inline-flex items-center gap-1.5 h-10 px-4 rounded-full border text-[13px] font-medium transition-colors",
               scheduledAt
-                ? "bg-peach-100 border-ink/20 text-ink"
-                : "bg-background-elev border-border-strong text-ink hover:border-ink",
+                ? (triggerActiveClassName ??
+                    "bg-peach-100 border-ink/20 text-ink")
+                : (triggerIdleClassName ??
+                    "bg-background-elev border-border-strong text-ink hover:border-ink"),
             )}
           >
             <CalendarClock className="w-4 h-4" />
