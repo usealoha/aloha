@@ -17,6 +17,7 @@ import {
 import { SchedulePopover } from "@/components/schedule-popover";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getCapability } from "@/lib/channels/capabilities";
+import { getFormView } from "@/lib/channels/capabilities/views";
 import { downloadExportFiles } from "@/lib/studio/download";
 import type { StudioPayload } from "@/db/schema";
 import type { PostStatus } from "@/lib/posts/transitions";
@@ -72,8 +73,16 @@ export function StudioShell({
     );
   }
   const form = cap.forms.find((f) => f.id === currentForm) ?? cap.forms[0];
-  const Editor = form.Editor;
-  const Preview = form.Preview;
+  const view = getFormView(channel, form.id);
+  if (!view) {
+    return (
+      <div className="p-8 text-[14px] text-ink/70">
+        Studio view for <b>{channel}/{form.id}</b> is not registered.
+      </div>
+    );
+  }
+  const Editor = view.Editor;
+  const Preview = view.Preview;
 
   const persist = () =>
     startSaving(async () => {
