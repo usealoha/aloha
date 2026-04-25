@@ -151,6 +151,10 @@ export async function publishToYouTube(args: {
 	workspaceId: string;
 	text: string;
 	media?: PostMedia[];
+	// Studio path supplies these explicitly; multi-channel fanout falls
+	// back to deriving title from the first line + appending #Shorts.
+	title?: string;
+	description?: string;
 }): Promise<YouTubePostResult> {
 	const video = args.media?.find((m) => m.mimeType.startsWith("video/"));
 	if (!video) {
@@ -160,8 +164,8 @@ export async function publishToYouTube(args: {
 		);
 	}
 
-	const title = deriveTitle(args.text);
-	const description = buildDescription(args.text);
+	const title = args.title?.trim() || deriveTitle(args.text);
+	const description = args.description ?? buildDescription(args.text);
 
 	let account = await getFreshToken(args.workspaceId, "youtube");
 
