@@ -19,6 +19,7 @@ import {
 } from "@/db/schema";
 import { decideForPublish } from "@/lib/channel-state";
 import { getForm } from "@/lib/channels/capabilities";
+import { getFormPublisher } from "@/lib/channels/capabilities/publishers";
 import { sendManualAssistReminderForDelivery } from "@/lib/manual-assist";
 import { createNotification } from "@/lib/notifications";
 import { dispatchEvent } from "@/lib/automations/dispatch";
@@ -190,7 +191,14 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 						`No Studio capability registered for ${platform}/${post.studioMode.form}`,
 					);
 				}
-				const result = await form.publish({
+				const publish = getFormPublisher(platform, post.studioMode.form);
+				if (!publish) {
+					throw new PublishError(
+						"unsupported_platform",
+						`No Studio publisher registered for ${platform}/${post.studioMode.form}`,
+					);
+				}
+				const result = await publish({
 					workspaceId: post.workspaceId,
 					payload: post.studioPayload ?? {},
 				});
