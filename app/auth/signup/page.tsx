@@ -138,7 +138,7 @@ function SignupNarrative() {
 	const bullets = [
 		"Compose once, publish to nine networks",
 		"A calendar that actually breathes",
-		"Logic Matrix replies to new followers while you sleep",
+		// "Logic Matrix replies to new followers while you sleep",  // hidden in production
 		"Your content, your analytics, fully exportable",
 	];
 

@@ -30,7 +30,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   entries.push(entry(routes.home, 1, "weekly"));
 
   // Product features — primary conversion surfaces.
-  for (const path of Object.values(routes.product)) {
+  // Logic Matrix (automations) is hidden in production; skip from sitemap.
+  for (const [key, path] of Object.entries(routes.product)) {
+    if (key === "logicMatrix") continue;
     entries.push(entry(path, 0.9, "weekly"));
   }
 

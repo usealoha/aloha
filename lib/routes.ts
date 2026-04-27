@@ -135,7 +135,8 @@ export const footerLinks = {
 				{ label: "Composer", href: routes.product.composer },
 				{ label: "Calendar", href: routes.product.calendar },
 				{ label: "Analytics", href: routes.product.analytics },
-				{ label: "Logic Matrix", href: routes.product.logicMatrix },
+				// Logic Matrix (automations) hidden in production; preserved for re-enable.
+				// { label: "Logic Matrix", href: routes.product.logicMatrix },
 				{ label: "Inbox", href: routes.product.inbox },
 				{ label: "Link-in-bio", href: routes.product.linkInBio },
 				{ label: "What's new", href: routes.product.whatsNew },
