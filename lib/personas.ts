@@ -133,13 +133,14 @@ export const PERSONAS: Record<string, Persona> = {
         feature: "Analytics",
         href: "/analytics",
       },
-      {
-        pain: "Your first reply to a new follower shouldn't be a job",
-        resolution:
-          "Logic Matrix drafts a warm first-touch DM when someone engages; you approve before it sends. Never auto-spam.",
-        feature: "Logic Matrix",
-        href: "/logic-matrix",
-      },
+      // Logic Matrix pain hidden in production; preserved for re-enable.
+      // {
+      //   pain: "Your first reply to a new follower shouldn't be a job",
+      //   resolution:
+      //     "Logic Matrix drafts a warm first-touch DM when someone engages; you approve before it sends. Never auto-spam.",
+      //   feature: "Logic Matrix",
+      //   href: "/logic-matrix",
+      // },
     ],
     day: [
       { time: "06:45", label: "morning pages → Monday field note", tone: "bg-peach-100" },
@@ -159,7 +160,7 @@ export const PERSONAS: Record<string, Persona> = {
     topFeatures: [
       { name: "Voice model", why: "Stays yours across Instagram, Threads, X, YouTube", href: "/composer" },
       { name: "Per-channel rewrite", why: "Long for LinkedIn, sharp for X, soft for Instagram", href: "/channels/instagram" },
-      { name: "Logic Matrix · welcome flow", why: "Warm first-touch DM, always approved", href: "/logic-matrix" },
+      // { name: "Logic Matrix · welcome flow", why: "Warm first-touch DM, always approved", href: "/logic-matrix" },  // hidden in production
     ],
     testimonial: {
       q: "The voice model writes in my cadence now. My editor can't always tell which drafts I wrote and which Aloha did — and she's been editing me for four years.",
@@ -192,13 +193,14 @@ export const PERSONAS: Record<string, Persona> = {
         feature: "Inbox",
         href: "/inbox",
       },
-      {
-        pain: "The launch goes up, then life happens",
-        resolution:
-          "Logic Matrix templates cover the 7-post launch arc — teaser, drop, social proof, FAQ, last call — you only touch the drafts that matter.",
-        feature: "Logic Matrix",
-        href: "/logic-matrix",
-      },
+      // Logic Matrix launch-arc pain hidden in production; preserved for re-enable.
+      // {
+      //   pain: "The launch goes up, then life happens",
+      //   resolution:
+      //     "Logic Matrix templates cover the 7-post launch arc — teaser, drop, social proof, FAQ, last call — you only touch the drafts that matter.",
+      //   feature: "Logic Matrix",
+      //   href: "/logic-matrix",
+      // },
       {
         pain: "Five people, not fifty SKUs",
         resolution:
@@ -224,7 +226,7 @@ export const PERSONAS: Record<string, Persona> = {
     channels: ["facebook", "instagram", "pinterest"],
     topFeatures: [
       { name: "Inbox with triage", why: "Customer questions surface; praise gets handled in one tap", href: "/inbox" },
-      { name: "Launch templates", why: "Seven-beat drop preloaded; customise in minutes", href: "/logic-matrix" },
+      // { name: "Launch templates", why: "Seven-beat drop preloaded; customise in minutes", href: "/logic-matrix" },  // hidden in production
       { name: "Team plan, not enterprise price", why: "$16 total for five people", href: "/pricing" },
     ],
     testimonial: {
@@ -294,7 +296,7 @@ export const PERSONAS: Record<string, Persona> = {
       { name: "Migration tools", why: "New-client onboarding in an afternoon", href: "/migrate" },
     ],
     testimonial: {
-      q: "The automation matrix saved me 11 hours last month. I checked.",
+      q: "The unified inbox saved me 11 hours last month. I checked.",
       n: "Leah S.",
       r: "Agency owner · 6 clients",
       ini: "L",

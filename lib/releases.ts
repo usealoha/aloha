@@ -48,13 +48,16 @@ export const RELEASES: Release[] = [
 		version: "0.5",
 		date: "2026-04-15",
 		dateLabel: "Apr 15, 2026",
-		title: "The Logic Matrix lands, plus your first analytics view",
-		lead: "Our automations canvas — triggers, conditions, actions — is in. Alongside it, an analytics dashboard that reads straight from platform insights rather than handing you a spreadsheet.",
+		title: "Your first analytics view",
+		lead: "An analytics dashboard that reads straight from platform insights rather than handing you a spreadsheet.",
 		changes: [
+			// Logic Matrix release note hidden in production; preserved for re-enable.
+			/*
 			{
 				tag: "new",
 				t: "Logic Matrix: a visual canvas for triggers, conditions, and actions. Build flows without leaving the app.",
 			},
+			*/
 			{
 				tag: "new",
 				t: "Analytics dashboard — platform-aware metrics across your connected channels.",
@@ -73,10 +76,10 @@ export const RELEASES: Release[] = [
 			},
 		],
 		featured: true,
-		screenshotLabel: "Logic Matrix canvas.",
-		screenshotSrc: "/aloha-matrix.webp",
-		screenshotAlt:
-			"Aloha Logic Matrix — automations list on the left with a canvas of trigger, condition, and action nodes wired together.",
+		// Logic Matrix screenshot fields hidden in production; preserved for re-enable.
+		// screenshotLabel: "Logic Matrix canvas.",
+		// screenshotSrc: "/aloha-matrix.webp",
+		// screenshotAlt: "Aloha Logic Matrix — automations list on the left with a canvas of trigger, condition, and action nodes wired together.",
 	},
 	{
 		version: "0.4",

@@ -50,7 +50,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     name: "Buffer",
     positioning: "the calm, creator-first schedule-and-analyse tool",
     lead:
-      "We're fans. Buffer has shaped the way this whole category reads for a decade. Aloha borrows the clarity and adds the pieces Buffer has chosen not to build — Muse (our style-trained voice model), an automation canvas, and a unified inbox. Here's where we overlap, where we diverge, and who should stay with Buffer.",
+      "We're fans. Buffer has shaped the way this whole category reads for a decade. Aloha borrows the clarity and adds the pieces Buffer has chosen not to build — Muse (our style-trained voice model) and a unified inbox. Here's where we overlap, where we diverge, and who should stay with Buffer.",
     accent: "bg-peach-100",
     verifiedOn: "2026-04-10",
     verifiedLabel: "Apr 10, 2026",
@@ -73,10 +73,11 @@ export const COMPETITORS: Record<string, Competitor> = {
         h: "Muse, not templates",
         p: "Muse — Aloha's voice model inside Composer — writes in your cadence after learning from your best posts. Buffer's AI Assistant uses generic prompts with one shared tone.",
       },
-      {
-        h: "Automation canvas",
-        p: "The Logic Matrix lets you wire triggers, conditions and actions — welcome DMs, cross-post chains, reply triage. Buffer has none of this.",
-      },
+      // Automation canvas advantage hidden in production; preserved for re-enable.
+      // {
+      //   h: "Automation canvas",
+      //   p: "The Logic Matrix lets you wire triggers, conditions and actions — welcome DMs, cross-post chains, reply triage. Buffer has none of this.",
+      // },
       {
         h: "Unified inbox",
         p: "Every comment and DM across every channel in one triageable list. Buffer's inbox is limited and costs extra on Team plans.",
@@ -88,7 +89,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", alohaNote: "custom domain, no watermark", them: "addon", themNote: "Start Page, separate product" },
       { label: "Full analytics history on every plan", aloha: "yes", alohaNote: "24 months, incl. Free", them: "partial", themNote: "30 days on Free" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "partial", themNote: "Engage, Team-plan add-on" },
       { label: "Approval workflows", aloha: "yes", them: "yes" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes" },
@@ -97,7 +98,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "SSO / SCIM", aloha: "yes", alohaNote: "on Agency plan", them: "yes" },
     ],
     verdict:
-      "Stay with Buffer if you want the minimal, schedule-plus-analytics shape. Move to Aloha if you want Muse, an automation canvas, and a unified inbox without the add-on pricing.",
+      "Stay with Buffer if you want the minimal, schedule-plus-analytics shape. Move to Aloha if you want Muse and a unified inbox without the add-on pricing.",
     testimonial: {
       q: "I migrated from Buffer in an afternoon. The importer didn't drop a single scheduled post — even the recurring ones landed right.",
       n: "Deniz K.",
@@ -148,8 +149,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Hootsuite is dense by design. Aloha prioritises the two-thirds of the job you actually do daily.",
       },
       {
-        h: "Muse + Logic Matrix",
-        p: "Hootsuite has AI features, but they're template-driven. Muse is trained on your posts; the Matrix automates cross-channel flows without Zapier.",
+        h: "Muse — voice-trained AI",
+        p: "Hootsuite has AI features, but they're template-driven. Muse is trained on your posts and writes in your cadence.",
       },
     ],
     matrix: [
@@ -158,7 +159,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "tiered by plan" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "yes" },
       { label: "Approval workflows", aloha: "yes", them: "yes" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes" },
@@ -190,7 +191,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     name: "Later",
     positioning: "the visual-first Instagram scheduler",
     lead:
-      "Later is beautiful for visual planners — especially if you live on Instagram. Aloha is broader: we're strong on voice, automation and multi-channel. If Instagram is 80% of your work and the visual grid is your primary canvas, Later may still be your best bet.",
+      "Later is beautiful for visual planners — especially if you live on Instagram. Aloha is broader: we're strong on voice and multi-channel. If Instagram is 80% of your work and the visual grid is your primary canvas, Later may still be your best bet.",
     accent: "bg-peach-200",
     verifiedOn: "2026-04-10",
     verifiedLabel: "Apr 10, 2026",
@@ -217,10 +218,11 @@ export const COMPETITORS: Record<string, Competitor> = {
         h: "Muse",
         p: "Later's AI writes generic captions. Muse — Aloha's voice model inside Composer — learns your cadence.",
       },
-      {
-        h: "Automation",
-        p: "Logic Matrix wires cross-channel behaviours — welcome DMs, reply triage, launch sequences. Later doesn't.",
-      },
+      // Automation advantage hidden in production; preserved for re-enable.
+      // {
+      //   h: "Automation",
+      //   p: "Logic Matrix wires cross-channel behaviours — welcome DMs, reply triage, launch sequences. Later doesn't.",
+      // },
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "partial", themNote: "6 networks, LinkedIn limited" },
@@ -228,7 +230,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "yes", themNote: "Linkin.bio, commerce-focused" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "3 months on Starter" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "no" },
       { label: "Approval workflows", aloha: "yes", them: "partial", themNote: "Teams plan only" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes" },
@@ -287,10 +289,11 @@ export const COMPETITORS: Record<string, Competitor> = {
         h: "Composer + Muse",
         p: "Sprout's content tooling is functional, not expressive. Muse drafts native-per-channel posts that sound like you.",
       },
-      {
-        h: "Automation canvas",
-        p: "Sprout has rule-based automations. The Matrix is a full visual canvas — triggers, conditions, and actions you can see at a glance.",
-      },
+      // Automation canvas advantage hidden in production; preserved for re-enable.
+      // {
+      //   h: "Automation canvas",
+      //   p: "Sprout has rule-based automations. The Matrix is a full visual canvas — triggers, conditions, and actions you can see at a glance.",
+      // },
     ],
     matrix: [
       { label: "Scheduling across 8 networks", aloha: "yes", them: "yes" },
@@ -298,7 +301,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "yes" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "limits by plan" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "partial", themNote: "rule-based only" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "partial", themNote: "rule-based only" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "yes", themNote: "Smart Inbox, strong" },
       { label: "Approval workflows", aloha: "yes", them: "yes" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes" },
@@ -358,8 +361,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "One Aloha draft → native versions across every social channel, in your voice. Kit has neither.",
       },
       {
-        h: "Inbox + Matrix",
-        p: "Comment triage, DM inbox, and cross-channel automation — Kit stays out of social entirely.",
+        h: "Unified inbox",
+        p: "Comment triage and DMs across every channel — Kit stays out of social entirely.",
       },
     ],
     matrix: [
@@ -368,7 +371,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "no" },
       { label: "Link-in-bio page included", aloha: "yes", them: "yes", themNote: "Creator profile page" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "partial", themNote: "email only" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "partial", themNote: "email sequences" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "partial", themNote: "email sequences" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "no" },
       { label: "Approval workflows", aloha: "yes", them: "no" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes" },
@@ -428,8 +431,8 @@ export const COMPETITORS: Record<string, Competitor> = {
         p: "Muse trains on your best posts across any channel. Typefully's AI is X-specific.",
       },
       {
-        h: "Inbox + Matrix + Calendar",
-        p: "Typefully is a writing tool. Aloha is a writing tool and a comment triage tool and an automation canvas and a calendar.",
+        h: "Inbox + Calendar",
+        p: "Typefully is a writing tool. Aloha is a writing tool, a comment triage tool, and a calendar.",
       },
     ],
     matrix: [
@@ -438,7 +441,7 @@ export const COMPETITORS: Record<string, Competitor> = {
       { label: "Native reel + story scheduling", aloha: "yes", them: "no" },
       { label: "Link-in-bio page included", aloha: "yes", them: "no" },
       { label: "Full analytics history on every plan", aloha: "yes", them: "yes", themNote: "X-only" },
-      { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },
+      // { label: "Cross-channel automation canvas", aloha: "yes", them: "no" },  // hidden in production
       { label: "Unified inbox (comments + DMs)", aloha: "yes", them: "no" },
       { label: "Approval workflows", aloha: "yes", them: "partial", themNote: "Team plan" },
       { label: "Mobile app (iOS + Android)", aloha: "yes", them: "yes", themNote: "iOS only" },
