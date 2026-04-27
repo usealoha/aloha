@@ -17,9 +17,10 @@ import {
   AlertCircle,
   FileText,
   ExternalLink,
-  Pencil,
 } from "lucide-react";
 import { CHANNEL_ICONS, CHANNEL_LABELS, channelLabel } from "@/components/channel-chip";
+import type { PostStatus } from "@/lib/posts/transitions";
+import { PostHeaderActions } from "./_components/post-header-actions";
 import { cn } from "@/lib/utils";
 import { PostAnalytics } from "./_components/post-analytics";
 import { PostReplies } from "./_components/post-replies";
@@ -66,6 +67,25 @@ const STATUS_META: Record<
   },
   deleted: { label: "Deleted", icon: AlertCircle, className: "bg-ink/10 text-ink/60" },
 };
+
+function statusDotClass(status: string, selected: boolean): string {
+  switch (status) {
+    case "published":
+      return "bg-emerald-500";
+    case "approved":
+      return "bg-emerald-400";
+    case "scheduled":
+      return "bg-primary";
+    case "in_review":
+      return "bg-amber-500";
+    case "failed":
+    case "needs_reauth":
+      return "bg-destructive";
+    case "draft":
+    default:
+      return selected ? "bg-background/60" : "bg-ink/30";
+  }
+}
 
 function formatDateTime(date: Date | null, tz: string) {
   if (!date) return null;
@@ -245,25 +265,17 @@ export default async function PostDetailPage({
               />
             ) : null}
           </div>
-          <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.05] tracking-[-0.02em] text-ink font-normal">
-            Post<span className="text-primary font-light">.</span>
-          </h1>
         </div>
         <div className="flex items-center gap-2 self-start">
           {post.status === "published" && (
             <RefreshRepliesButton postId={post.id} />
           )}
-          {post.status !== "published" &&
-            post.status !== "failed" &&
-            post.status !== "deleted" && (
-            <Link
-              href={`/app/composer?post=${post.id}`}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border bg-background text-[13px] font-medium text-ink hover:border-ink/40 transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              {post.status === "draft" ? "Edit" : "Open"}
-            </Link>
-          )}
+          <PostHeaderActions
+            postId={post.id}
+            status={post.status as PostStatus}
+            workspaceRole={ctx.role}
+            timezone={tz}
+          />
         </div>
       </header>
 
@@ -293,11 +305,7 @@ export default async function PostDetailPage({
                 <span
                   className={cn(
                     "inline-block w-1.5 h-1.5 rounded-full",
-                    chipMeta.className.includes("destructive")
-                      ? "bg-destructive"
-                      : chipStatus === "published"
-                        ? "bg-emerald-500"
-                        : "bg-ink/30",
+                    statusDotClass(chipStatus, isSelected),
                   )}
                 />
               </Link>
@@ -311,31 +319,32 @@ export default async function PostDetailPage({
       {/* Selected channel details (left column) */}
       {selectedChannel && (
         <section className="space-y-6">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/55">
-                {channelLabel(selectedChannel)} · Content
-              </p>
+          {(selectedDelivery?.remoteUrl ||
+            (selectedDelivery?.status === "failed" &&
+              selectedDelivery.errorMessage)) && (
+            <div className="space-y-3">
               {selectedDelivery?.remoteUrl && (
-                <a
-                  href={selectedDelivery.remoteUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1.5 text-[12px] text-ink/60 hover:text-ink transition-colors"
-                >
-                  View on {channelLabel(selectedChannel)}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-            {selectedDelivery?.status === "failed" &&
-              selectedDelivery.errorMessage && (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
-                  <span className="font-medium">Failed:</span>{" "}
-                  {selectedDelivery.errorMessage}
+                <div className="flex justify-end">
+                  <a
+                    href={selectedDelivery.remoteUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-1.5 text-[12px] text-ink/60 hover:text-ink transition-colors"
+                  >
+                    View on {channelLabel(selectedChannel)}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               )}
-          </div>
+              {selectedDelivery?.status === "failed" &&
+                selectedDelivery.errorMessage && (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
+                    <span className="font-medium">Failed:</span>{" "}
+                    {selectedDelivery.errorMessage}
+                  </div>
+                )}
+            </div>
+          )}
 
           <PostAnalytics
             deliveryId={selectedDelivery?.id ?? null}
