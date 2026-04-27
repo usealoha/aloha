@@ -206,6 +206,7 @@ export default async function PostsPage({
 				content: posts.content,
 				channelContent: posts.channelContent,
 				platforms: posts.platforms,
+				media: posts.media,
 				status: posts.status,
 				scheduledAt: posts.scheduledAt,
 				publishedAt: posts.publishedAt,
