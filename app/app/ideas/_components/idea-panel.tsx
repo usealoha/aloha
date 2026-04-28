@@ -5,10 +5,12 @@ import {
   ImagePlus,
   Link2,
   Loader2,
+  PenLine,
   Plus,
   Tag,
   X as XIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { createIdeaAction, updateIdeaAction } from "@/app/actions/ideas";
 import type { PostMedia } from "@/db/schema";
@@ -172,6 +174,15 @@ export function IdeaPanel({
                 />
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                {isEdit && idea ? (
+                  <Link
+                    href={`/app/composer?idea=${idea.id}`}
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-background text-[13px] font-medium text-ink hover:border-ink transition-colors"
+                  >
+                    <PenLine className="w-3.5 h-3.5" />
+                    Draft post
+                  </Link>
+                ) : null}
                 <button
                   type="submit"
                   disabled={isSaving || isUploading || !body.trim()}

@@ -89,7 +89,14 @@ export default async function IdeasPage({
             anything here; pull into a draft when it&apos;s time to write.
           </p>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/app/ideas/clip-tools"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border bg-background text-[13px] font-medium text-ink hover:border-ink transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Capture from anywhere
+          </Link>
           <IdeaPanel />
         </div>
       </header>
