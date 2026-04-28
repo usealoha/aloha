@@ -1,4 +1,14 @@
-import { AlertCircle, CheckCircle2, Inbox, Send } from "lucide-react";
+import {
+  AlertCircle,
+  AtSign,
+  CheckCircle2,
+  CheckCircle,
+  Inbox,
+  Mail,
+  MessageSquare,
+  Send,
+  UserPlus,
+} from "lucide-react";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -18,6 +28,11 @@ export default async function NotificationsSettingsPage() {
       notificationsEnabled: users.notificationsEnabled,
       notifyPostOutcomes: users.notifyPostOutcomes,
       notifyInboxSyncIssues: users.notifyInboxSyncIssues,
+      notifyReviewSubmittedByEmail: users.notifyReviewSubmittedByEmail,
+      notifyReviewApprovedByEmail: users.notifyReviewApprovedByEmail,
+      notifyReviewAssignedByEmail: users.notifyReviewAssignedByEmail,
+      notifyReviewCommentByEmail: users.notifyReviewCommentByEmail,
+      notifyReviewMentionByEmail: users.notifyReviewMentionByEmail,
     })
     .from(users)
     .where(eq(users.id, session.user.id))
@@ -27,6 +42,11 @@ export default async function NotificationsSettingsPage() {
     notificationsEnabled: true,
     notifyPostOutcomes: true,
     notifyInboxSyncIssues: true,
+    notifyReviewSubmittedByEmail: true,
+    notifyReviewApprovedByEmail: true,
+    notifyReviewAssignedByEmail: true,
+    notifyReviewCommentByEmail: true,
+    notifyReviewMentionByEmail: true,
   };
 
   return (
@@ -75,6 +95,48 @@ export default async function NotificationsSettingsPage() {
             hint="When a platform returns an error while pulling mentions and replies."
             defaultChecked={prefs.notifyInboxSyncIssues}
             Icon={Inbox}
+          />
+        </Section>
+
+        <Section
+          eyebrow="Email"
+          title="Review pipeline emails"
+          body="The review workflow already pings you in-app. Toggle which events also send an email — useful when you don't keep Aloha open."
+        >
+          <ToggleRow
+            name="notifyReviewSubmittedByEmail"
+            label="Drafts submitted for review"
+            hint="When someone submits a post and you're a reviewer in the workspace."
+            defaultChecked={prefs.notifyReviewSubmittedByEmail}
+            Icon={Mail}
+          />
+          <ToggleRow
+            name="notifyReviewApprovedByEmail"
+            label="Your post is approved"
+            hint="When a reviewer (internal or external via share link) approves a post you submitted."
+            defaultChecked={prefs.notifyReviewApprovedByEmail}
+            Icon={CheckCircle}
+          />
+          <ToggleRow
+            name="notifyReviewAssignedByEmail"
+            label="A post is assigned to you"
+            hint="When a teammate routes a draft to you specifically."
+            defaultChecked={prefs.notifyReviewAssignedByEmail}
+            Icon={UserPlus}
+          />
+          <ToggleRow
+            name="notifyReviewCommentByEmail"
+            label="New comments on your posts"
+            hint="When anyone — workspace member or external client — leaves a comment on a draft you authored or commented on."
+            defaultChecked={prefs.notifyReviewCommentByEmail}
+            Icon={MessageSquare}
+          />
+          <ToggleRow
+            name="notifyReviewMentionByEmail"
+            label="You're @-mentioned"
+            hint="When a comment names you directly. Mentions always pre-empt the generic comment email — you'll get one or the other, never both."
+            defaultChecked={prefs.notifyReviewMentionByEmail}
+            Icon={AtSign}
           />
         </Section>
 
