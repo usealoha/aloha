@@ -48,6 +48,15 @@ const envSchema = z.object({
   // dashboard → Webhooks; starts with `whsec_`. Optional so dev without
   // webhooks set up doesn't fail to boot.
   RESEND_WEBHOOK_SECRET: z.string().optional(),
+  // Inbound mail domain (the right-hand side of the per-workspace alias,
+  // e.g., `in.usealoha.app`). When unset, the email-to-ideas surface
+  // doesn't render and the inbound webhook 503s.
+  INBOUND_EMAIL_DOMAIN: z.string().optional(),
+  // Shared bearer for the inbound email webhook. The forwarder
+  // (Cloudflare Email Worker / Postmark / etc.) sends this in the
+  // `Authorization` header. Optional in dev; required in prod once the
+  // forwarder is wired up.
+  INBOUND_EMAIL_SECRET: z.string().optional(),
 
   // AI
   OPENROUTER_API_KEY: z.string().min(1),
