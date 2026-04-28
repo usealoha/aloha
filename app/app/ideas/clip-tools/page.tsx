@@ -4,12 +4,13 @@
 // users don't see a half-built feature. Setting both env vars
 // re-enables it without code changes.
 
+import { BookmarkletButton } from "./_components/bookmarklet-button";
 import { CopyText } from "./_components/copy-text";
 import { ensureWorkspaceShortId } from "@/lib/workspaces/short-id";
 import { getCurrentContext } from "@/lib/current-context";
 import { env } from "@/lib/env";
 import { redirect } from "next/navigation";
-import { Bookmark, Inbox, Link2 } from "lucide-react";
+import { Bookmark, Inbox } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -67,15 +68,7 @@ export default async function ClipToolsPage() {
           file the URL (and any selected text) as an idea.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={bookmarklet}
-            onClick={(e) => e.preventDefault()}
-            draggable="true"
-            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium cursor-grab active:cursor-grabbing hover:bg-primary transition-colors"
-          >
-            <Link2 className="w-3.5 h-3.5" />
-            Save to Aloha
-          </a>
+          <BookmarkletButton href={bookmarklet} />
           <p className="text-[11.5px] text-ink/55">
             Drag it up to your bookmarks bar. Doesn&apos;t work? Use the
             link below to add it manually.
