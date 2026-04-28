@@ -24,7 +24,7 @@ import { sendManualAssistReminderForDelivery } from "@/lib/manual-assist";
 import { createNotification } from "@/lib/notifications";
 import { dispatchEvent } from "@/lib/automations/dispatch";
 import { PublishError } from "./errors";
-import { publishToLinkedIn } from "./linkedin";
+import { publishLinkedInDocument, publishToLinkedIn } from "./linkedin";
 import { publishToX } from "./x";
 import { publishToBluesky } from "./bluesky";
 import { publishToMedium } from "./medium";
@@ -47,7 +47,43 @@ const PUBLISHERS: Record<
 		media?: PostMedia[];
 	}) => Promise<{ remotePostId: string; remoteUrl: string }>
 > = {
-	linkedin: publishToLinkedIn,
+	linkedin: async (args) => {
+		// LinkedIn is the only channel that accepts PDFs (as document
+		// carousels). Other channels strip PDFs upstream — see the
+		// dispatch loop in publishPost — so by the time we get here, if
+		// there's a PDF in args.media, the user intended it for us.
+		// Document carousels go through a different LinkedIn endpoint
+		// (`shareMediaCategory: DOCUMENT`). When the user attached a PDF,
+		// route there; otherwise fall through to the standard image/text
+		// publisher. Mixed PDF + image attachments aren't a thing on
+		// LinkedIn, so the first PDF wins and other media is dropped with
+		// a console warning rather than failing the publish.
+		const media = args.media ?? [];
+		const pdf = media.find((m) => m.mimeType === "application/pdf");
+		if (pdf) {
+			if (media.length > 1) {
+				console.warn(
+					"[linkedin] PDF attachment present alongside other media — only the PDF is sent.",
+				);
+			}
+			// Title is required by the LinkedIn document API. Use the first
+			// non-empty line of the post body, capped — keeps creators from
+			// having to fill a separate field for what's effectively the
+			// post's display name on the carousel preview.
+			const title =
+				args.text.split(/\r?\n/).find((l) => l.trim().length > 0)?.slice(
+					0,
+					100,
+				) ?? "Document";
+			return publishLinkedInDocument({
+				workspaceId: args.workspaceId,
+				text: args.text,
+				title,
+				document: pdf,
+			});
+		}
+		return publishToLinkedIn(args);
+	},
 	twitter: publishToX,
 	bluesky: publishToBluesky,
 	medium: publishToMedium,
@@ -215,10 +251,19 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 				}
 				const publisher = PUBLISHERS[platform];
 				const override = post.channelContent?.[platform];
+				const rawMedia = override?.media ?? post.media;
+				// Strip PDFs for every channel except LinkedIn — they're only
+				// supported as LinkedIn document carousels. Without this the
+				// non-LinkedIn publishers would either reject the upload or
+				// (worse) try to handle it as an image and post junk.
+				const media =
+					platform === "linkedin"
+						? rawMedia
+						: rawMedia.filter((m) => m.mimeType !== "application/pdf");
 				const result = await publisher({
 					workspaceId: post.workspaceId,
 					text: override?.content ?? post.content,
-					media: override?.media ?? post.media,
+					media,
 				});
 				remotePostId = result.remotePostId;
 				remoteUrl = result.remoteUrl;
