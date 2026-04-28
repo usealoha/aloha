@@ -82,8 +82,7 @@ const PROVIDER_DESCRIPTORS: Omit<ProviderConfig, "status">[] = [
   {
     id: "twitter",
     name: "X",
-    purpose: "Publish posts and threads.",
-    note: "DMs require the dm.read / dm.write scopes — if you connected before DMs shipped, reconnect to pick them up.",
+    purpose: "Publish posts and threads, and read/reply to DMs.",
     Icon: XIcon,
     mono: true,
   },

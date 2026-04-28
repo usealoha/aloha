@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CreditCard, Plug, Sparkles, Users, UserRound } from "lucide-react";
+import { CreditCard, Plug, Sparkles, Users, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WorkspaceRole } from "@/lib/current-context";
 import { ROLES, hasRole } from "@/lib/workspaces/roles";
@@ -35,12 +35,6 @@ const ITEMS: NavItem[] = [
     caption: "Voice training",
     Icon: Sparkles,
     requires: ROLES.ADMIN,
-  },
-  {
-    href: "/app/settings/notifications",
-    label: "Notifications",
-    caption: "What pings you",
-    Icon: Bell,
   },
   {
     href: "/app/settings/members",
