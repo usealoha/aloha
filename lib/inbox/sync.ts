@@ -146,6 +146,7 @@ export async function syncInbox(
       authorDisplayName: m.authorDisplayName,
       authorAvatarUrl: m.authorAvatarUrl,
       content: m.content,
+      attachments: m.attachments ?? [],
       platformData: m.platformData,
       platformCreatedAt: m.platformCreatedAt,
     }));

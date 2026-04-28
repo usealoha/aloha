@@ -14,8 +14,20 @@ export type NormalizedMessage = {
   authorDisplayName: string | null;
   authorAvatarUrl: string | null;
   content: string;
+  attachments?: Attachment[];
   platformData: Record<string, unknown>;
   platformCreatedAt: Date;
+};
+
+export type Attachment = {
+  type: "image" | "video" | "gif" | "audio" | "file";
+  url: string;
+  previewUrl?: string;
+  width?: number;
+  height?: number;
+  altText?: string;
+  durationSec?: number;
+  fileName?: string;
 };
 
 export type SyncResult = {
