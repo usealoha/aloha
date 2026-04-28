@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/*
+ * Aloha extension popup theme. A trimmed slice of the web app's design
+ * tokens — peach/ink palette + display font where it matters. We don't
+ * pull from the web app's CSS file directly because the extension
+ * bundles independently and shouldn't ship the whole calendar/composer
+ * stylesheet.
+ */
+
+@theme {
+  --color-background: #f6f1e4;
+  --color-background-elev: #fffdf6;
+  --color-ink: #1a1612;
+  --color-ink-soft: rgba(26, 22, 18, 0.65);
+  --color-primary: #4f46e5;
+  --color-primary-deep: #3f37b8;
+  --color-primary-soft: #e5e3fb;
+  --color-peach-100: #fbe6cf;
+  --color-peach-300: #f4c896;
+  --color-border: #e2d8bf;
+  --color-border-strong: #cdc1a0;
+  --color-muted: rgba(26, 22, 18, 0.08);
+  --font-display:
+    "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  width: 380px;
+  min-height: 320px;
+  font-family: var(--font-sans);
+}
+
+body {
+  margin: 0;
+}
