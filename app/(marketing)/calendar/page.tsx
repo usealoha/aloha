@@ -460,7 +460,7 @@ export default function CalendarPage() {
 								},
 								{
 									title: "Quiet hours respected",
-									body: "Nothing ships overnight unless you say so. The same rule applies to every automation; the calendar doesn't break it on a whim.",
+									body: "Nothing ships overnight unless you say so. The calendar doesn't break it on a whim.",
 								},
 							]}
 						/>

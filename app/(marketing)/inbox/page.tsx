@@ -441,7 +441,7 @@ export default function InboxPage() {
 								},
 								{
 									title: "No auto-replies by default",
-									body: "If you want the bot behaviour, wire it up in the Logic Matrix with approval chips. The Inbox itself never speaks for you unasked.",
+									body: "The Inbox never speaks for you unasked. Every reply you send is one you wrote.",
 								},
 							]}
 						/>
