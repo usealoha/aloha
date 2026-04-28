@@ -23,6 +23,10 @@ import {
   type EffectiveState,
   type PublishMode,
 } from "@/lib/channel-state";
+import {
+  channelAvailability,
+  type ChannelAvailability,
+} from "@/lib/channels/availability";
 import { redirect } from "next/navigation";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasRole, ROLES } from "@/lib/workspaces/roles";
@@ -61,21 +65,19 @@ type ProviderConfig = {
   note?: string;
   Icon: React.ComponentType<{ className?: string }>;
   mono?: boolean;
-  status: "available" | "approval_needed" | "soon";
+  status: ChannelAvailability;
 };
 
-// Platform availability:
-// - "available": Can connect and auto-publish
-// - "approval_needed": Can include in AI generation/campaigns, but cannot connect for auto-publish
-// - "soon": Coming soon
-const PROVIDERS: ProviderConfig[] = [
+// Per-channel UI copy + icon. Availability flag is derived from
+// `lib/channels/availability.ts` (which itself reads PLATFORM_GATING)
+// so flipping a channel's status only requires one edit there.
+const PROVIDER_DESCRIPTORS: Omit<ProviderConfig, "status">[] = [
   {
     id: "linkedin",
     name: "LinkedIn",
     purpose: "Publish to your profile.",
     Icon: LinkedInIcon,
     mono: true,
-    status: "available",
   },
   {
     id: "twitter",
@@ -84,7 +86,6 @@ const PROVIDERS: ProviderConfig[] = [
     note: "DMs require the dm.read / dm.write scopes — if you connected before DMs shipped, reconnect to pick them up.",
     Icon: XIcon,
     mono: true,
-    status: "available",
   },
   {
     id: "facebook",
@@ -92,7 +93,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate content for campaigns. Auto-publish coming after platform approval.",
     Icon: FacebookIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "instagram",
@@ -100,7 +100,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate content for campaigns. Auto-publish coming after platform approval.",
     Icon: InstagramIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "tiktok",
@@ -108,7 +107,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate content for campaigns. Auto-publish coming after platform approval.",
     Icon: TikTokIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "bluesky",
@@ -116,7 +114,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Posts, threads, and images.",
     Icon: BlueskyIcon,
     mono: true,
-    status: "available",
   },
   {
     id: "mastodon",
@@ -124,7 +121,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Federated posts to any instance.",
     Icon: MastodonIcon,
     mono: true,
-    status: "available",
   },
   {
     id: "medium",
@@ -132,7 +128,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate articles. Auto-publish coming after platform approval.",
     Icon: MediumIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "threads",
@@ -140,7 +135,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate content for campaigns. Auto-publish coming after platform approval.",
     Icon: ThreadsIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "pinterest",
@@ -148,7 +142,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate pin ideas. Auto-publish coming after platform approval.",
     Icon: PinterestIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "youtube",
@@ -156,7 +149,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate content for campaigns. Auto-publish coming after platform approval.",
     Icon: YouTubeIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "reddit",
@@ -164,7 +156,6 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Generate post ideas. Auto-publish coming after platform approval.",
     Icon: RedditIcon,
     mono: true,
-    status: "approval_needed",
   },
   {
     id: "telegram",
@@ -172,9 +163,13 @@ const PROVIDERS: ProviderConfig[] = [
     purpose: "Broadcast messages and photos to your channel.",
     Icon: TelegramIcon,
     mono: true,
-    status: "available",
   },
 ];
+
+const PROVIDERS: ProviderConfig[] = PROVIDER_DESCRIPTORS.map((d) => ({
+  ...d,
+  status: channelAvailability(d.id),
+}));
 
 function ReauthBanner({ providers }: { providers: string[] }) {
   const providerLabel = (id: string) => {
