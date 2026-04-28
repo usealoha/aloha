@@ -1,5 +1,9 @@
 import { getFreshToken, forceRefresh } from "@/lib/publishers/tokens";
 import type { SyncResult, NormalizedMessage } from "./types";
+import {
+	upsertThreadProfiles,
+	type ThreadProfile,
+} from "./dms/_thread-profiles";
 
 // This fetcher hits /{pageId}/conversations — Facebook's Messenger (DM)
 // endpoint. Every row is a DM, emitted with reason='dm' and a direction
@@ -12,8 +16,9 @@ const PAGE_SIZE = 50;
 type FacebookConversation = {
 	id: string;
 	updated_time: string;
-	from: { name: string; id: string; email?: string };
-	to: { data: Array<{ name: string; id: string }> };
+	from?: { name: string; id: string; email?: string };
+	to?: { data: Array<{ name: string; id: string }> };
+	senders?: { data: Array<{ name: string; id: string; email?: string }> };
 	comments?: { data: Array<{ id: string; message: string; created_time: string; from: { name: string; id: string } }> };
 };
 
@@ -47,6 +52,10 @@ async function fetchConversationsPage(
 ): Promise<FacebookConversationsResponse> {
 	const params = new URLSearchParams({
 		limit: String(PAGE_SIZE),
+		// senders{} gives us the recipient identity even when no inbound
+		// message has been received yet. Without explicit fields, /conversations
+		// returns id+updated_time only.
+		fields: "id,updated_time,senders{id,name,email}",
 	});
 	if (cursor) params.set("cursor", cursor);
 
@@ -106,6 +115,7 @@ export async function fetchFacebookInbox(
 
 	const page = pages[0];
 	const messages: NormalizedMessage[] = [];
+	const threadProfiles: ThreadProfile[] = [];
 	let currentCursor = cursor ?? undefined;
 	let pagesRead = 0;
 
@@ -125,6 +135,19 @@ export async function fetchFacebookInbox(
 		if (!res.data || res.data.length === 0) break;
 
 		for (const conv of res.data) {
+			const counterparty =
+				conv.senders?.data?.find((s) => s.id !== page.id) ??
+				conv.to?.data?.find((t) => t.id !== page.id);
+			if (counterparty) {
+				threadProfiles.push({
+					threadId: conv.id,
+					counterpartyId: counterparty.id,
+					counterpartyHandle: counterparty.id,
+					counterpartyDisplayName: counterparty.name,
+					counterpartyAvatarUrl: null,
+				});
+			}
+
 			if (!conv.comments?.data || conv.comments.data.length === 0) continue;
 
 			for (const comment of conv.comments.data) {
@@ -154,6 +177,8 @@ export async function fetchFacebookInbox(
 
 		if (!currentCursor || res.data.length < PAGE_SIZE) break;
 	}
+
+	await upsertThreadProfiles(appUserId, "facebook", threadProfiles);
 
 	return {
 		messages,

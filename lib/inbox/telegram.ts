@@ -1,6 +1,10 @@
 import bigInt from "big-integer";
 import type { SyncResult, NormalizedMessage } from "./types";
 import { getTelegramSession } from "@/lib/publishers/telegram";
+import {
+	upsertThreadProfiles,
+	type ThreadProfile,
+} from "./dms/_thread-profiles";
 
 const MAX_MESSAGES = 100;
 
@@ -77,6 +81,32 @@ export async function fetchTelegramMessages(
 
 		// Return the next offset (max message ID)
 		const newCursor = maxId > offsetId ? String(maxId) : null;
+
+		// One thread per Telegram session — the bound channel/group itself
+		// is the "counterparty." Cache its identity so the inbox header
+		// shows the chat title rather than the latest sender.
+		const e = entity as {
+			id: { toString(): string } | string | number;
+			title?: string;
+			username?: string;
+			firstName?: string;
+			lastName?: string;
+		};
+		const entityId = String(e.id);
+		const handle = e.username ?? entityId;
+		const displayName =
+			e.title ??
+			[e.firstName, e.lastName].filter(Boolean).join(" ") ??
+			null;
+		await upsertThreadProfiles(workspaceId, "telegram", [
+			{
+				threadId: entityId,
+				counterpartyId: entityId,
+				counterpartyHandle: handle,
+				counterpartyDisplayName: displayName || null,
+				counterpartyAvatarUrl: null,
+			},
+		]);
 
 		return {
 			messages,
