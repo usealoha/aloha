@@ -692,7 +692,10 @@ export async function approvePost(postId: string) {
     })
     .where(eq(posts.id, postId));
 
-  await notifyPostApproved({ postId, approvedBy: ctx.user.id });
+  await notifyPostApproved({
+    postId,
+    actor: { kind: "user", userId: ctx.user.id },
+  });
 
   revalidatePostPaths(postId);
   return { success: true };
@@ -717,6 +720,7 @@ export async function backToDraft(postId: string) {
       submittedBy: null,
       approvedAt: null,
       approvedBy: null,
+      externalApproverIdentity: null,
       assignedReviewerId: null,
       updatedAt: new Date(),
     })
