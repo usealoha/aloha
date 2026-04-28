@@ -85,6 +85,21 @@ export async function updateProfile(formData: FormData) {
       workspaceName,
       role,
       timezone: tz,
+      notificationsEnabled: formData.get("notificationsEnabled") === "on",
+      notifyPostOutcomes: formData.get("notifyPostOutcomes") === "on",
+      notifyInboxSyncIssues: formData.get("notifyInboxSyncIssues") === "on",
+      notifyReviewSubmittedByEmail:
+        formData.get("notifyReviewSubmittedByEmail") === "on",
+      notifyReviewApprovedByEmail:
+        formData.get("notifyReviewApprovedByEmail") === "on",
+      notifyReviewAssignedByEmail:
+        formData.get("notifyReviewAssignedByEmail") === "on",
+      notifyReviewCommentByEmail:
+        formData.get("notifyReviewCommentByEmail") === "on",
+      notifyReviewMentionByEmail:
+        formData.get("notifyReviewMentionByEmail") === "on",
+      notifyInsightsDigestByEmail:
+        formData.get("notifyInsightsDigestByEmail") === "on",
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
@@ -614,34 +629,6 @@ export async function updateChannelPublishMode(formData: FormData) {
 
   await setChannelPublishMode(userId, channel, mode);
   revalidatePath("/app/settings/channels");
-}
-
-export async function updateNotificationPreferences(formData: FormData) {
-  const { userId, workspaceId } = await requireWorkspace(ROLES.ANY);
-
-  await db
-    .update(users)
-    .set({
-      notificationsEnabled: formData.get("notificationsEnabled") === "on",
-      notifyPostOutcomes: formData.get("notifyPostOutcomes") === "on",
-      notifyInboxSyncIssues: formData.get("notifyInboxSyncIssues") === "on",
-      notifyReviewSubmittedByEmail:
-        formData.get("notifyReviewSubmittedByEmail") === "on",
-      notifyReviewApprovedByEmail:
-        formData.get("notifyReviewApprovedByEmail") === "on",
-      notifyReviewAssignedByEmail:
-        formData.get("notifyReviewAssignedByEmail") === "on",
-      notifyReviewCommentByEmail:
-        formData.get("notifyReviewCommentByEmail") === "on",
-      notifyReviewMentionByEmail:
-        formData.get("notifyReviewMentionByEmail") === "on",
-      notifyInsightsDigestByEmail:
-        formData.get("notifyInsightsDigestByEmail") === "on",
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
-
-  redirect("/app/settings/notifications?saved=1");
 }
 
 // Notify user when a platform becomes available for connection.
