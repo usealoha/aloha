@@ -729,3 +729,38 @@ export async function backToDraft(postId: string) {
   revalidatePostPaths(postId);
   return { success: true };
 }
+
+// Toggle the "evergreen" flag on a published post. Marked posts become
+// eligible for the recycle automation, which clones them as a fresh
+// draft on each cycle (respecting a cool-off so the same post doesn't
+// resurface every run). Only meaningful for `published` posts; the
+// automation filters there anyway, so we enforce the same constraint
+// here to keep the UI honest.
+export async function setEvergreen(postId: string, evergreen: boolean) {
+  const ctx = await assertRole(ROLES.REVIEWER);
+
+  const [post] = await db
+    .select({
+      id: posts.id,
+      status: posts.status,
+      evergreenMarkedAt: posts.evergreenMarkedAt,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.workspaceId, ctx.workspace.id)))
+    .limit(1);
+  if (!post) throw new Error("Post not found");
+  if (evergreen && post.status !== "published") {
+    throw new Error("Only published posts can be marked evergreen.");
+  }
+
+  await db
+    .update(posts)
+    .set({
+      evergreenMarkedAt: evergreen ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(posts.id, postId));
+
+  revalidatePostPaths(postId);
+  return { success: true, evergreen };
+}

@@ -3,6 +3,7 @@
 import {
   CheckCircle2,
   FileText,
+  Leaf,
   Loader2,
   Pencil,
   RotateCcw,
@@ -17,6 +18,7 @@ import {
   backToDraft,
   publishPostNow,
   schedulePost,
+  setEvergreen,
   submitForReview,
 } from "@/app/actions/posts";
 import { SchedulePopover } from "@/components/schedule-popover";
@@ -41,11 +43,13 @@ export function PostHeaderActions({
   status,
   workspaceRole,
   timezone,
+  evergreenMarkedAt,
 }: {
   postId: string;
   status: PostStatus;
   workspaceRole: WorkspaceRole;
   timezone: string;
+  evergreenMarkedAt: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -101,6 +105,17 @@ export function PostHeaderActions({
     "Couldn't publish.",
     () => publishPostNow(postId),
   );
+  const onToggleEvergreen = () => {
+    const isOn = evergreenMarkedAt !== null;
+    return wrap(
+      isOn ? "Removing from evergreen…" : "Marking as evergreen…",
+      isOn
+        ? "No longer resurfacing this one."
+        : "Saved for resurfacing on the recycle schedule.",
+      "Couldn't update evergreen flag.",
+      () => setEvergreen(postId, !isOn),
+    )();
+  };
 
   const onSchedule = () => {
     if (!scheduleInput) return;
@@ -139,6 +154,12 @@ export function PostHeaderActions({
     status !== "published" &&
     status !== "failed" &&
     status !== "deleted";
+  // Evergreen marking is reviewer-tier and only meaningful for posts that
+  // already shipped — those are the ones with audience signal worth
+  // resurfacing.
+  const canEvergreen =
+    hasRole(workspaceRole, ROLES.REVIEWER) && status === "published";
+  const isEvergreen = evergreenMarkedAt !== null;
 
   const hasLeftAction =
     canAct("backToDraft") ||
@@ -221,6 +242,31 @@ export function PostHeaderActions({
       ) : null}
 
       {canShare ? <ShareLinkButton postId={postId} /> : null}
+
+      {canEvergreen ? (
+        <button
+          type="button"
+          onClick={onToggleEvergreen}
+          disabled={pending}
+          aria-pressed={isEvergreen}
+          title={
+            isEvergreen
+              ? "This post is queued to resurface on the recycle schedule. Click to stop."
+              : "Mark as evergreen — the recycle schedule will resurface a fresh draft from this post."
+          }
+          className={cn(
+            ghostBtn,
+            isEvergreen && "border-primary/50 bg-primary-soft/40 text-ink",
+          )}
+        >
+          {pending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Leaf className="w-3.5 h-3.5" />
+          )}
+          {isEvergreen ? "Evergreen" : "Mark evergreen"}
+        </button>
+      ) : null}
 
       {canAct("approve") ? (
         <>

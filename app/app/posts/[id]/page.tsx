@@ -7,7 +7,7 @@ import {
   type PostMedia,
 } from "@/db/schema";
 import { getCurrentContext } from "@/lib/current-context";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -200,11 +200,48 @@ export default async function PostDetailPage({
 
   const publishedLabel = formatDateTime(post.publishedAt, tz);
 
-  const [notes, reviewerOptions, mentionableMembers] = await Promise.all([
-    listNotes(post.id),
-    listReviewerOptions(),
-    listMentionableMembers(),
-  ]);
+  const [notes, reviewerOptions, mentionableMembers, children, parent] =
+    await Promise.all([
+      listNotes(post.id),
+      listReviewerOptions(),
+      listMentionableMembers(),
+      // Resurfaces of THIS post — drafts the recycle automation cloned
+      // (or that may exist in the future via a manual "spin off" action).
+      db
+        .select({
+          id: posts.id,
+          status: posts.status,
+          createdAt: posts.createdAt,
+          publishedAt: posts.publishedAt,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.parentPostId, post.id),
+            eq(posts.workspaceId, workspace.id),
+          ),
+        )
+        .orderBy(asc(posts.createdAt)),
+      // If THIS post is itself a resurface, fetch its origin so the UI
+      // can link back. Two-step lookup to keep the join minimal.
+      post.parentPostId
+        ? db
+            .select({
+              id: posts.id,
+              status: posts.status,
+              publishedAt: posts.publishedAt,
+            })
+            .from(posts)
+            .where(
+              and(
+                eq(posts.id, post.parentPostId),
+                eq(posts.workspaceId, workspace.id),
+              ),
+            )
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+        : Promise.resolve(null),
+    ]);
 
   // Reviewer picker shows when the post is in an assignable stage. Server
   // action re-validates permission on click; UI just decides visibility.
@@ -275,6 +312,7 @@ export default async function PostDetailPage({
             status={post.status as PostStatus}
             workspaceRole={ctx.role}
             timezone={tz}
+            evergreenMarkedAt={post.evergreenMarkedAt?.toISOString() ?? null}
           />
         </div>
       </header>
@@ -361,6 +399,14 @@ export default async function PostDetailPage({
         </section>
       )}
 
+      <ResurfaceLineage
+        parent={parent}
+        children={children}
+        lastResurfacedAt={post.lastResurfacedAt}
+        evergreenMarkedAt={post.evergreenMarkedAt}
+        tz={tz}
+      />
+
       <PostNotes
         postId={post.id}
         initialNotes={notes}
@@ -389,5 +435,94 @@ export default async function PostDetailPage({
         )}
       </div>
     </div>
+  );
+}
+
+// Surfaces resurface lineage on a post's detail page. On an origin post,
+// lists every child draft the recycle automation (or future "spin off"
+// action) cloned from it. On a child post, links back to the origin.
+// Returns null when neither side has anything to show, so we don't add
+// blank space to vanilla posts.
+function ResurfaceLineage({
+  parent,
+  children,
+  lastResurfacedAt,
+  evergreenMarkedAt,
+  tz,
+}: {
+  parent: { id: string; status: string; publishedAt: Date | null } | null;
+  children: { id: string; status: string; createdAt: Date; publishedAt: Date | null }[];
+  lastResurfacedAt: Date | null;
+  evergreenMarkedAt: Date | null;
+  tz: string;
+}) {
+  if (!parent && children.length === 0 && !evergreenMarkedAt) return null;
+
+  return (
+    <section className="rounded-2xl border border-border bg-background-elev p-5 space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+          Lineage
+        </p>
+        {evergreenMarkedAt ? (
+          <span className="inline-flex items-center h-5 px-2 rounded-full bg-primary-soft border border-primary/40 text-[10.5px] font-medium tracking-wide text-primary-deep">
+            Marked evergreen
+          </span>
+        ) : null}
+      </div>
+
+      {parent ? (
+        <div className="text-[13px] text-ink/75 leading-[1.55]">
+          Resurfaced from{" "}
+          <Link
+            href={`/app/posts/${parent.id}`}
+            className="text-ink font-medium underline underline-offset-4 decoration-dotted hover:decoration-solid"
+          >
+            an earlier post
+          </Link>
+          {parent.publishedAt
+            ? ` originally published ${formatDateTime(parent.publishedAt, tz)}`
+            : ""}
+          .
+        </div>
+      ) : null}
+
+      {children.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[12px] text-ink/65">
+            {children.length === 1
+              ? "Resurfaced once:"
+              : `Resurfaced ${children.length} times:`}
+            {lastResurfacedAt
+              ? ` last on ${formatDateTime(lastResurfacedAt, tz)}.`
+              : ""}
+          </p>
+          <ul className="space-y-1.5">
+            {children.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-2 text-[12.5px] text-ink/75"
+              >
+                <span className="inline-flex items-center h-5 px-2 rounded-full bg-background border border-border text-[10.5px] tracking-wide text-ink/65">
+                  {c.status}
+                </span>
+                <Link
+                  href={`/app/posts/${c.id}`}
+                  className="text-ink hover:underline underline-offset-4 decoration-dotted"
+                >
+                  Draft from {formatDateTime(c.createdAt, tz)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : evergreenMarkedAt && !parent ? (
+        <p className="text-[12.5px] text-ink/55">
+          Hasn&apos;t been resurfaced yet — the recycle automation will
+          pick it up on its next run, respecting a 90-day cool-off
+          between resurfaces of the same post.
+        </p>
+      ) : null}
+    </section>
   );
 }

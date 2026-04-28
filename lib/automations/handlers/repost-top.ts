@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   platformInsights,
@@ -20,13 +20,21 @@ import {
 } from "../registry";
 
 // Config from `scheduled_repost`:
-//   { captionMode: "keep" | "rewrite" }
+//   {
+//     captionMode: "keep" | "rewrite",
+//     mode: "top" | "evergreen" | "any"   // default "any"
+//   }
 // Trigger carries `intervalDays` from the schedule node via `trigger` when
 // the dispatcher is aware of it; we fall back to 14 days otherwise. The
 // interval also doubles as the "don't re-repost the same winner" window.
 
 const LOOKBACK_DAYS = 60;
 const DEFAULT_INTERVAL_DAYS = 14;
+// Cool-off between successive resurfaces of the same evergreen post.
+// Independent of the config interval — the schedule decides cadence,
+// this protects the audience from seeing the same evergreen too often
+// even when the schedule fires weekly.
+const EVERGREEN_COOLOFF_DAYS = 90;
 
 // Same rank formula `loadPastHighPerformers` uses in campaign.ts so the
 // automation picks the winner the user would expect when they see the
@@ -76,6 +84,60 @@ async function loadCandidateWinners(
     .map((r) => ({ postId: r.postId, platform: r.platform, score: r.score }));
 }
 
+// Posts the user has explicitly opted into resurfacing. Filtered by the
+// evergreen cool-off so a single winner doesn't dominate the queue. The
+// "platform" we return is just the first platform the post shipped on —
+// the rewrite uses it for tone-tuning; the actual resurface clones the
+// full platform list from the origin.
+async function loadEvergreenCandidates(
+  userId: string,
+): Promise<WinnerRow[]> {
+  const workspaceId = await requireActiveWorkspaceId(userId);
+  const cooloffSince = new Date(
+    Date.now() - EVERGREEN_COOLOFF_DAYS * 86_400_000,
+  );
+
+  const rows = await db
+    .select({
+      postId: posts.id,
+      platforms: posts.platforms,
+      evergreenMarkedAt: posts.evergreenMarkedAt,
+      lastResurfacedAt: posts.lastResurfacedAt,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.workspaceId, workspaceId),
+        eq(posts.status, "published"),
+        isNotNull(posts.evergreenMarkedAt),
+        or(
+          // Never resurfaced before, or resurfaced before the cool-off.
+          // SQL NULL comparisons would always be false, so split.
+          sql`${posts.lastResurfacedAt} IS NULL`,
+          lt(posts.lastResurfacedAt, cooloffSince),
+        ),
+      ),
+    )
+    // Oldest first — let the slow burners cycle before recently-resurfaced
+    // ones. `evergreenMarkedAt` desc would re-prioritize whatever the user
+    // touched last; ascending biases toward the back catalog the way a
+    // creator typically wants when they batch-mark.
+    .orderBy(posts.lastResurfacedAt, desc(posts.evergreenMarkedAt))
+    .limit(20);
+
+  return rows
+    .filter((r): r is { postId: string; platforms: string[]; evergreenMarkedAt: Date | null; lastResurfacedAt: Date | null } =>
+      typeof r.postId === "string" && Array.isArray(r.platforms),
+    )
+    .map((r) => ({
+      postId: r.postId,
+      platform: r.platforms[0] ?? "general",
+      // Score column is unused for evergreen ranking but kept on the
+      // shape so the downstream logic stays uniform.
+      score: 0,
+    }));
+}
+
 async function findRecentRepostSources(
   userId: string,
   since: Date,
@@ -121,7 +183,20 @@ registerAction(
   "repost_top",
   async ({ userId, step, trigger }: ActionContext): Promise<ActionResult> => {
     const cfg = step.config ?? {};
-    const captionMode = cfg.captionMode === "keep" ? "keep" : "rewrite";
+    const requestedMode =
+      cfg.mode === "top" || cfg.mode === "evergreen" || cfg.mode === "any"
+        ? (cfg.mode as "top" | "evergreen" | "any")
+        : "any";
+    // Evergreen-marked posts default to a fresh-caption pass — the whole
+    // point is the audience sees a new spin. Top-only posts respect the
+    // user's keep/rewrite choice so cost stays predictable.
+    const explicitCaption = cfg.captionMode;
+    const captionMode =
+      explicitCaption === "keep" || explicitCaption === "rewrite"
+        ? (explicitCaption as "keep" | "rewrite")
+        : requestedMode === "top"
+          ? "keep"
+          : "rewrite";
 
     const rawInterval =
       typeof cfg.intervalDays === "string"
@@ -136,25 +211,49 @@ registerAction(
     const lookbackSince = new Date(Date.now() - LOOKBACK_DAYS * 86_400_000);
     const intervalSince = new Date(Date.now() - intervalDays * 86_400_000);
 
-    const [candidates, alreadyReposted] = await Promise.all([
-      loadCandidateWinners(userId, lookbackSince),
-      findRecentRepostSources(userId, intervalSince),
-    ]);
+    const [topCandidates, evergreenCandidates, alreadyReposted] =
+      await Promise.all([
+        requestedMode === "evergreen"
+          ? Promise.resolve([])
+          : loadCandidateWinners(userId, lookbackSince),
+        requestedMode === "top"
+          ? Promise.resolve([])
+          : loadEvergreenCandidates(userId),
+        findRecentRepostSources(userId, intervalSince),
+      ]);
 
-    const winner = candidates.find((c) => !alreadyReposted.has(c.postId));
-    if (!winner) {
-      return {
-        output: {
-          skipped: true,
-          reason:
-            candidates.length === 0
-              ? "No published posts with insights in the lookback window"
-              : "All top performers have already been reposted this window",
-          lookbackDays: LOOKBACK_DAYS,
-          intervalDays,
-          candidatesConsidered: candidates.length,
-        },
-      };
+    // Resolution order: evergreen first (creator-curated), then top
+    // (data-curated). The "any" mode falls back gracefully when one
+    // pool is empty.
+    let winner: WinnerRow | undefined;
+    let chosenSource: "evergreen" | "top";
+    const evergreenPick = evergreenCandidates.find(
+      (c) => !alreadyReposted.has(c.postId),
+    );
+    if (evergreenPick) {
+      winner = evergreenPick;
+      chosenSource = "evergreen";
+    } else {
+      const topPick = topCandidates.find((c) => !alreadyReposted.has(c.postId));
+      if (topPick) {
+        winner = topPick;
+        chosenSource = "top";
+      } else {
+        return {
+          output: {
+            skipped: true,
+            reason:
+              evergreenCandidates.length === 0 && topCandidates.length === 0
+                ? "No eligible posts (no evergreen marks, no insights)"
+                : "All eligible posts have been resurfaced recently",
+            mode: requestedMode,
+            lookbackDays: LOOKBACK_DAYS,
+            intervalDays,
+            evergreenConsidered: evergreenCandidates.length,
+            topConsidered: topCandidates.length,
+          },
+        };
+      }
     }
 
     // Load the source post locally — we need content, media, and the
@@ -201,12 +300,14 @@ registerAction(
       }
     }
 
+    const sourceLabel =
+      chosenSource === "evergreen" ? "evergreen pick" : "top performer";
     const draftMeta: DraftMeta = {
       sourcePostId: source.id,
       rationale:
         captionMode === "rewrite" && generationId
-          ? `Reposted top performer — caption rewritten`
-          : `Reposted top performer — original caption kept`,
+          ? `Resurfaced ${sourceLabel} — caption rewritten`
+          : `Resurfaced ${sourceLabel} — original caption kept`,
     };
 
     const workspaceId = await requireActiveWorkspaceId(userId);
@@ -220,13 +321,22 @@ registerAction(
         media: source.media as PostMedia[],
         status: "draft",
         draftMeta,
+        parentPostId: source.id,
       })
       .returning({ id: posts.id });
+
+    // Stamp the origin so the next pass respects the cool-off and the
+    // detail UI can show "last resurfaced 14d ago".
+    await db
+      .update(posts)
+      .set({ lastResurfacedAt: new Date(), updatedAt: new Date() })
+      .where(eq(posts.id, source.id));
 
     return {
       output: {
         postId: row.id,
         sourcePostId: source.id,
+        chosenSource,
         platform: winner.platform,
         platforms: source.platforms,
         score: winner.score,
