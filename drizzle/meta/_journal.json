@@ -260,6 +260,13 @@
       "when": 1777384613134,
       "tag": "0036_strong_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1777409265980,
+      "tag": "0037_freezing_the_initiative",
+      "breakpoints": true
     }
   ]
 }

@@ -1141,6 +1141,35 @@ export const inboxMessages = pgTable(
   ],
 );
 
+// Cached counterparty profile per DM thread. Without this, threads with
+// only outbound messages have no recipient identity (the platforms expand
+// senders only on the events endpoint), so the inbox would render as
+// "talking to yourself." Populated at sync time after parsing the
+// conversation id and looking the participant up.
+export const dmThreadProfiles = pgTable(
+  "dm_thread_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspaceId")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    threadId: text("threadId").notNull(),
+    counterpartyId: text("counterpartyId").notNull(),
+    counterpartyHandle: text("counterpartyHandle").notNull(),
+    counterpartyDisplayName: text("counterpartyDisplayName"),
+    counterpartyAvatarUrl: text("counterpartyAvatarUrl"),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("dm_thread_profiles_workspace_platform_thread").on(
+      table.workspaceId,
+      table.platform,
+      table.threadId,
+    ),
+  ],
+);
+
 // Per-user voice profile. Trained from past posts + uploaded corpus + slider
 // input; consumed by every Muse generation call. Basic companion ignores it.
 // `tone` holds the slider state and any structured descriptors; `features`
