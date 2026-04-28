@@ -29,10 +29,15 @@ async function readPayload(req: NextRequest): Promise<{
 }> {
   if (req.method === "GET") {
     const sp = req.nextUrl.searchParams;
+    // `text` is the canonical Web Share API param; `selection` is what
+    // the bookmarklet sends. Accept both so the same endpoint handles
+    // both ingress paths without a dedicated /share route.
+    const selection =
+      clip(sp.get("selection") ?? sp.get("text") ?? "", MAX_BODY).trim() || null;
     return {
       url: clip(sp.get("url"), MAX_URL).trim() || null,
       title: clip(sp.get("title"), MAX_TITLE).trim() || null,
-      selection: clip(sp.get("selection"), MAX_BODY).trim() || null,
+      selection,
     };
   }
   // POST — try JSON first, fall back to form-encoded.
@@ -53,10 +58,12 @@ async function readPayload(req: NextRequest): Promise<{
   }
   const form = await req.formData().catch(() => null);
   if (form) {
+    const selectionRaw =
+      String(form.get("selection") ?? form.get("text") ?? "");
     return {
       url: clip(String(form.get("url") ?? ""), MAX_URL).trim() || null,
       title: clip(String(form.get("title") ?? ""), MAX_TITLE).trim() || null,
-      selection: clip(String(form.get("selection") ?? ""), MAX_BODY).trim() || null,
+      selection: clip(selectionRaw, MAX_BODY).trim() || null,
     };
   }
   return { url: null, title: null, selection: null };
@@ -110,7 +117,15 @@ async function handle(req: NextRequest) {
   // on the new idea. POST requests get JSON so the bookmarklet can
   // toast/close without a navigation.
   if (req.method === "GET") {
-    return NextResponse.redirect(new URL(`/app/ideas?clipped=${row.id}`, req.url));
+    // Bookmarklet opens a small popup window with `popup=1`; that flow
+    // lands on a self-closing confirmation page so the user's reading
+    // context isn't disrupted by an extra tab. Web-share-target shares
+    // (no popup flag) drop the user into /app/ideas.
+    const popup = req.nextUrl.searchParams.get("popup") === "1";
+    const dest = popup
+      ? `/app/ideas/clipped-popup?id=${row.id}`
+      : `/app/ideas?clipped=${row.id}`;
+    return NextResponse.redirect(new URL(dest, req.url));
   }
   return NextResponse.json({ ok: true, ideaId: row.id });
 }

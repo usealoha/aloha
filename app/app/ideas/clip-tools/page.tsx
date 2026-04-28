@@ -29,14 +29,39 @@ export default async function ClipToolsPage() {
   // The bookmarklet is a single-line javascript: URL the user drags to
   // their bookmarks bar. We construct it server-side so APP_URL is
   // baked in and there's no client-side env juggling.
+  //
+  // Polished flow:
+  // 1. Drop a small toast into the host page so the user gets immediate
+  //    feedback even before our domain loads.
+  // 2. Open a 1x1 popup pointed at /api/ideas/clip?...&popup=1. The
+  //    popup lands on a self-closing confirmation page (~1s) so the
+  //    reading flow on the host page isn't disrupted by an extra tab.
+  // 3. If the popup is blocked (some browsers require user-gesture
+  //    affinity that bookmarklets sometimes lose), fall back to the
+  //    classic new-tab open.
   const appUrl = env.APP_URL.replace(/\/$/, "");
   const bookmarklet =
     `javascript:(function(){` +
+    `try{` +
     `var s=window.getSelection&&window.getSelection().toString()||'';` +
-    `var u='${appUrl}/api/ideas/clip?url='+encodeURIComponent(location.href)+` +
+    `var q='?url='+encodeURIComponent(location.href)+` +
     `'&title='+encodeURIComponent(document.title)+` +
-    `'&selection='+encodeURIComponent(s);` +
-    `window.open(u,'_blank','noopener,noreferrer');` +
+    `'&text='+encodeURIComponent(s);` +
+    `var u='${appUrl}/api/ideas/clip'+q+'&popup=1';` +
+    // Toast on the host page. Fire-and-forget — z-index is high enough
+    // to outrank most layouts; failures are silent.
+    `var t=document.createElement('div');` +
+    `t.textContent='Saving to Aloha…';` +
+    `t.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1612;color:#fffdf6;padding:10px 16px;border-radius:999px;font:500 13px system-ui,sans-serif;z-index:2147483647;box-shadow:0 8px 24px rgba(0,0,0,0.2);transition:opacity .3s;';` +
+    `document.body.appendChild(t);` +
+    // Tiny popup. width/height under 200 keeps it visually unobtrusive
+    // while still triggering a real popup (not a tab) in most browsers.
+    `var w=window.open(u,'aloha_clip','width=420,height=240,noopener=no,noreferrer=no');` +
+    `if(!w){window.open(u,'_blank');}` +
+    `setTimeout(function(){t.textContent='Saved to Aloha';},800);` +
+    `setTimeout(function(){t.style.opacity='0';},2000);` +
+    `setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2400);` +
+    `}catch(e){window.open('${appUrl}/api/ideas/clip?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'_blank');}` +
     `})();void(0);`;
 
   return (
