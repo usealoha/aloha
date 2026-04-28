@@ -253,6 +253,13 @@
       "when": 1777376660217,
       "tag": "0035_sudden_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1777384613134,
+      "tag": "0036_strong_warbound",
+      "breakpoints": true
     }
   ]
 }

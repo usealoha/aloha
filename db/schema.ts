@@ -497,6 +497,23 @@ export const postDeliveries = pgTable("post_deliveries", {
   attemptCount: integer("attemptCount").default(0).notNull(),
   publishedAt: timestamp("publishedAt", { mode: "date" }),
   deletedAt: timestamp("deletedAt", { mode: "date" }),
+  // Free-form metadata about how the delivery completed. Today this
+  // carries `deliveredVia` ("auto" | "manual_assist_email" | "extension")
+  // so we can attribute manual-assist completions back to the surface
+  // that drove them. Optional fields like `extensionVersion` get
+  // stamped opportunistically — keep the type loose to avoid migrations
+  // for every new attribution dimension.
+  metadata: jsonb("metadata")
+    .$type<{
+      deliveredVia?:
+        | "auto"
+        | "manual_assist_email"
+        | "extension"
+        | "manual_web";
+      extensionVersion?: string;
+    }>()
+    .default({})
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
