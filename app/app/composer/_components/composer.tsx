@@ -1326,65 +1326,96 @@ export function Composer({
 						)}
 
 						{allowedActions.size > 0 ? (
+						<TooltipProvider delay={250}>
 						<div className="mt-auto flex flex-wrap items-center justify-end gap-2">
 							{canAct("backToDraft") ? (
-								<button
-									type="button"
-									onClick={handleBackToDraft}
-									disabled={isSaving || isPublishing}
-									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
-								>
-									<RotateCcw className="w-4 h-4" />
-									Back to draft
-								</button>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={handleBackToDraft}
+												disabled={isSaving || isPublishing}
+												aria-label="Back to draft"
+												className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border-strong bg-background-elev text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+											>
+												<RotateCcw className="w-4 h-4" />
+											</button>
+										}
+									/>
+									<TooltipContent>Back to draft</TooltipContent>
+								</Tooltip>
 							) : null}
 
 							{canAct("saveContent") || canAct("saveDraft") ? (
-								<button
-									type="button"
-									onClick={handleSaveDraft}
-									disabled={!canSubmit || isSaving}
-									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-border-strong bg-background-elev text-[13px] font-medium text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
-								>
-									{isSaving ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<Paperclip className="w-4 h-4" />
-									)}
-									{canAct("saveContent") ? "Save changes" : "Save draft"}
-								</button>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={handleSaveDraft}
+												disabled={!canSubmit || isSaving}
+												aria-label={canAct("saveContent") ? "Save changes" : "Save draft"}
+												className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border-strong bg-background-elev text-ink hover:border-ink disabled:opacity-40 disabled:hover:border-border-strong transition-colors"
+											>
+												{isSaving ? (
+													<Loader2 className="w-4 h-4 animate-spin" />
+												) : (
+													<Paperclip className="w-4 h-4" />
+												)}
+											</button>
+										}
+									/>
+									<TooltipContent>
+										{canAct("saveContent") ? "Save changes" : "Save draft"}
+									</TooltipContent>
+								</Tooltip>
 							) : null}
 
 							{canAct("submitForReview") ? (
-								<button
-									type="button"
-									onClick={handleSubmitForReview}
-									disabled={!canSubmit || isSaving}
-									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-								>
-									{isSaving ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<FileText className="w-4 h-4" />
-									)}
-									Submit for review
-								</button>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={handleSubmitForReview}
+												disabled={!canSubmit || isSaving}
+												aria-label="Submit for review"
+												className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-background hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+											>
+												{isSaving ? (
+													<Loader2 className="w-4 h-4 animate-spin" />
+												) : (
+													<FileText className="w-4 h-4" />
+												)}
+											</button>
+										}
+									/>
+									<TooltipContent>Submit for review</TooltipContent>
+								</Tooltip>
 							) : null}
 
 							{canAct("approve") ? (
-								<button
-									type="button"
-									onClick={handleApprove}
-									disabled={isSaving}
-									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-								>
-									{isSaving ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<Sparkles className="w-4 h-4" />
-									)}
-									Approve
-								</button>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={handleApprove}
+												disabled={isSaving}
+												aria-label="Approve"
+												className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-background hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+											>
+												{isSaving ? (
+													<Loader2 className="w-4 h-4 animate-spin" />
+												) : (
+													<Sparkles className="w-4 h-4" />
+												)}
+											</button>
+										}
+									/>
+									<TooltipContent>Approve</TooltipContent>
+								</Tooltip>
 							) : null}
 
 							{canAct("schedule") ? (
@@ -1402,26 +1433,33 @@ export function Composer({
 							) : null}
 
 							{canAct("publish") && anyPublishable ? (
-								<button
-									type="button"
-									onClick={handlePublishNow}
-									disabled={isPublishing}
-									className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-ink text-background text-[13px] font-medium hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
-									title={
-										notifyOnlySelected.length > 0
-											? `Publishes to ${publishableSelected.map((p) => p.name).join(", ")}. ${notifyOnlySelected.map((p) => p.name).join(", ")} need a schedule to get a reminder.`
-											: `Publish to ${publishableSelected.map((p) => p.name).join(", ")}`
-									}
-								>
-									{isPublishing && !scheduledAt ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<Send className="w-4 h-4" />
-									)}
-									Publish
-								</button>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={handlePublishNow}
+												disabled={isPublishing}
+												aria-label="Publish"
+												className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-background hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
+											>
+												{isPublishing && !scheduledAt ? (
+													<Loader2 className="w-4 h-4 animate-spin" />
+												) : (
+													<Send className="w-4 h-4" />
+												)}
+											</button>
+										}
+									/>
+									<TooltipContent>
+										{notifyOnlySelected.length > 0
+											? `Publish to ${publishableSelected.map((p) => p.name).join(", ")}. ${notifyOnlySelected.map((p) => p.name).join(", ")} need a schedule to get a reminder.`
+											: `Publish to ${publishableSelected.map((p) => p.name).join(", ")}`}
+									</TooltipContent>
+								</Tooltip>
 							) : null}
 						</div>
+						</TooltipProvider>
 						) : null}
 					</aside>
 				</div>
