@@ -26,8 +26,10 @@ import {
 } from "@/lib/posts/actions-available";
 import type { PostStatus } from "@/lib/posts/transitions";
 import type { WorkspaceRole } from "@/lib/current-context";
+import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { cn } from "@/lib/utils";
 import { tzLocalInputToUtcDate } from "@/lib/tz";
+import { ShareLinkButton } from "./share-link-button";
 
 const baseBtn =
   "inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-medium transition-colors disabled:opacity-40";
@@ -129,6 +131,14 @@ export function PostHeaderActions({
 
   const canEdit =
     status !== "published" && status !== "failed" && status !== "deleted";
+  // Sharing is a reviewer-tier capability — minting a link delegates the
+  // approval decision (or just visibility) to someone outside the workspace.
+  // Only meaningful for posts that haven't shipped yet.
+  const canShare =
+    hasRole(workspaceRole, ROLES.REVIEWER) &&
+    status !== "published" &&
+    status !== "failed" &&
+    status !== "deleted";
 
   const hasLeftAction =
     canAct("backToDraft") ||
@@ -209,6 +219,8 @@ export function PostHeaderActions({
           {status === "draft" ? "Edit" : "Open"}
         </Link>
       ) : null}
+
+      {canShare ? <ShareLinkButton postId={postId} /> : null}
 
       {canAct("approve") ? (
         <>
