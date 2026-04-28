@@ -1,0 +1,99 @@
+import { makeMetadata } from "@/lib/seo";
+import { routes } from "@/lib/routes";
+import { Summary } from "../_components/summary";
+import { LegalHeader } from "../_components/legal-header";
+import { LegalFooter } from "../_components/legal-footer";
+
+export const metadata = makeMetadata({
+  title: "Aloha extension — privacy",
+  description:
+    "What the Aloha Chrome extension reads from your browser, what it sends to Aloha, and what it never touches.",
+  path: "/legal/extension-privacy",
+});
+
+<LegalHeader
+  title="Aloha extension privacy"
+  lastUpdated="April 28, 2026"
+  description="What the Aloha Chrome extension reads from your browser, what it sends to Aloha, and what it never touches."
+/>
+
+<Summary>
+  The extension only talks to your Aloha workspace and the social
+  platforms you ask it to assist with. We never sell your data, never
+  collect browsing history, and never run analytics inside the
+  extension. Permissions are scoped tightly to the four publish
+  platforms we currently support plus your Aloha workspace.
+</Summary>
+
+## What the extension reads
+
+When you click the Aloha icon, the extension reads:
+
+- The **URL** and **title** of the active tab so the capture flow can
+  show you what page you&apos;re on.
+- Any **text you have selected** on that page — only when the popup is
+  open, and only to seed the capture.
+- The **session cookie** for your Aloha account so it can call our API
+  on your behalf. That cookie never leaves your browser.
+
+When you visit one of the four supported publish platforms (LinkedIn,
+Instagram, TikTok, Medium), a small content script loads on those
+domains and watches for the platform&apos;s compose surface. It does not
+read your feed, your messages, or any content you didn&apos;t put there
+yourself.
+
+## What the extension sends
+
+Two destinations:
+
+- **Your Aloha workspace.** Capture flow sends the URL of the page you
+  asked us to capture (and your selected text, if any) to
+  `/api/ai/import`. Saved drafts go to `/api/posts/draft`. Manual-assist
+  publishing reports use `/api/posts/.../complete`.
+- **The platform you&apos;re publishing to.** When you click &quot;Use
+  this&quot; on a draft, the extension fills the platform&apos;s compose
+  field with the draft content. The platform sees the text the same way
+  it would if you typed it yourself — we don&apos;t bypass any of their
+  systems.
+
+That&apos;s everything. The extension does not call third-party
+analytics, advertising networks, or telemetry endpoints.
+
+## What the extension never does
+
+- **Click submit on your behalf.** Every post you make through the
+  assist flow is one you reviewed and submitted yourself. We&apos;re a
+  fancy clipboard, not an autoposter.
+- **Read pages outside your active tab + the four supported publish
+  platforms.** Capture is on-demand only; publish content scripts are
+  scoped to LinkedIn, Instagram, TikTok, and Medium domains.
+- **Send your data anywhere except your own Aloha workspace and the
+  platforms you choose to publish to.**
+
+## Permissions and why we ask for them
+
+| Permission | Why |
+|---|---|
+| `cookies` | Read your Aloha session cookie so API calls authenticate as you. |
+| `host_permissions: usealoha.app` | Make API calls to your workspace. |
+| `host_permissions: linkedin.com / instagram.com / tiktok.com / medium.com` | Inject the assisted-publish content script when you&apos;re on those platforms&apos; compose pages. |
+| `activeTab` + `scripting` | Read the URL and your selection from the current tab when you open the popup. |
+| `tabs` | Detect when you&apos;re on a known compose page so the popup can show you matching drafts. |
+| `storage` | Remember which capture targets you picked last time. |
+
+## Data retention
+
+Drafts you save through the extension live in your Aloha workspace
+exactly the same as drafts created in the web app — see the main
+[privacy policy](/legal/privacy) for retention and deletion details.
+The extension itself stores nothing on your device beyond the
+last-selected capture targets in `chrome.storage.local`, which you can
+clear by uninstalling the extension or via your browser&apos;s
+extension settings.
+
+## Questions
+
+Email us at [hey@usealoha.app](mailto:hey@usealoha.app). The main privacy
+policy is at [usealoha.app/legal/privacy](/legal/privacy).
+
+<LegalFooter />
