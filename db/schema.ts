@@ -81,6 +81,26 @@ export const users = pgTable("users", {
   notificationsEnabled: boolean("notificationsEnabled").default(true).notNull(),
   notifyPostOutcomes: boolean("notifyPostOutcomes").default(true).notNull(),
   notifyInboxSyncIssues: boolean("notifyInboxSyncIssues").default(true).notNull(),
+  // Per-event email toggles for the review pipeline. Each governs whether
+  // the matching in-app notification also fans out to email. The master
+  // `notificationsEnabled` switch still gates everything; these layer on
+  // top so a user can opt out of (e.g.) comment emails while keeping the
+  // approval ping.
+  notifyReviewSubmittedByEmail: boolean("notifyReviewSubmittedByEmail")
+    .default(true)
+    .notNull(),
+  notifyReviewApprovedByEmail: boolean("notifyReviewApprovedByEmail")
+    .default(true)
+    .notNull(),
+  notifyReviewAssignedByEmail: boolean("notifyReviewAssignedByEmail")
+    .default(true)
+    .notNull(),
+  notifyReviewCommentByEmail: boolean("notifyReviewCommentByEmail")
+    .default(true)
+    .notNull(),
+  notifyReviewMentionByEmail: boolean("notifyReviewMentionByEmail")
+    .default(true)
+    .notNull(),
   // Which workspace the user is currently acting inside. Nullable during
   // Phase 2 rollout; backfill sets this to the user's personal workspace
   // once it exists. Later phases tighten this + drive the workspace switch
@@ -374,6 +394,14 @@ export const posts = pgTable("posts", {
   approvedBy: uuid("approvedBy").references(() => users.id, {
     onDelete: "set null",
   }),
+  // When a post is approved via a public share link by someone who isn't
+  // a workspace member, `approvedBy` stays null and we record the typed
+  // name + email here so the audit trail isn't anonymous. Cleared on
+  // back-to-draft alongside the other approval fields.
+  externalApproverIdentity: jsonb("externalApproverIdentity").$type<{
+    name: string;
+    email: string;
+  }>(),
   // Optional reviewer assignment. When set, the post shows on that
   // reviewer's "assigned to me" Kanban filter. Null = goes into the
   // general reviewer queue (anyone with reviewer+ can approve). Cleared
@@ -1552,9 +1580,21 @@ export const postNotes = pgTable(
     postId: uuid("postId")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
-    authorUserId: uuid("authorUserId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // Author when the note comes from a workspace member. Null when the
+    // note was left through a public share link by an external reviewer
+    // (in which case `externalAuthor` carries their typed identity).
+    // Exactly one of authorUserId / externalAuthor is set.
+    authorUserId: uuid("authorUserId").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    // Identity of an external reviewer who left this note via /r/[token].
+    // Set when authorUserId is null. Not validated beyond shape — the
+    // share token authorizes the action, the name + email are display
+    // metadata for the workspace's audit trail.
+    externalAuthor: jsonb("externalAuthor").$type<{
+      name: string;
+      email: string;
+    }>(),
     body: text("body").notNull(),
     // Mentioned workspace-member user ids, deduped. Drives the mention
     // notifications and lets the renderer style `@Name` tokens as pills.
@@ -1571,6 +1611,43 @@ export const postNotes = pgTable(
     }),
   },
   (table) => [index("post_notes_post").on(table.postId, table.createdAt)],
+);
+
+// Shareable review links. A REVIEWER+ mints a token and sends the URL to a
+// client / external stakeholder. The token grants viewing the post + leaving
+// notes + (optionally) approving or requesting changes — without needing a
+// workspace seat. External actions write back to the same `postNotes` and
+// `posts` tables; identity comes from the typed name + email captured on
+// first visit. Token is opaque base64url, looked up directly (cf.
+// `workspaceInvites`). `expiresAt` null = no expiry; `revokedAt` non-null
+// blocks use even before expiry.
+export const postShareTokens = pgTable(
+  "post_share_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    postId: uuid("postId")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspaceId")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    createdByUserId: uuid("createdByUserId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    permissions: text("permissions", {
+      enum: ["comment_only", "comment_approve"],
+    })
+      .default("comment_approve")
+      .notNull(),
+    expiresAt: timestamp("expiresAt", { mode: "date" }),
+    revokedAt: timestamp("revokedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("post_share_tokens_post").on(table.postId),
+    index("post_share_tokens_token").on(table.token),
+  ],
 );
 
 // Admin panel operators. Completely separate from `users` — no shared
