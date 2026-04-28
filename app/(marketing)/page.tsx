@@ -3,7 +3,7 @@ import { routes } from "@/lib/routes";
 import { faqJsonLd, makeMetadata, softwareApplicationJsonLd } from "@/lib/seo";
 import { ArrowRight, ArrowUpRight, Check, Smile, Sparkle } from "lucide-react";
 import Link from "next/link";
-import { HeroDoodle } from "./_components/hero-doodle";
+import { HeroDoodleSketch } from "./_components/hero-doodle-sketch";
 import { SOCIAL_ICONS } from "./_components/social-icons";
 import { EngageInbox } from "./engage-inbox";
 import { FaqList } from "./faq-list";
@@ -11,7 +11,7 @@ import { FaqList } from "./faq-list";
 export const metadata = makeMetadata({
 	title: "The calm social media OS — with Muse, the AI that sounds like you",
 	description:
-		"Aloha is the quiet operator behind creators who post on six platforms and still have a life. Plan, write, schedule, automate — with Muse, the voice model trained on your own writing.",
+		"Aloha is the quiet operator behind creators who post on six platforms and still have a life. Plan, write, and schedule — with Muse, the voice model trained on your own writing.",
 	path: routes.home,
 });
 
@@ -28,10 +28,11 @@ const FAQ = [
 		q: "Do you support teams and client approvals?",
 		a: "Yes. Roles, draft approvals, and per-brand permissions ship on the Team plan. Agencies can also separate clients into fully isolated workspaces.",
 	},
-	{
-		q: "How is Aloha different from Buffer or Kit?",
-		a: "We borrow the clarity, and add a visual automation matrix so your first post to a new follower doesn't have to be manual. Consider us the quiet operator between the two.",
-	},
+	// Automations-themed FAQ hidden in production; preserved for re-enable.
+	// {
+	// 	q: "How is Aloha different from Buffer or Kit?",
+	// 	a: "We borrow the clarity, and add a visual automation matrix so your first post to a new follower doesn't have to be manual. Consider us the quiet operator between the two.",
+	// },
 	{
 		q: "What happens to my analytics when a platform changes its API?",
 		a: "Historical data stays. For new data we fall back to what the platform permits and flag any gap in the dashboard — no silent blanks.",
@@ -51,7 +52,7 @@ export default function LandingPage() {
 						name: "Aloha",
 						path: routes.home,
 						description:
-							"Aloha is a calm social media OS for creators and communities. Schedule across Instagram, LinkedIn, X, TikTok, Threads, Facebook, Pinterest, YouTube, and Medium from one draft; automate first-follower DMs with the Logic Matrix; see analytics that tell you what to do next.",
+							"Aloha is a calm social media OS for creators and communities. Schedule across Instagram, LinkedIn, X, TikTok, Threads, Facebook, Pinterest, YouTube, and Medium from one draft; see analytics that tell you what to do next.",
 						applicationCategory: "BusinessApplication",
 					}),
 					faqJsonLd(FAQ.map((f) => ({ q: f.q, a: f.a }))),
@@ -59,7 +60,7 @@ export default function LandingPage() {
 			/>
 			{/* ─── HERO ──────────────────────────────────────────────────────── */}
 			<section className="bg-peach-200 wavy min-h-[calc(100vh-72px)] relative overflow-hidden">
-				<HeroDoodle />
+				<HeroDoodleSketch />
 
 				<div className="relative max-w-[1320px] w-full mx-auto px-6 lg:px-10 pt-20 lg:pt-32 pb-24 lg:pb-32 grid grid-cols-12 gap-y-10">
 					<div className="col-span-12 lg:col-start-2 lg:col-span-10 xl:col-start-3 xl:col-span-8 text-center">
@@ -553,6 +554,8 @@ export default function LandingPage() {
 			</section>
 
 			{/* ─── FEATURE · AUTOMATE (dark ink block) ────────────────────────── */}
+			{/* Automations / Logic Matrix hidden in production; preserved for re-enable. */}
+			{false && (
 			<section className="bg-primary-soft">
 				<section className="relative pb-8 bg-ink text-background-elev wavy">
 					<div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-24 lg:py-32 grid grid-cols-12 gap-x-0 gap-y-10 lg:gap-10 items-center">
@@ -644,6 +647,7 @@ export default function LandingPage() {
 					</div>
 				</section>
 			</section>
+			)}
 
 			{/* ─── FEATURE · ENGAGE (primary-soft block) ──────────────────────── */}
 			<section className="bg-background">
@@ -861,7 +865,7 @@ export default function LandingPage() {
 							{[
 								{
 									h: "Every feature on this page ships today",
-									p: "Composer, voice model, calendar, link-in-bio, analytics, automations — all live on the free tier or Basic.",
+									p: "Composer, voice model, calendar, link-in-bio, analytics — all live on the free tier or Basic.",
 									bg: "bg-peach-100",
 								},
 								{

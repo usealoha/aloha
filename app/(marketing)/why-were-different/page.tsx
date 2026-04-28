@@ -151,6 +151,8 @@ export default function WhyWereDifferentPage() {
                   </>
                 ),
               },
+              // Automation/Matrix principle hidden in production; preserved for re-enable.
+              /*
               {
                 h: "We chose human approvals over auto-send.",
                 p: (
@@ -169,6 +171,7 @@ export default function WhyWereDifferentPage() {
                   </>
                 ),
               },
+              */
             ].map((c, i) => (
               <li key={i} className="relative grid grid-cols-12 gap-x-0 gap-y-6 lg:gap-10">
                 <div className="col-span-12 lg:col-span-2">

@@ -8,6 +8,7 @@ import {
 	Shield,
 } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { FeatureDetails } from "../_components/feature-details";
 import { ScreenshotPlaceholder } from "../_components/screenshot-placeholder";
 
@@ -19,6 +20,8 @@ export const metadata = makeMetadata({
 });
 
 export default function LogicMatrixPage() {
+	// Logic Matrix (automations) hidden in production; preserved for re-enable.
+	notFound();
 	return (
 		<>
 			{/* ─── HERO ────────────────────────────────────────────────────── */}

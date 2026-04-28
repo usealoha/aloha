@@ -16,7 +16,7 @@ import Link from "next/link";
 export const metadata = makeMetadata({
 	title: "Templates — clone-and-ship shapes for the Composer",
 	description:
-		"Aloha's template library. Campaign templates, matrix templates, voice presets — clone into the Composer in two clicks.",
+		"Aloha's template library. Campaign templates, voice presets — clone into the Composer in two clicks.",
 	path: routes.resources.templates,
 });
 
@@ -62,6 +62,8 @@ const TEMPLATES: Template[] = [
 		channels: ["LinkedIn", "Threads", "Pinterest"],
 		tone: "bg-primary-soft",
 	},
+	// Matrix (automation) templates hidden in production; preserved for re-enable.
+	/*
 	{
 		slug: "first-reply-welcome",
 		name: "First-reply welcome DM",
@@ -98,6 +100,7 @@ const TEMPLATES: Template[] = [
 		channels: ["LinkedIn", "X"],
 		tone: "bg-primary-soft",
 	},
+	*/
 	{
 		slug: "voice-preset-essay",
 		name: "Voice preset · essay-writer",
@@ -155,6 +158,8 @@ const CATEGORY_META: Record<
 		eyebrow: "Multi-post arcs",
 		tone: "text-primary",
 	},
+	// matrix category preserved in CATEGORY_META so the type stays satisfied,
+	// but it's filtered out of CATEGORIES below — won't render in production.
 	matrix: {
 		name: "Matrices",
 		icon: GitBranch,
@@ -175,7 +180,7 @@ const CATEGORY_META: Record<
 	},
 };
 
-const CATEGORIES: TemplateCategory[] = ["campaign", "matrix", "voice", "post"];
+const CATEGORIES: TemplateCategory[] = ["campaign", /* "matrix", */ "voice", "post"];
 
 export default function TemplatesPage() {
 	const featured = TEMPLATES.find((t) => t.featured);

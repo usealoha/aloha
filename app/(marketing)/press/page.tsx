@@ -43,7 +43,7 @@ const DOWNLOADS = [
 	},
 	{
 		h: "Screenshot pack",
-		p: "Composer, Calendar, Inbox, Logic Matrix, Analytics — WebP originals in one zip.",
+		p: "Composer, Calendar, Inbox, Analytics — WebP originals in one zip.",
 		cta: "Screenshots.zip",
 		href: "/press/screenshots.zip",
 		tone: "bg-primary-soft",
@@ -147,9 +147,8 @@ export default function PressPage() {
 						<div className="col-span-12 lg:col-span-8 space-y-5 text-[15.5px] lg:text-[16.5px] leading-[1.7] text-ink/85">
 							<p>
 								Aloha is a calm social media OS for creators and small teams. It
-								schedules posts across eight networks, triages comments and DMs
-								in a unified inbox, and automates cross-channel flows without
-								code.
+								schedules posts across eight networks and triages comments and
+								DMs in a unified inbox.
 							</p>
 							<p>
 								Founded in 2026 in India by Kashyap Gohil, Aloha was built to be
@@ -288,6 +287,8 @@ export default function PressPage() {
 							src="/aloha-calendar.webp"
 							alt="Aloha Calendar week view with scheduled posts across seven days, channel chips, and status indicators."
 						/>
+						{/* Logic Matrix screenshot hidden in production; preserved for re-enable. */}
+						{false && (
 						<ScreenshotPlaceholder
 							id="press-matrix"
 							label="Logic Matrix — cross-channel automation canvas."
@@ -296,6 +297,7 @@ export default function PressPage() {
 							src="/aloha-automations-edit.webp"
 							alt="Aloha Logic Matrix builder — cross-channel Reactflow canvas with trigger, condition, and action nodes plus a human-approve chip."
 						/>
+						)}
 						<ScreenshotPlaceholder
 							id="press-inbox"
 							label="Inbox — unified comments and DMs across channels."

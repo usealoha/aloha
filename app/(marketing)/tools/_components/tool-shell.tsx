@@ -143,7 +143,7 @@ export function ToolShell({
 						<div className="relative max-w-2xl">
 							<Sparkle className="w-5 h-5 text-peach-300 mb-4" />
 							<p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-peach-200 mb-3">
-								Want this automated?
+								Want this built in?
 							</p>
 							<p className="font-display text-[24px] lg:text-[32px] leading-[1.15] tracking-[-0.01em]">
 								{productFeature.pitch}

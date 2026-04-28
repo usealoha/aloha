@@ -14,7 +14,7 @@ import Link from "next/link";
 export const metadata = makeMetadata({
 	title: "Creator guides — sequenced learning paths",
 	description:
-		"Aloha's creator guides. Curriculum-style learning paths — voice, calendar, automation, inbox. Lessons that build on each other.",
+		"Aloha's creator guides. Curriculum-style learning paths — voice, calendar, inbox. Lessons that build on each other.",
 	path: routes.resources.creatorGuides,
 });
 
@@ -40,6 +40,8 @@ const PATHS = [
 		tone: "bg-peach-100",
 		href: "#",
 	},
+	// Automation guide hidden in production; preserved for re-enable.
+	/*
 	{
 		slug: "automation-no-spam",
 		icon: Sparkle,
@@ -50,6 +52,7 @@ const PATHS = [
 		tone: "bg-primary-soft",
 		href: "#",
 	},
+	*/
 	{
 		slug: "inbox-triage",
 		icon: Inbox,
@@ -64,7 +67,7 @@ const PATHS = [
 		slug: "agency-multi-brand",
 		icon: Layers,
 		title: "Agency · multi-brand workflow",
-		lead: "Workspaces, white-label reports, and Logic Matrix templates that scale across clients.",
+		lead: "Workspaces and white-label reports that scale across clients.",
 		lessons: 6,
 		minutes: "50 min total",
 		tone: "bg-peach-100",
@@ -220,7 +223,7 @@ export default function CreatorGuidesIndexPage() {
 						</div>
 						<ol className="col-span-12 lg:col-span-7 relative space-y-5 pl-8 text-[15.5px] leading-[1.7] text-ink/85 before:absolute before:inset-y-0 before:left-[7px] before:w-px before:bg-border-strong/60">
 							{[
-								"Each lesson is 4–10 minutes. Most include a one-action prompt — train the model, draft a post, set up the matrix.",
+								"Each lesson is 4–10 minutes. Most include a one-action prompt — train the model, draft a post, queue the week.",
 								"Lessons sequence: by the end you've used the feature for real, not just understood it.",
 								"Bookmark progress in your account; resume where you left off across devices.",
 								"Recordings are transcribed (free, no member gate) — the same content as text on every page.",

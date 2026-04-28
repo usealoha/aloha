@@ -73,10 +73,8 @@ export default function ManifestoPage() {
 
 						<p>
 							Aloha is a social media tool. We help creators and small teams
-							schedule posts across eight networks, triage comments and DMs in
-							one place, and automate the quiet choreography that used to be
-							manual — a welcome DM to a new follower, a reminder post the day
-							after a launch, a carousel cross-posted as a Threads reply chain.
+							schedule posts across eight networks and triage comments and DMs
+							in one place — without the platform burnout.
 						</p>
 
 						<p>
@@ -132,6 +130,9 @@ export default function ManifestoPage() {
 							</blockquote>
 						</figure>
 
+						{/* Automation principle hidden in production; preserved for re-enable. */}
+						{false && (
+						<>
 						<h2 className="font-display text-[28px] lg:text-[36px] font-normal leading-[1.15] tracking-[-0.015em] text-ink mt-16 mb-5 scroll-mt-20">
 							3. Automation with a thumb in the loop.
 						</h2>
@@ -155,6 +156,8 @@ export default function ManifestoPage() {
 							Automation is powerful. It's also how brands lose trust. We picked
 							defaults that make that harder.
 						</p>
+						</>
+						)}
 
 						<h2 className="font-display text-[28px] lg:text-[36px] font-normal leading-[1.15] tracking-[-0.015em] text-ink mt-16 mb-5 scroll-mt-20">
 							4. The notification budget is zero.
