@@ -1,6 +1,7 @@
 "use client";
 
 import { markItemReadAction, saveItemAsIdeaAction } from "@/app/actions/feeds";
+import { buttonVariants } from "@/components/ui/button";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import {
 	Tooltip,
@@ -236,7 +237,9 @@ function ItemRow({ item }: { item: StreamItem }) {
 									</button>
 								}
 							/>
-							<TooltipContent>{saved ? "Saved" : "Save to ideas"}</TooltipContent>
+							<TooltipContent>
+								{saved ? "Saved" : "Save to ideas"}
+							</TooltipContent>
 						</Tooltip>
 					</form>
 					{!item.isRead ? (
@@ -249,7 +252,13 @@ function ItemRow({ item }: { item: StreamItem }) {
 										<button
 											type="submit"
 											aria-label="Mark read"
-											className="inline-flex items-center justify-center w-8 h-8 rounded-full text-ink/60 hover:text-ink hover:bg-muted/80 transition-colors"
+											className={cn(
+												buttonVariants({
+													variant: "ghost",
+													size: "icon",
+												}),
+												"text-ink/60 hover:bg-muted/80 hover:text-ink",
+											)}
 										>
 											<Eye className="w-3.5 h-3.5" />
 										</button>
