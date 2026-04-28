@@ -101,6 +101,15 @@ export const users = pgTable("users", {
   notifyReviewMentionByEmail: boolean("notifyReviewMentionByEmail")
     .default(true)
     .notNull(),
+  // Weekly Insights digest — top posts + concrete suggestions emailed
+  // to workspace owners + admins. Default-on; users opt out from the
+  // notifications settings page. Independent of `notificationsEnabled`
+  // because the insights email is creator-facing analytics, not an
+  // event ping; killing the master switch shouldn't silently kill the
+  // weekly retro.
+  notifyInsightsDigestByEmail: boolean("notifyInsightsDigestByEmail")
+    .default(true)
+    .notNull(),
   // Which workspace the user is currently acting inside. Nullable during
   // Phase 2 rollout; backfill sets this to the user's personal workspace
   // once it exists. Later phases tighten this + drive the workspace switch
@@ -136,6 +145,13 @@ export const workspaces = pgTable("workspaces", {
   // Billing customer pointer. Moves from `users.polarCustomerId` to here in
   // Slice 2.7; kept nullable until then so backfill can populate it lazily.
   polarCustomerId: text("polarCustomerId").unique(),
+  // Public-facing short identifier used in user-friendly URLs and inbound
+  // email aliases (e.g., `ideas-{shortId}@in.usealoha.app`). 12 chars from
+  // [a-z0-9], unique. Nullable for two reasons: (a) old rows backfill
+  // lazily on first read, (b) external systems sometimes use the workspace
+  // id directly, so we don't want a hard schema requirement that blocks
+  // workspace creation if the random generator collides under load.
+  shortId: text("shortId").unique(),
   // Non-null when the workspace is in read-only "frozen" state — set by
   // the quota reconciler when the owner has more workspaces than their
   // current add-on seat count allows (e.g. after canceling add-on seats,
@@ -419,6 +435,23 @@ export const posts = pgTable("posts", {
   // campaign detail list its own drafts + the calendar tint cells by
   // campaign. Set-null on campaign delete so drafts survive.
   campaignId: uuid("campaignId").references((): AnyPgColumn => campaigns.id, {
+    onDelete: "set null",
+  }),
+  // Set when the user marks a published post as "evergreen" — eligible
+  // for resurfacing as a fresh draft by the recycle automation. Cleared
+  // when the user opts the post out. Only meaningful for `published`
+  // posts; the automation filters there anyway.
+  evergreenMarkedAt: timestamp("evergreenMarkedAt", { mode: "date" }),
+  // Updated each time the recycle automation creates a child draft from
+  // this post. Lets the handler enforce a cool-off window so a single
+  // winner isn't resurfaced every cycle, and powers the lineage UI on
+  // the origin's detail page.
+  lastResurfacedAt: timestamp("lastResurfacedAt", { mode: "date" }),
+  // For posts that ARE the resurface (i.e., the new draft cloned from
+  // an origin), this points at the origin. Null for original posts.
+  // Self-FK with set-null so deleting the origin doesn't cascade-kill
+  // the resurfaces — they stand on their own once authored.
+  parentPostId: uuid("parentPostId").references((): AnyPgColumn => posts.id, {
     onDelete: "set null",
   }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1002,7 +1035,7 @@ export const ideas = pgTable("ideas", {
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   source: text("source", {
-    enum: ["manual", "url_clip", "feed", "notion", "inbox"],
+    enum: ["manual", "url_clip", "feed", "notion", "inbox", "email"],
   }).notNull(),
   sourceId: text("sourceId"),
   sourceUrl: text("sourceUrl"),
