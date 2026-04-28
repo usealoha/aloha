@@ -1,5 +1,5 @@
 import { getFreshToken, forceRefresh } from "@/lib/publishers/tokens";
-import type { NormalizedMessage, SyncResult } from "../types";
+import type { Attachment, NormalizedMessage, SyncResult } from "../types";
 import { upsertThreadProfiles, type ThreadProfile } from "./_thread-profiles";
 
 const PAGE_SIZE = 100;
@@ -19,11 +19,24 @@ type DmEvent = {
   created_at?: string;
   dm_conversation_id?: string;
   sender_id?: string;
+  attachments?: { media_keys?: string[] };
+};
+
+type DmMedia = {
+  media_key: string;
+  type: "photo" | "video" | "animated_gif" | string;
+  url?: string;
+  preview_image_url?: string;
+  width?: number;
+  height?: number;
+  alt_text?: string;
+  duration_ms?: number;
+  variants?: Array<{ content_type: string; url: string; bit_rate?: number }>;
 };
 
 type DmEventsResponse = {
   data?: DmEvent[];
-  includes?: { users?: DmUser[] };
+  includes?: { users?: DmUser[]; media?: DmMedia[] };
   meta?: { next_token?: string; result_count?: number };
 };
 
@@ -34,9 +47,12 @@ async function fetchPage(
   const params = new URLSearchParams({
     max_results: String(PAGE_SIZE),
     event_types: "MessageCreate",
-    "dm_event.fields": "id,event_type,text,created_at,dm_conversation_id,sender_id",
-    expansions: "sender_id",
+    "dm_event.fields":
+      "id,event_type,text,created_at,dm_conversation_id,sender_id,attachments",
+    expansions: "sender_id,attachments.media_keys",
     "user.fields": "name,username,profile_image_url",
+    "media.fields":
+      "type,url,preview_image_url,width,height,alt_text,duration_ms,variants",
   });
   if (paginationToken) params.set("pagination_token", paginationToken);
 
@@ -80,6 +96,8 @@ export async function fetchXDms(
 
     const usersById = new Map<string, DmUser>();
     for (const u of res.includes?.users ?? []) usersById.set(u.id, u);
+    const mediaByKey = new Map<string, DmMedia>();
+    for (const m of res.includes?.media ?? []) mediaByKey.set(m.media_key, m);
 
     for (const ev of res.data) {
       if (ev.event_type !== "MessageCreate") continue;
@@ -87,6 +105,11 @@ export async function fetchXDms(
 
       const outbound = ev.sender_id === account.providerAccountId;
       const user = usersById.get(ev.sender_id);
+
+      const attachments = (ev.attachments?.media_keys ?? [])
+        .map((key) => mediaByKey.get(key))
+        .filter((m): m is DmMedia => !!m)
+        .map(toAttachment);
 
       messages.push({
         remoteId: ev.id,
@@ -99,6 +122,7 @@ export async function fetchXDms(
         authorDisplayName: user?.name ?? null,
         authorAvatarUrl: user?.profile_image_url ?? null,
         content: ev.text ?? "",
+        attachments,
         platformData: {
           convoId: ev.dm_conversation_id,
           senderId: ev.sender_id,
@@ -116,6 +140,33 @@ export async function fetchXDms(
   await syncCounterpartyProfiles(workspaceId, account.accessToken, account.providerAccountId, messages);
 
   return { messages, comments: [], newCursor: token ?? null };
+}
+
+function toAttachment(m: DmMedia): Attachment {
+  if (m.type === "video" || m.type === "animated_gif") {
+    // Pick the highest-bitrate mp4 variant for direct playback. X often
+    // returns only HLS for video, in which case we keep the preview only
+    // and leave the URL as the preview (link click → external).
+    const mp4 = (m.variants ?? [])
+      .filter((v) => v.content_type === "video/mp4")
+      .sort((a, b) => (b.bit_rate ?? 0) - (a.bit_rate ?? 0))[0];
+    return {
+      type: m.type === "animated_gif" ? "gif" : "video",
+      url: mp4?.url ?? m.preview_image_url ?? "",
+      previewUrl: m.preview_image_url,
+      width: m.width,
+      height: m.height,
+      altText: m.alt_text,
+      durationSec: m.duration_ms ? Math.round(m.duration_ms / 1000) : undefined,
+    };
+  }
+  return {
+    type: "image",
+    url: m.url ?? m.preview_image_url ?? "",
+    width: m.width,
+    height: m.height,
+    altText: m.alt_text,
+  };
 }
 
 // X 1:1 DM conversation ids are `<participantA>-<participantB>` with both

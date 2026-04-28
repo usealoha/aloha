@@ -1,5 +1,5 @@
 import { getFreshToken, forceRefresh } from "@/lib/publishers/tokens";
-import type { NormalizedMessage, SyncResult } from "../types";
+import type { Attachment, NormalizedMessage, SyncResult } from "../types";
 import { upsertThreadProfiles, type ThreadProfile } from "./_thread-profiles";
 
 // Instagram Messaging flows through the Graph API under the linked
@@ -40,6 +40,16 @@ type IgMessage = {
     profile_pic?: string;
   };
   message?: string;
+  attachments?: {
+    data?: Array<{
+      id?: string;
+      mime_type?: string;
+      name?: string;
+      image_data?: { url?: string; preview_url?: string; width?: number; height?: number };
+      video_data?: { url?: string; preview_url?: string; width?: number; height?: number };
+      file_url?: string;
+    }>;
+  };
 };
 
 type MessagesResponse = {
@@ -100,7 +110,8 @@ async function fetchMessagesPage(
   convoId: string,
 ): Promise<MessagesResponse> {
   const params = new URLSearchParams({
-    fields: "id,created_time,from{id,username,name,profile_pic},message",
+    fields:
+      "id,created_time,from{id,username,name,profile_pic},message,attachments{id,mime_type,name,image_data,video_data,file_url}",
     limit: String(PAGE_SIZE),
     access_token: pageAccessToken,
   });
@@ -179,6 +190,29 @@ export async function fetchInstagramDms(
       if (!m.from?.id) continue;
       const outbound = m.from.id === igAccountId;
 
+      const attachments: Attachment[] = [];
+      for (const a of m.attachments?.data ?? []) {
+        if (a.image_data?.url) {
+          attachments.push({
+            type: "image",
+            url: a.image_data.url,
+            previewUrl: a.image_data.preview_url,
+            width: a.image_data.width,
+            height: a.image_data.height,
+          });
+        } else if (a.video_data?.url) {
+          attachments.push({
+            type: "video",
+            url: a.video_data.url,
+            previewUrl: a.video_data.preview_url,
+            width: a.video_data.width,
+            height: a.video_data.height,
+          });
+        } else if (a.file_url) {
+          attachments.push({ type: "file", url: a.file_url, fileName: a.name });
+        }
+      }
+
       messages.push({
         remoteId: m.id,
         threadId: convo.id,
@@ -190,6 +224,7 @@ export async function fetchInstagramDms(
         authorDisplayName: m.from.name ?? null,
         authorAvatarUrl: m.from.profile_pic ?? null,
         content: m.message ?? "",
+        attachments,
         platformData: { convoId: convo.id, igAccountId },
         platformCreatedAt: new Date(m.created_time),
       });
