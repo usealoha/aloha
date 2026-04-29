@@ -14,29 +14,12 @@ import { fetchMastodonPostMetrics } from "./mastodon";
 import { fetchPinterestPostMetrics } from "./pinterest";
 import { fetchThreadsPostMetrics } from "./threads";
 import { fetchXPostMetrics } from "./x";
+import { nextMetricSyncAt } from "./schedule";
+import { isSnapshotSupported, type SnapshotPlatform } from "./supported";
 import type { NormalizedSnapshot } from "./types";
 
-type Platform =
-  | "bluesky"
-  | "twitter"
-  | "mastodon"
-  | "instagram"
-  | "pinterest"
-  | "linkedin"
-  | "threads";
-
-const SUPPORTED: readonly Platform[] = [
-  "bluesky",
-  "twitter",
-  "mastodon",
-  "instagram",
-  "pinterest",
-  "linkedin",
-  "threads",
-];
-
 const FETCHERS: Record<
-  Platform,
+  SnapshotPlatform,
   (workspaceId: string, remotePostId: string) => Promise<NormalizedSnapshot>
 > = {
   bluesky: fetchBlueskyPostMetrics,
@@ -48,10 +31,6 @@ const FETCHERS: Record<
   threads: fetchThreadsPostMetrics,
 };
 
-function isSupported(platform: string): platform is Platform {
-  return (SUPPORTED as readonly string[]).includes(platform);
-}
-
 export async function syncPostDeliveryMetrics(
   deliveryId: string,
 ): Promise<{ captured: boolean }> {
@@ -61,6 +40,7 @@ export async function syncPostDeliveryMetrics(
       platform: postDeliveries.platform,
       remotePostId: postDeliveries.remotePostId,
       status: postDeliveries.status,
+      publishedAt: postDeliveries.publishedAt,
       workspaceId: posts.workspaceId,
     })
     .from(postDeliveries)
@@ -68,7 +48,7 @@ export async function syncPostDeliveryMetrics(
     .where(eq(postDeliveries.id, deliveryId))
     .limit(1);
 
-  if (!row || !row.remotePostId || !isSupported(row.platform)) {
+  if (!row || !row.remotePostId || !isSnapshotSupported(row.platform)) {
     return { captured: false };
   }
 
@@ -136,6 +116,17 @@ export async function syncPostDeliveryMetrics(
         updatedAt: new Date(),
       },
     });
+
+  // Advance the decay-curve schedule. Manual refreshes also flow through
+  // here, so a user clicking Refresh effectively "uses up" the next
+  // scheduled tick and we just compute the one after that.
+  if (row.publishedAt) {
+    const nextAt = nextMetricSyncAt(row.publishedAt, new Date());
+    await db
+      .update(postDeliveries)
+      .set({ nextMetricSyncAt: nextAt, updatedAt: new Date() })
+      .where(eq(postDeliveries.id, row.id));
+  }
 
   return { captured: true };
 }
