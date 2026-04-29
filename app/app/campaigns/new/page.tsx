@@ -6,11 +6,14 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { db } from "@/db";
 import {
 	accounts,
+	blueskyCredentials,
 	brandVoice,
 	feedItems,
 	feeds,
 	ideas,
+	mastodonCredentials,
 	platformInsights,
+	telegramCredentials,
 } from "@/db/schema";
 import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
@@ -42,8 +45,16 @@ export default async function NewCampaignPage() {
 		redirect("/app/campaigns");
 	}
 
-	const [connected, ideaCount, feedItemCount, insightCount, voiceRow] =
-		await Promise.all([
+	const [
+		connected,
+		blueskyRows,
+		mastodonRows,
+		telegramRows,
+		ideaCount,
+		feedItemCount,
+		insightCount,
+		voiceRow,
+	] = await Promise.all([
 			db
 				.selectDistinct({ provider: accounts.provider })
 				.from(accounts)
@@ -53,6 +64,21 @@ export default async function NewCampaignPage() {
 						notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
 					),
 				),
+			db
+				.select({ id: blueskyCredentials.id })
+				.from(blueskyCredentials)
+				.where(eq(blueskyCredentials.workspaceId, workspace.id))
+				.limit(1),
+			db
+				.select({ id: mastodonCredentials.id })
+				.from(mastodonCredentials)
+				.where(eq(mastodonCredentials.workspaceId, workspace.id))
+				.limit(1),
+			db
+				.select({ id: telegramCredentials.id })
+				.from(telegramCredentials)
+				.where(eq(telegramCredentials.workspaceId, workspace.id))
+				.limit(1),
 			db
 				.select({ value: count() })
 				.from(ideas)
@@ -74,7 +100,14 @@ export default async function NewCampaignPage() {
 				.where(eq(brandVoice.workspaceId, workspace.id))
 				.limit(1),
 		]);
-	const channels = connected.map((c) => c.provider);
+	const channels = Array.from(
+		new Set<string>([
+			...connected.map((c) => c.provider),
+			...(blueskyRows.length > 0 ? ["bluesky"] : []),
+			...(mastodonRows.length > 0 ? ["mastodon"] : []),
+			...(telegramRows.length > 0 ? ["telegram"] : []),
+		]),
+	);
 	const research = {
 		ideas: Number(ideaCount[0]?.value ?? 0),
 		feedItems: Number(feedItemCount[0]?.value ?? 0),
