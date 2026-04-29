@@ -23,6 +23,7 @@ import { getFormPublisher } from "@/lib/channels/capabilities/publishers";
 import { sendManualAssistReminderForDelivery } from "@/lib/manual-assist";
 import { createNotification } from "@/lib/notifications";
 import { dispatchEvent } from "@/lib/automations/dispatch";
+import { isSnapshotSupported } from "@/lib/posts/engagement/supported";
 import { PublishError } from "./errors";
 import { publishLinkedInDocument, publishToLinkedIn } from "./linkedin";
 import { publishToX } from "./x";
@@ -269,6 +270,13 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 				remoteUrl = result.remoteUrl;
 			}
 			const publishedAt = new Date();
+			// Schedule the first engagement snapshot ~1h out — see
+			// lib/posts/engagement/schedule.ts for the full curve. Only set
+			// when the platform is actually supported by the snapshot
+			// fetchers; otherwise leave NULL so the cron skips it.
+			const firstSnapshotAt = isSnapshotSupported(platform)
+				? new Date(publishedAt.getTime() + 60 * 60 * 1000)
+				: null;
 			await db
 				.update(postDeliveries)
 				.set({
@@ -278,6 +286,7 @@ export async function publishPost(postId: string): Promise<PublishSummary> {
 					errorCode: null,
 					errorMessage: null,
 					publishedAt,
+					nextMetricSyncAt: firstSnapshotAt,
 					attemptCount: delivery.attemptCount + 1,
 					updatedAt: new Date(),
 				})
