@@ -8,6 +8,10 @@
 		{
 			"path": "/api/cron/automations",
 			"schedule": "0 * * * *"
+		},
+		{
+			"path": "/api/cron/engagement-snapshots",
+			"schedule": "0 * * * *"
 		}
 	],
 	"git": {
