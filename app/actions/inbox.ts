@@ -5,13 +5,8 @@ import { db } from "@/db";
 import { requireContext } from "@/lib/current-context";
 import { ROLES } from "@/lib/workspaces/roles";
 import { assertRole } from "@/lib/workspaces/assert-role";
-import {
-  accounts,
-  blueskyCredentials,
-  inboxMessages,
-  mastodonCredentials,
-  telegramCredentials,
-} from "@/db/schema";
+import { inboxMessages } from "@/db/schema";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { syncInbox } from "@/lib/inbox/sync";
@@ -32,50 +27,21 @@ export async function refreshInbox() {
   const userId = ctx.user.id;
   const workspaceId = ctx.workspace.id;
 
-  // Detect which platforms are connected by hitting every credential table
-  // in parallel. Each syncInbox call handles its own fetcher errors
-  // internally, so one platform failing doesn't short-circuit the others.
-  const [bsky, twitter, mastodon, telegram, instagram, facebook] =
-    await Promise.all([
-      db
-        .select({ id: blueskyCredentials.id })
-        .from(blueskyCredentials)
-        .where(eq(blueskyCredentials.workspaceId, workspaceId))
-        .limit(1),
-      db
-        .select({ provider: accounts.provider })
-        .from(accounts)
-        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "twitter")))
-        .limit(1),
-      db
-        .select({ id: mastodonCredentials.id })
-        .from(mastodonCredentials)
-        .where(eq(mastodonCredentials.workspaceId, workspaceId))
-        .limit(1),
-      db
-        .select({ id: telegramCredentials.id })
-        .from(telegramCredentials)
-        .where(eq(telegramCredentials.workspaceId, workspaceId))
-        .limit(1),
-      db
-        .select({ provider: accounts.provider })
-        .from(accounts)
-        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "instagram")))
-        .limit(1),
-      db
-        .select({ provider: accounts.provider })
-        .from(accounts)
-        .where(and(eq(accounts.workspaceId, workspaceId), eq(accounts.provider, "facebook")))
-        .limit(1),
-    ]);
-
-  const platforms: Array<Parameters<typeof syncInbox>[1]> = [];
-  if (bsky.length > 0) platforms.push("bluesky");
-  if (twitter.length > 0) platforms.push("twitter");
-  if (mastodon.length > 0) platforms.push("mastodon");
-  if (telegram.length > 0) platforms.push("telegram");
-  if (instagram.length > 0) platforms.push("instagram");
-  if (facebook.length > 0) platforms.push("facebook");
+  // syncInbox handles each platform independently — one fetcher failing
+  // doesn't short-circuit the others. We just need to know which ones to
+  // dispatch.
+  const { providerSet } = await getConnectedChannels(workspaceId);
+  const INBOX_SYNCABLE = [
+    "bluesky",
+    "twitter",
+    "mastodon",
+    "telegram",
+    "instagram",
+    "facebook",
+  ] as const;
+  const platforms: Array<Parameters<typeof syncInbox>[1]> = INBOX_SYNCABLE.filter(
+    (p) => providerSet.has(p),
+  );
 
   const results = await Promise.allSettled(
     platforms.map((p) => syncInbox(userId, p)),
