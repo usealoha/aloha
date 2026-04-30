@@ -2,14 +2,7 @@ import { PricingCalculator } from "@/app/(marketing)/pricing/_components/pricing
 import { WishlistForm } from "@/app/(marketing)/pricing/_components/wishlist-form";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import {
-	accounts,
-	blueskyCredentials,
-	mastodonCredentials,
-	telegramCredentials,
-	users,
-	wishlist,
-} from "@/db/schema";
+import { users, wishlist } from "@/db/schema";
 import {
 	effectivePrice,
 	FREE_TIER_CHANNELS,
@@ -21,9 +14,9 @@ import {
 	getAccountEntitlements,
 	getWorkspaceQuota,
 } from "@/lib/billing/account-entitlements";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { routes } from "@/lib/routes";
-import { and, eq, notInArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Sparkle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { FlashToast } from "@/components/ui/flash-toast";
@@ -85,38 +78,8 @@ export default async function BillingPage() {
 		/>
 	);
 
-	const [channelRows, blueskyRows, mastodonRows, telegramRows] =
-		await Promise.all([
-			db
-				.select({ provider: accounts.provider })
-				.from(accounts)
-				.where(
-					and(
-						eq(accounts.workspaceId, workspaceId),
-						notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-					),
-				),
-			db
-				.select({ id: blueskyCredentials.id })
-				.from(blueskyCredentials)
-				.where(eq(blueskyCredentials.workspaceId, workspaceId))
-				.limit(1),
-			db
-				.select({ id: mastodonCredentials.id })
-				.from(mastodonCredentials)
-				.where(eq(mastodonCredentials.workspaceId, workspaceId))
-				.limit(1),
-			db
-				.select({ id: telegramCredentials.id })
-				.from(telegramCredentials)
-				.where(eq(telegramCredentials.workspaceId, workspaceId))
-				.limit(1),
-		]);
-	const connectedChannels =
-		channelRows.length +
-		blueskyRows.length +
-		mastodonRows.length +
-		telegramRows.length;
+	const connectedChannels = (await getConnectedChannels(workspaceId))
+		.perAccountCount;
 
 	if (!IS_DEV) {
 		const [userRow] = await db

@@ -1,23 +1,19 @@
 import { ChannelChip, ChannelIcons } from "@/components/channel-chip";
 import { db } from "@/db";
 import {
-	accounts,
-	blueskyCredentials,
 	brandCorpus,
 	campaigns,
 	feedItems,
 	feeds,
 	ideas,
 	inboxMessages,
-	mastodonCredentials,
 	notionCredentials,
 	posts,
-	telegramCredentials,
 } from "@/db/schema";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
 import { getLogicalSubscription } from "@/lib/billing/service";
 import { PLATFORM_GATING } from "@/lib/channel-state";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { getCurrentContext } from "@/lib/current-context";
 import type { CurrentUser } from "@/lib/current-user";
 import { getRecentActivity } from "@/lib/dashboard/recent-activity";
@@ -130,17 +126,9 @@ async function DashboardContent({
 	// sum. All downstream aggregations run off the resolved arrays.
 	const [
 		countsRows,
-		channelsCountRows,
-		hasBlueskyCountRows,
-		hasMastodonCountRows,
-		hasTelegramCountRows,
+		connectedSnap,
 		upcoming,
 		recentPublished,
-		totalAccountsRows,
-		hasBlueskyRows,
-		hasMastodonRows,
-		hasTelegramRows,
-		channelProviders,
 		reachRows,
 		activeCampaign,
 		ideaCounts,
@@ -164,32 +152,7 @@ async function DashboardContent({
 			.from(posts)
 			.where(eq(posts.workspaceId, workspaceId)),
 
-		db
-			.select({
-				value: sql<number>`count(distinct ${accounts.provider})`,
-			})
-			.from(accounts)
-			.where(
-				and(
-					eq(accounts.workspaceId, workspaceId),
-					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-				),
-			),
-
-		db
-			.select({ value: count() })
-			.from(blueskyCredentials)
-			.where(eq(blueskyCredentials.workspaceId, workspaceId)),
-
-		db
-			.select({ value: count() })
-			.from(mastodonCredentials)
-			.where(eq(mastodonCredentials.workspaceId, workspaceId)),
-
-		db
-			.select({ value: count() })
-			.from(telegramCredentials)
-			.where(eq(telegramCredentials.workspaceId, workspaceId)),
+		getConnectedChannels(workspaceId),
 
 		db
 			.select({
@@ -224,44 +187,6 @@ async function DashboardContent({
 			)
 			.orderBy(desc(posts.publishedAt))
 			.limit(3),
-
-		db
-			.select({ value: count() })
-			.from(accounts)
-			.where(
-				and(
-					eq(accounts.workspaceId, workspaceId),
-					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-				),
-			),
-
-		db
-			.select({ value: sql<number>`1` })
-			.from(blueskyCredentials)
-			.where(eq(blueskyCredentials.workspaceId, workspaceId))
-			.limit(1),
-
-		db
-			.select({ value: sql<number>`1` })
-			.from(mastodonCredentials)
-			.where(eq(mastodonCredentials.workspaceId, workspaceId))
-			.limit(1),
-
-		db
-			.select({ value: sql<number>`1` })
-			.from(telegramCredentials)
-			.where(eq(telegramCredentials.workspaceId, workspaceId))
-			.limit(1),
-
-		db
-			.selectDistinct({ provider: accounts.provider })
-			.from(accounts)
-			.where(
-				and(
-					eq(accounts.workspaceId, workspaceId),
-					notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-				),
-			),
 
 		// Reach over the last 7 days, per platform, from the nightly
 		// read-back cache. Only platforms that have returned data show up;
@@ -386,27 +311,9 @@ async function DashboardContent({
 	]);
 
 	const counts = countsRows[0];
-	const channelsCount = channelsCountRows[0];
-	const hasBlueskyCount = hasBlueskyCountRows[0];
-	const hasMastodonCount = hasMastodonCountRows[0];
-	const hasTelegramCount = hasTelegramCountRows[0];
-	const totalAccounts = totalAccountsRows[0].value;
-	const hasBluesky = hasBlueskyRows[0];
-	const hasMastodon = hasMastodonRows[0];
-	const hasTelegram = hasTelegramRows[0];
-
-	const connectedChannels =
-		Number(channelsCount.value ?? 0) +
-		Number(hasBlueskyCount.value ?? 0) +
-		Number(hasMastodonCount.value ?? 0) +
-		Number(hasTelegramCount.value ?? 0);
-
-	const allProviders = [
-		...channelProviders.map((c) => c.provider),
-		...(hasBluesky ? ["bluesky" as const] : []),
-		...(hasMastodon ? ["mastodon" as const] : []),
-		...(hasTelegram ? ["telegram" as const] : []),
-	];
+	const connectedChannels = connectedSnap.providers.length;
+	const allProviders = [...connectedSnap.providers];
+	const totalAccountSlots = connectedSnap.perAccountCount;
 
 	const reachByPlatform = new Map(
 		reachRows
@@ -466,17 +373,11 @@ async function DashboardContent({
 		},
 		{
 			label: "Connected channels",
-			value: connectedChannels ?? 0,
-			hint: (() => {
-				const total =
-					Number(totalAccounts) +
-					(hasBluesky ? 1 : 0) +
-					(hasMastodon ? 1 : 0) +
-					(hasTelegram ? 1 : 0);
-				return total > 0
-					? `${total} account${total > 1 ? "s" : ""}`
-					: "none yet";
-			})(),
+			value: connectedChannels,
+			hint:
+				totalAccountSlots > 0
+					? `${totalAccountSlots} account${totalAccountSlots > 1 ? "s" : ""}`
+					: "none yet",
 			href: "/app/settings/channels",
 		},
 	];

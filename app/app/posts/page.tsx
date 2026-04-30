@@ -1,18 +1,12 @@
 import { CHANNEL_ICONS, CHANNEL_LABELS } from "@/components/channel-chip";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import { db } from "@/db";
-import {
-	accounts,
-	blueskyCredentials,
-	mastodonCredentials,
-	posts,
-	telegramCredentials,
-} from "@/db/schema";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import { posts } from "@/db/schema";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { getCurrentContext } from "@/lib/current-context";
 import { cn } from "@/lib/utils";
 import { hasRole, ROLES } from "@/lib/workspaces/roles";
-import { and, desc, eq, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
 	AlertCircle,
 	CheckCircle2,
@@ -166,69 +160,35 @@ export default async function PostsPage({
 		}
 	}
 
-	// Fire posts list + status aggregation + channel sources concurrently.
-	// Channels come from several tables: OAuth accounts plus per-channel
-	// credential tables for bluesky/mastodon/telegram.
-	const [oauthRows, blueskyRows, mastodonRows, telegramRows, rows, statusAgg] =
-		await Promise.all([
-			db
-				.select({ provider: accounts.provider })
-				.from(accounts)
-				.where(
-					and(
-						eq(accounts.workspaceId, workspace.id),
-						notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-					),
-				),
-			db
-				.select({ id: blueskyCredentials.id })
-				.from(blueskyCredentials)
-				.where(eq(blueskyCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({ id: mastodonCredentials.id })
-				.from(mastodonCredentials)
-				.where(eq(mastodonCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({ id: telegramCredentials.id })
-				.from(telegramCredentials)
-				.where(eq(telegramCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({
-					id: posts.id,
-					content: posts.content,
-					channelContent: posts.channelContent,
-					platforms: posts.platforms,
-					media: posts.media,
-					status: posts.status,
-					scheduledAt: posts.scheduledAt,
-					publishedAt: posts.publishedAt,
-					createdAt: posts.createdAt,
-				})
-				.from(posts)
-				.where(and(...where))
-				.orderBy(desc(posts.updatedAt))
-				.limit(view === "board" ? 300 : 100),
-			db
-				.select({
-					status: posts.status,
-					count: sql<number>`count(*)::int`,
-				})
-				.from(posts)
-				.where(and(...countWhere))
-				.groupBy(posts.status),
-		]);
+	const [connectedSnap, rows, statusAgg] = await Promise.all([
+		getConnectedChannels(workspace.id),
+		db
+			.select({
+				id: posts.id,
+				content: posts.content,
+				channelContent: posts.channelContent,
+				platforms: posts.platforms,
+				media: posts.media,
+				status: posts.status,
+				scheduledAt: posts.scheduledAt,
+				publishedAt: posts.publishedAt,
+				createdAt: posts.createdAt,
+			})
+			.from(posts)
+			.where(and(...where))
+			.orderBy(desc(posts.updatedAt))
+			.limit(view === "board" ? 300 : 100),
+		db
+			.select({
+				status: posts.status,
+				count: sql<number>`count(*)::int`,
+			})
+			.from(posts)
+			.where(and(...countWhere))
+			.groupBy(posts.status),
+	]);
 
-	const connectedChannels = Array.from(
-		new Set<string>([
-			...oauthRows.map((a) => a.provider),
-			...(blueskyRows.length > 0 ? ["bluesky"] : []),
-			...(mastodonRows.length > 0 ? ["mastodon"] : []),
-			...(telegramRows.length > 0 ? ["telegram"] : []),
-		]),
-	);
+	const connectedChannels = [...connectedSnap.providers];
 
 	const countByStatus = Object.fromEntries(
 		statusAgg.map((r) => [r.status, r.count]),

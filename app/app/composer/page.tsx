@@ -1,21 +1,17 @@
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { db } from "@/db";
 import {
-  accounts,
-  blueskyCredentials,
   channelProfiles,
   ideas,
-  mastodonCredentials,
   posts,
-  telegramCredentials,
   type ChannelOverride,
   type DraftMeta,
   type PostMedia,
 } from "@/db/schema";
+import { getConnectedProviders } from "@/lib/channels/connected";
 import type { ChannelProfileView } from "@/components/channel-identity";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { getEffectiveStatesForUser } from "@/lib/channel-state";
@@ -44,35 +40,8 @@ export default async function ComposerPage({
 
   const timezone = workspace.timezone ?? user.timezone ?? "UTC";
 
-  // Connected channels live across several tables: OAuth accounts plus
-  // per-channel credential tables for bluesky/mastodon/telegram. Mirror
-  // the union pattern used in posts/dashboard/analytics so the composer
-  // doesn't show "no channels" when only a non-OAuth channel is wired up.
-  const [oauthRows, blueskyRows, mastodonRows, telegramRows, bestWindows, channelStates, museAccess, profileRows] = await Promise.all([
-    db
-      .selectDistinct({ provider: accounts.provider })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.workspaceId, workspace.id),
-          notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-        ),
-      ),
-    db
-      .select({ id: blueskyCredentials.id })
-      .from(blueskyCredentials)
-      .where(eq(blueskyCredentials.workspaceId, workspace.id))
-      .limit(1),
-    db
-      .select({ id: mastodonCredentials.id })
-      .from(mastodonCredentials)
-      .where(eq(mastodonCredentials.workspaceId, workspace.id))
-      .limit(1),
-    db
-      .select({ id: telegramCredentials.id })
-      .from(telegramCredentials)
-      .where(eq(telegramCredentials.workspaceId, workspace.id))
-      .limit(1),
+  const [connectedProviders, bestWindows, channelStates, museAccess, profileRows] = await Promise.all([
+    getConnectedProviders(workspace.id),
     getBestWindowsForUser(user.id, timezone),
     getEffectiveStatesForUser(user.id),
     hasMuseInviteEntitlement(user.id),
@@ -178,15 +147,6 @@ export default async function ComposerPage({
     }
   }
 
-  const connectedProviders = Array.from(
-    new Set<string>([
-      ...oauthRows.map((c) => c.provider),
-      ...(blueskyRows.length > 0 ? ["bluesky"] : []),
-      ...(mastodonRows.length > 0 ? ["mastodon"] : []),
-      ...(telegramRows.length > 0 ? ["telegram"] : []),
-    ]),
-  );
-
   return (
     <Composer
       author={{
@@ -197,7 +157,7 @@ export default async function ComposerPage({
         timezone,
         workspaceRole: ctx.role,
       }}
-      connectedProviders={connectedProviders}
+      connectedProviders={[...connectedProviders]}
       channelProfiles={channelProfilesById}
       museAccess={museAccess}
       bestWindows={bestWindows}

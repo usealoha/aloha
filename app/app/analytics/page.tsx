@@ -1,12 +1,9 @@
-import { and, eq, notInArray } from "drizzle-orm";
 import { Download } from "lucide-react";
-import { db } from "@/db";
-import { accounts, blueskyCredentials } from "@/db/schema";
 import { getAnalyticsSummary } from "@/lib/analytics/summary";
 import { getRepeatability } from "@/lib/analytics/repeatability";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { PLATFORM_GATING } from "@/lib/channel-state";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { getCurrentContext } from "@/lib/current-context";
 import {
   BestTimesSection,
@@ -24,32 +21,15 @@ export default async function AnalyticsPage() {
   const { user, workspace } = ctx;
   const tz = workspace.timezone ?? user.timezone ?? "UTC";
 
-  const [summary, bestWindows, repeatability, connectedProviders, hasBluesky] =
+  const [summary, bestWindows, repeatability, connectedSnap] =
     await Promise.all([
       getAnalyticsSummary(user.id),
       getBestWindowsForUser(user.id, tz),
       getRepeatability(user.id, tz),
-      db
-        .selectDistinct({ provider: accounts.provider })
-        .from(accounts)
-        .where(
-          and(
-            eq(accounts.workspaceId, workspace.id),
-            notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-          ),
-        ),
-      db
-        .select({ id: blueskyCredentials.id })
-        .from(blueskyCredentials)
-        .where(eq(blueskyCredentials.workspaceId, workspace.id))
-        .limit(1),
+      getConnectedChannels(workspace.id),
     ]);
 
-  const allProviders = [
-    ...connectedProviders.map((p) => p.provider),
-    ...(hasBluesky.length > 0 ? ["bluesky" as const] : []),
-  ];
-  const gatedConnected = allProviders.filter(
+  const gatedConnected = connectedSnap.providers.filter(
     (p) => PLATFORM_GATING[p] === "pending_approval",
   );
 

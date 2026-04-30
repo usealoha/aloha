@@ -5,22 +5,18 @@ import { ChannelToggle } from "@/components/channel-chip";
 import { DatePicker } from "@/components/ui/date-picker";
 import { db } from "@/db";
 import {
-	accounts,
-	blueskyCredentials,
 	brandVoice,
 	feedItems,
 	feeds,
 	ideas,
-	mastodonCredentials,
 	platformInsights,
-	telegramCredentials,
 } from "@/db/schema";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
+import { getConnectedProviders } from "@/lib/channels/connected";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasRole, ROLES } from "@/lib/workspaces/roles";
 import { cn } from "@/lib/utils";
-import { and, count, eq, isNotNull, ne, notInArray } from "drizzle-orm";
+import { and, count, eq, isNotNull, ne } from "drizzle-orm";
 import {
 	ArrowLeft,
 	BarChart3,
@@ -46,68 +42,35 @@ export default async function NewCampaignPage() {
 	}
 
 	const [
-		connected,
-		blueskyRows,
-		mastodonRows,
-		telegramRows,
+		connectedProviders,
 		ideaCount,
 		feedItemCount,
 		insightCount,
 		voiceRow,
 	] = await Promise.all([
-			db
-				.selectDistinct({ provider: accounts.provider })
-				.from(accounts)
-				.where(
-					and(
-						eq(accounts.workspaceId, workspace.id),
-						notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-					),
-				),
-			db
-				.select({ id: blueskyCredentials.id })
-				.from(blueskyCredentials)
-				.where(eq(blueskyCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({ id: mastodonCredentials.id })
-				.from(mastodonCredentials)
-				.where(eq(mastodonCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({ id: telegramCredentials.id })
-				.from(telegramCredentials)
-				.where(eq(telegramCredentials.workspaceId, workspace.id))
-				.limit(1),
-			db
-				.select({ value: count() })
-				.from(ideas)
-				.where(and(eq(ideas.workspaceId, workspace.id), ne(ideas.status, "archived"))),
-			db
-				.select({ value: count() })
-				.from(feedItems)
-				.innerJoin(feeds, eq(feedItems.feedId, feeds.id))
-				.where(
-					and(eq(feeds.workspaceId, workspace.id), isNotNull(feedItems.savedAsIdeaId)),
-				),
-			db
-				.select({ value: count() })
-				.from(platformInsights)
-				.where(eq(platformInsights.workspaceId, workspace.id)),
-			db
-				.select({ id: brandVoice.id })
-				.from(brandVoice)
-				.where(eq(brandVoice.workspaceId, workspace.id))
-				.limit(1),
-		]);
-	const channels = Array.from(
-		new Set<string>([
-			...connected.map((c) => c.provider),
-			...(blueskyRows.length > 0 ? ["bluesky"] : []),
-			...(mastodonRows.length > 0 ? ["mastodon"] : []),
-			...(telegramRows.length > 0 ? ["telegram"] : []),
-		]),
-	);
+		getConnectedProviders(workspace.id),
+		db
+			.select({ value: count() })
+			.from(ideas)
+			.where(and(eq(ideas.workspaceId, workspace.id), ne(ideas.status, "archived"))),
+		db
+			.select({ value: count() })
+			.from(feedItems)
+			.innerJoin(feeds, eq(feedItems.feedId, feeds.id))
+			.where(
+				and(eq(feeds.workspaceId, workspace.id), isNotNull(feedItems.savedAsIdeaId)),
+			),
+		db
+			.select({ value: count() })
+			.from(platformInsights)
+			.where(eq(platformInsights.workspaceId, workspace.id)),
+		db
+			.select({ id: brandVoice.id })
+			.from(brandVoice)
+			.where(eq(brandVoice.workspaceId, workspace.id))
+			.limit(1),
+	]);
+	const channels = [...connectedProviders];
 	const research = {
 		ideas: Number(ideaCount[0]?.value ?? 0),
 		feedItems: Number(feedItemCount[0]?.value ?? 0),

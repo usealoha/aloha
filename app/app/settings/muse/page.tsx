@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, desc, eq, ne, notInArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, ne, or, sql } from "drizzle-orm";
 import {
   BookOpen,
   Check,
@@ -11,17 +11,13 @@ import {
 } from "lucide-react";
 import { db } from "@/db";
 import {
-  accounts,
-  blueskyCredentials,
   brandCorpus,
   ideas,
-  mastodonCredentials,
   notionCredentials,
   platformContentCache,
   posts,
-  telegramCredentials,
 } from "@/db/schema";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import { getConnectedProviders } from "@/lib/channels/connected";
 import { trainVoiceAction } from "@/app/actions/voice";
 import {
   syncNotionAction,
@@ -131,44 +127,9 @@ export default async function MuseSettingsPage() {
         ),
       )
       .then((rows) => rows[0]?.count ?? 0),
-    // Enumerate every connected channel — OAuth providers plus the per-provider
-    // credential tables. A channel with zero posts still needs a row in the
-    // tuning list so the user sees it counting up toward the threshold.
-    Promise.all([
-      db
-        .select({ provider: accounts.provider })
-        .from(accounts)
-        .where(
-          and(
-            eq(accounts.workspaceId, workspace.id),
-            notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-          ),
-        ),
-      db
-        .select({ id: blueskyCredentials.id })
-        .from(blueskyCredentials)
-        .where(eq(blueskyCredentials.workspaceId, workspace.id))
-        .limit(1),
-      db
-        .select({ id: mastodonCredentials.id })
-        .from(mastodonCredentials)
-        .where(eq(mastodonCredentials.workspaceId, workspace.id))
-        .limit(1),
-      db
-        .select({ id: telegramCredentials.id })
-        .from(telegramCredentials)
-        .where(eq(telegramCredentials.workspaceId, workspace.id))
-        .limit(1),
-    ]).then(([oauthRows, blueskyRows, mastodonRows, telegramRows]) =>
-      Array.from(
-        new Set<string>([
-          ...oauthRows.map((r) => r.provider),
-          ...(blueskyRows.length > 0 ? ["bluesky"] : []),
-          ...(mastodonRows.length > 0 ? ["mastodon"] : []),
-          ...(telegramRows.length > 0 ? ["telegram"] : []),
-        ]),
-      ),
-    ),
+    // Enumerate every connected channel so a zero-post channel still gets a
+    // row in the tuning list (the threshold UI counts up from there).
+    getConnectedProviders(workspace.id),
   ]);
 
   // Combined per-channel sample counts (cached readback + internal Aloha
