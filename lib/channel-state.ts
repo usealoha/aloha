@@ -11,15 +11,10 @@
 // settings UI both consult. Flip a platform's gating to "ready" here when
 // the corresponding platform review lands — no other code should care.
 
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  accounts,
-  blueskyCredentials,
-  channelStates,
-  mastodonCredentials,
-} from "@/db/schema";
-import { AUTH_ONLY_PROVIDERS } from "@/lib/auth-providers";
+import { channelStates } from "@/db/schema";
+import { getConnectedChannels } from "@/lib/channels/connected";
 import { requireActiveWorkspaceId } from "@/lib/workspaces/resolve";
 import type {
   EffectiveState,
@@ -199,26 +194,8 @@ export async function getEffectiveStatesForUser(
   userId: string,
 ): Promise<Record<string, EffectiveState>> {
   const workspaceId = await requireActiveWorkspaceId(userId);
-  const [oauthRows, blueskyRow, mastodonRow, stateRows] = await Promise.all([
-    db
-      .select({ provider: accounts.provider })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.workspaceId, workspaceId),
-          notInArray(accounts.provider, AUTH_ONLY_PROVIDERS),
-        ),
-      ),
-    db
-      .select({ id: blueskyCredentials.id })
-      .from(blueskyCredentials)
-      .where(eq(blueskyCredentials.workspaceId, workspaceId))
-      .limit(1),
-    db
-      .select({ id: mastodonCredentials.id })
-      .from(mastodonCredentials)
-      .where(eq(mastodonCredentials.workspaceId, workspaceId))
-      .limit(1),
+  const [snapshot, stateRows] = await Promise.all([
+    getConnectedChannels(workspaceId),
     db
       .select({
         channel: channelStates.channel,
@@ -230,9 +207,7 @@ export async function getEffectiveStatesForUser(
       .where(eq(channelStates.workspaceId, workspaceId)),
   ]);
 
-  const connected = new Set<string>(oauthRows.map((r) => r.provider));
-  if (blueskyRow.length > 0) connected.add("bluesky");
-  if (mastodonRow.length > 0) connected.add("mastodon");
+  const connected = snapshot.providerSet;
 
   const overrides = new Map<string, ChannelStateRow>(
     stateRows.map((r) => [
