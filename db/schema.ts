@@ -159,6 +159,11 @@ export const workspaces = pgTable("workspaces", {
   // remain visible but block publish/invite mutations. Cleared when the
   // owner either deletes enough workspaces or buys back the seats.
   frozenAt: timestamp("frozenAt", { mode: "date" }),
+  // Every new workspace gets a 30-day Basic trial. After trialEndsAt the
+  // workspace drops to view-only (publish + AI generation gated) unless the
+  // owner has an active paid subscription. NULL = legacy row predating trial
+  // tracking; treated as an expired trial by callers (paid sub overrides).
+  trialEndsAt: timestamp("trialEndsAt", { mode: "date" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -257,7 +262,15 @@ export const subscriptions = pgTable("subscriptions", {
   //                       Seats = extra member slots beyond the per-workspace
   //                       included allowance (5 base + 3 × workspace_addon).
   productKey: text("productKey", {
-    enum: ["basic", "bundle", "workspace_addon", "member_addon"],
+    enum: [
+      "basic",
+      "bundle",
+      "workspace_addon",
+      "member_addon",
+      // Recurring credit-boost subscription. Each renewal grants
+      // CREDIT_BOOST_AMOUNT credits on top of the plan's monthly grant.
+      "credits_boost",
+    ],
   }).notNull(),
   status: text("status", {
     enum: [
@@ -274,6 +287,34 @@ export const subscriptions = pgTable("subscriptions", {
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+// Per-account credit ledger. Every grant, consume, top-up, or admin
+// adjustment is one row; the running balance is sum(delta) since the
+// most recent `monthly_grant` row for the owner. Period rollover happens
+// lazily when a consume/read sees that the latest grant is >= 30 days old.
+//
+// Scope: account-level (ownerUserId). `workspaceId` is metadata so the
+// owner admin view can break down spend by tenant — it does NOT change
+// the balance pool.
+export const creditLedger = pgTable("credit_ledger", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerUserId: uuid("ownerUserId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Signed integer. Positive on grants/top-ups, negative on consumes.
+  delta: integer("delta").notNull(),
+  reason: text("reason", {
+    enum: ["monthly_grant", "topup", "consume", "expire", "admin_adjust"],
+  }).notNull(),
+  // AI feature key on consume rows (e.g. "ai.refine"). Null for grants.
+  feature: text("feature"),
+  // Tenant the consume happened in — purely informational, not a scope
+  // boundary. Null for account-wide events (grants, top-ups).
+  workspaceId: uuid("workspaceId").references(() => workspaces.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export const accounts = pgTable(

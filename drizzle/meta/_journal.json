@@ -281,6 +281,20 @@
       "when": 1777443036841,
       "tag": "0039_sweet_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1777581271307,
+      "tag": "0040_yielding_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1777582205839,
+      "tag": "0041_cool_layla_miller",
+      "breakpoints": true
     }
   ]
 }
