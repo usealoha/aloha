@@ -78,6 +78,7 @@ import {
 	Info,
 	Layers,
 	Loader2,
+	Lock,
 	Paperclip,
 	Plug,
 	RotateCcw,
@@ -232,6 +233,7 @@ export function Composer({
 	connectedProviders,
 	channelProfiles = {},
 	museAccess,
+	publishAllowed = true,
 	bestWindows,
 	channelStates,
 	initialContent = "",
@@ -251,6 +253,10 @@ export function Composer({
 	connectedProviders: string[];
 	channelProfiles?: Record<string, ChannelProfileView>;
 	museAccess: boolean;
+	// False when the workspace's trial has expired without a paid sub.
+	// Schedule + Publish buttons disable; AI generation also throws but is
+	// gated server-side via the credits balance.
+	publishAllowed?: boolean;
 	bestWindows: Record<string, BestWindow[]>;
 	channelStates: Record<string, EffectiveState>;
 	initialContent?: string;
@@ -998,9 +1004,17 @@ export function Composer({
 		<div className="space-y-8 pb-12">
 			{/* Page header: eyebrow + title (actions live inside the editor card) */}
 			<header>
-				<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
-					{isEditing ? headerEyebrowForStatus(initialStatus) : "New post"}
-				</p>
+				<div className="flex flex-wrap items-center gap-2">
+					<p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink/55">
+						{isEditing ? headerEyebrowForStatus(initialStatus) : "New post"}
+					</p>
+					{!publishAllowed ? (
+						<span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-peach-100/70 text-[10.5px] font-mono uppercase tracking-[0.14em] text-ink">
+							<Lock className="w-3 h-3" />
+							View only
+						</span>
+					) : null}
+				</div>
 				<h1 className="mt-3 font-display text-[44px] lg:text-[52px] leading-[1.02] tracking-[-0.03em] text-ink font-normal">
 					{isEditing ? (
 						<>
@@ -1015,8 +1029,9 @@ export function Composer({
 					)}
 				</h1>
 				<p className="mt-3 text-[14px] text-ink/65 max-w-xl leading-[1.55]">
-					Write once, pick your channels, schedule or ship. Muse can help
-					with hooks, hashtags, and images as you go.
+					{publishAllowed
+						? "Write once, pick your channels, schedule or ship. Muse can help with hooks, hashtags, and images as you go."
+						: "Trial ended — you can keep drafting, but publishing is paused until you upgrade."}
 				</p>
 			</header>
 
@@ -1425,10 +1440,14 @@ export function Composer({
 									open={showSchedule}
 									setOpen={setShowSchedule}
 									onConfirm={handleSchedule}
-									disabled={isPublishing}
+									disabled={isPublishing || !publishAllowed}
 									busy={isPublishing && scheduledAt !== ""}
 									timezone={author.timezone}
-									hint={scheduleHint}
+									hint={
+										publishAllowed
+											? scheduleHint
+											: "Trial ended — upgrade to schedule posts."
+									}
 									iconOnly
 								/>
 							) : null}
@@ -1440,7 +1459,7 @@ export function Composer({
 											<button
 												type="button"
 												onClick={handlePublishNow}
-												disabled={isPublishing}
+												disabled={isPublishing || !publishAllowed}
 												aria-label="Publish"
 												className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-background hover:bg-primary disabled:opacity-40 disabled:hover:bg-ink transition-colors"
 											>
@@ -1453,9 +1472,11 @@ export function Composer({
 										}
 									/>
 									<TooltipContent>
-										{notifyOnlySelected.length > 0
-											? `Publish to ${publishableSelected.map((p) => p.name).join(", ")}. ${notifyOnlySelected.map((p) => p.name).join(", ")} need a schedule to get a reminder.`
-											: `Publish to ${publishableSelected.map((p) => p.name).join(", ")}`}
+										{!publishAllowed
+											? "Trial ended — upgrade to publish."
+											: notifyOnlySelected.length > 0
+												? `Publish to ${publishableSelected.map((p) => p.name).join(", ")}. ${notifyOnlySelected.map((p) => p.name).join(", ")} need a schedule to get a reminder.`
+												: `Publish to ${publishableSelected.map((p) => p.name).join(", ")}`}
 									</TooltipContent>
 								</Tooltip>
 							) : null}

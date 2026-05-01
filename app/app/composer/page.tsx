@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasMuseInviteEntitlement } from "@/lib/billing/muse";
+import { canPublish } from "@/lib/billing/trial";
 import { db } from "@/db";
 import {
   channelProfiles,
@@ -40,11 +41,12 @@ export default async function ComposerPage({
 
   const timezone = workspace.timezone ?? user.timezone ?? "UTC";
 
-  const [connectedProviders, bestWindows, channelStates, museAccess, profileRows] = await Promise.all([
+  const [connectedProviders, bestWindows, channelStates, museAccess, publishAllowed, profileRows] = await Promise.all([
     getConnectedProviders(workspace.id),
     getBestWindowsForUser(user.id, timezone),
     getEffectiveStatesForUser(user.id),
     hasMuseInviteEntitlement(user.id),
+    canPublish(workspace.id, workspace.ownerUserId),
     db
       .select({
         channel: channelProfiles.channel,
@@ -160,6 +162,7 @@ export default async function ComposerPage({
       connectedProviders={[...connectedProviders]}
       channelProfiles={channelProfilesById}
       museAccess={museAccess}
+      publishAllowed={publishAllowed}
       bestWindows={bestWindows}
       channelStates={channelStates}
       initialContent={initialContent}
