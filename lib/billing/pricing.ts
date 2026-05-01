@@ -27,21 +27,42 @@ export const FREE_TIER_CHANNELS = 3;
 // Yearly prices apply ANNUAL_DISCOUNT (≈2 months free), matching the base
 // plan's yearly discount ratio. Kept here so scripts/polar-setup.ts and
 // the UI preview always agree on the number.
-export const WORKSPACE_ADDON_MONTHLY_USD = 25;
+export const WORKSPACE_ADDON_MONTHLY_USD = 10;
 export const WORKSPACE_ADDON_YEARLY_USD =
   Math.round(WORKSPACE_ADDON_MONTHLY_USD * 12 * (1 - ANNUAL_DISCOUNT));
 export const MEMBER_ADDON_MONTHLY_USD = 3;
 export const MEMBER_ADDON_YEARLY_USD =
   Math.round(MEMBER_ADDON_MONTHLY_USD * 12 * (1 - ANNUAL_DISCOUNT));
 
-// A workspace add-on seat bundles these quotas alongside the new tenant.
-// Consumed by lib/billing/workspace-limits.ts to compute real entitlements.
-export const WORKSPACE_ADDON_CHANNELS_INCLUDED = 3;
-export const WORKSPACE_ADDON_MEMBERS_INCLUDED = 3;
+// Workspace add-ons are pure tenants now — no bundled channels or members.
+// Each add-on workspace buys its own channels independently and shares the
+// account-pooled member seat quota.
+export const WORKSPACE_ADDON_CHANNELS_INCLUDED = 0;
+export const WORKSPACE_ADDON_MEMBERS_INCLUDED = 0;
 
 // Base paid-plan included allowances.
 export const BASE_PLAN_WORKSPACES_INCLUDED = 1;
 export const BASE_PLAN_MEMBERS_INCLUDED = 5;
+
+// Free Basic trial granted to every new workspace. After this expires the
+// workspace drops into a view-only state until upgraded.
+export const TRIAL_DAYS = 30;
+
+// Credit purchase SKUs.
+//
+// Top-up: one-off purchase. Stacks on the current period and decays with
+// the next monthly_grant rollover (no roll-over by design — keeps revenue
+// predictable + the metered nature honest).
+//
+// Boost: recurring monthly subscription. Each renewal grants additional
+// credits on top of the plan's normal monthly grant. Cancel-at-period-end
+// keeps the last grant intact through the period.
+export const CREDIT_TOPUP_AMOUNT = 500;
+export const CREDIT_TOPUP_USD = 8;
+export const CREDIT_BOOST_AMOUNT = 2000;
+export const CREDIT_BOOST_MONTHLY_USD = 20;
+export const CREDIT_BOOST_YEARLY_USD =
+  Math.round(CREDIT_BOOST_MONTHLY_USD * 12 * (1 - ANNUAL_DISCOUNT));
 
 export function bandFor(position: number): Band {
 	return BANDS.find((b) => position >= b.from && position <= b.to) ?? BANDS[BANDS.length - 1];

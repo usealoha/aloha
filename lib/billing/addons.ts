@@ -18,6 +18,7 @@ import {
 	productSlot,
 	type Interval,
 	type ProductKey,
+	type SubscriptionProductKey,
 } from "./products";
 import { reconcileOwnerQuota } from "./quota-reconciler";
 import { env } from "@/lib/env";
@@ -69,7 +70,10 @@ async function resolveBaseInterval(userId: string): Promise<Interval | null> {
 // Finds an existing active/past_due add-on subscription of the given
 // productKey on the given workspace. Returns null if none exists —
 // caller should spin up a checkout in that case.
-async function findAddonSub(workspaceId: string, productKey: ProductKey) {
+async function findAddonSub(
+	workspaceId: string,
+	productKey: SubscriptionProductKey,
+) {
 	const [row] = await db
 		.select({
 			id: subscriptions.id,
@@ -187,13 +191,16 @@ export async function removeWorkspaceAddonSeats(
 	return { seats: nextSeats, canceledAtPeriodEnd: false };
 }
 
-// ---------- Member add-on (per-workspace) ---------------------------------
+// ---------- Member add-on (account-pooled) --------------------------------
 
-// Adds `count` member-addon seats on a specific workspace. Caller must
-// have already authorized (role check at the server action layer).
+// One human = one seat at the account level. Member add-on subscriptions
+// always anchor to the owner's billing workspace; the seat pool is summed
+// across the whole account regardless of which workspace's row carries
+// the row. Legacy per-workspace member_addon rows continue to count via
+// getAccountSeats — we just never create new ones outside the billing ws.
+
 export async function addMemberAddonSeats(
 	userId: string,
-	workspaceId: string,
 	count: number,
 ): Promise<AddonPurchaseResult> {
 	if (count < 1) throw new Error("Must add at least one seat.");
@@ -204,7 +211,7 @@ export async function addMemberAddonSeats(
 		throw new Error("A paid base plan is required before buying add-ons.");
 	}
 
-	const existing = await findAddonSub(workspaceId, "member_addon");
+	const existing = await findAddonSub(ctx.workspaceId, "member_addon");
 	if (existing) {
 		const nextSeats = existing.seats + count;
 		await polar.subscriptions.update({
@@ -222,14 +229,12 @@ export async function addMemberAddonSeats(
 	const checkout = await polar.checkouts.create({
 		products: [productId(slot)],
 		seats: count,
-		// member_addon is scoped to the target workspace — stamp it so
-		// the webhook reconciler writes the row against the right one.
 		externalCustomerId: ctx.workspaceId,
 		customerEmail: ctx.email,
 		customerName: ctx.name ?? undefined,
 		successUrl: `${env.APP_URL}/app/settings/billing?addon=member&success=1`,
 		metadata: {
-			internal_workspace_id: workspaceId,
+			internal_workspace_id: ctx.workspaceId,
 			internal_user_id: ctx.userId,
 			addon: "member_addon",
 			interval,
@@ -240,22 +245,13 @@ export async function addMemberAddonSeats(
 
 export async function removeMemberAddonSeats(
 	userId: string,
-	workspaceId: string,
 	count: number,
 ): Promise<{ seats: number; canceledAtPeriodEnd: boolean }> {
 	if (count < 1) throw new Error("Must remove at least one seat.");
-	const existing = await findAddonSub(workspaceId, "member_addon");
+	const ctx = await loadBillingContext(userId);
+	if (!ctx) throw new Error("No billing workspace for user.");
+	const existing = await findAddonSub(ctx.workspaceId, "member_addon");
 	if (!existing) throw new Error("No member add-on subscription to modify.");
-
-	// Ownership check: caller's context must match the target workspace's
-	// owner. This prevents an admin in workspace A from yanking seats off
-	// workspace B via a crafted payload.
-	const [ws] = await db
-		.select({ ownerUserId: workspaces.ownerUserId })
-		.from(workspaces)
-		.where(eq(workspaces.id, workspaceId))
-		.limit(1);
-	if (!ws) throw new Error("Workspace not found.");
 
 	const nextSeats = Math.max(0, existing.seats - count);
 
@@ -280,4 +276,98 @@ export async function removeMemberAddonSeats(
 		.set({ seats: nextSeats, updatedAt: new Date() })
 		.where(eq(subscriptions.id, existing.id));
 	return { seats: nextSeats, canceledAtPeriodEnd: false };
+}
+
+// ---------- Credit boost (recurring monthly) ------------------------------
+
+// Subscribe the owner to the recurring credit boost. First-time purchase
+// returns a Polar checkout URL; the webhook handler grants credits on
+// each renewal. Subsequent calls (already subscribed) are a no-op.
+export async function startCreditBoost(
+	userId: string,
+): Promise<AddonPurchaseResult> {
+	const ctx = await loadBillingContext(userId);
+	if (!ctx) throw new Error("No billing workspace for user.");
+	const interval = await resolveBaseInterval(userId);
+	if (!interval) {
+		throw new Error("A paid base plan is required before subscribing to a credit boost.");
+	}
+
+	const existing = await findAddonSub(ctx.workspaceId, "credits_boost");
+	if (existing) {
+		// If the boost was set to cancel at period end, resume it instead
+		// of opening a duplicate checkout.
+		await polar.subscriptions.update({
+			id: existing.polarSubscriptionId,
+			subscriptionUpdate: { cancelAtPeriodEnd: false },
+		});
+		await db
+			.update(subscriptions)
+			.set({ cancelAtPeriodEnd: false, updatedAt: new Date() })
+			.where(eq(subscriptions.id, existing.id));
+		return { kind: "updated", seats: existing.seats };
+	}
+
+	const slot = productSlot("credits_boost", interval);
+	const checkout = await polar.checkouts.create({
+		products: [productId(slot)],
+		seats: 1,
+		externalCustomerId: ctx.workspaceId,
+		customerEmail: ctx.email,
+		customerName: ctx.name ?? undefined,
+		successUrl: `${env.APP_URL}/app/settings/billing?addon=credits_boost&success=1`,
+		metadata: {
+			internal_workspace_id: ctx.workspaceId,
+			internal_user_id: ctx.userId,
+			addon: "credits_boost",
+			interval,
+		},
+	});
+	return { kind: "checkout", url: checkout.url };
+}
+
+// Set the boost to cancel at period end. The user keeps the boost grant
+// they already received this period. The webhook stops granting on the
+// next renewal because the subscription will be canceled by then.
+export async function stopCreditBoost(
+	userId: string,
+): Promise<{ canceledAtPeriodEnd: true } | { canceledAtPeriodEnd: false; reason: string }> {
+	const ctx = await loadBillingContext(userId);
+	if (!ctx) throw new Error("No billing workspace for user.");
+	const existing = await findAddonSub(ctx.workspaceId, "credits_boost");
+	if (!existing) {
+		return { canceledAtPeriodEnd: false, reason: "No active credit boost to cancel." };
+	}
+	await polar.subscriptions.update({
+		id: existing.polarSubscriptionId,
+		subscriptionUpdate: { cancelAtPeriodEnd: true },
+	});
+	await db
+		.update(subscriptions)
+		.set({ cancelAtPeriodEnd: true, updatedAt: new Date() })
+		.where(eq(subscriptions.id, existing.id));
+	return { canceledAtPeriodEnd: true };
+}
+
+// ---------- Credit top-up (one-off) --------------------------------------
+
+// Open a Polar checkout for a single top-up. Polar fires order.paid on
+// success; the webhook handler grants credits to the buyer's ledger.
+export async function purchaseCreditTopUp(userId: string): Promise<{ url: string }> {
+	const ctx = await loadBillingContext(userId);
+	if (!ctx) throw new Error("No billing workspace for user.");
+
+	const checkout = await polar.checkouts.create({
+		products: [productId("credits_topup")],
+		externalCustomerId: ctx.workspaceId,
+		customerEmail: ctx.email,
+		customerName: ctx.name ?? undefined,
+		successUrl: `${env.APP_URL}/app/settings/billing?addon=credits_topup&success=1`,
+		metadata: {
+			internal_workspace_id: ctx.workspaceId,
+			internal_user_id: ctx.userId,
+			addon: "credits_topup",
+		},
+	});
+	return { url: checkout.url };
 }

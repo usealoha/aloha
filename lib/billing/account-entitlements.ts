@@ -10,13 +10,12 @@
 // Model:
 //   - Base plan ("basic" / "bundle") lives on a specific workspace and
 //     provides channel seats for that workspace.
-//   - "workspace_addon" seats live on any workspace the owner owns
-//     (typically the primary billing workspace). Each seat:
-//       * grants permission to own one extra workspace, AND
-//       * implicitly adds +3 channels and +3 member slots to any one
-//         add-on workspace (see applyAddonBundling below).
-//   - "member_addon" seats are per-workspace; each seat adds one member
-//     slot to that workspace's allowance.
+//   - "workspace_addon" seats grant the right to own additional
+//     workspaces. Each new workspace buys its own channels independently;
+//     no channels or members are bundled with the workspace add-on.
+//   - "member_addon" seats are per-workspace today (account-pooled in a
+//     later phase); each seat adds one member slot to that workspace's
+//     allowance.
 
 import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { db } from "@/db";
@@ -30,8 +29,6 @@ import {
 	BASE_PLAN_MEMBERS_INCLUDED,
 	BASE_PLAN_WORKSPACES_INCLUDED,
 	FREE_TIER_CHANNELS,
-	WORKSPACE_ADDON_CHANNELS_INCLUDED,
-	WORKSPACE_ADDON_MEMBERS_INCLUDED,
 } from "./pricing";
 
 const FREE_TIER_MEMBERS = 3;
@@ -56,21 +53,26 @@ export type WorkspaceQuota = {
 	hasBasePlan: boolean; // this workspace has its own basic/bundle sub
 	hasAddonCoverage: boolean; // owner has workspace_addon seats
 	channels: {
-		included: number; // free slots (FREE_TIER / addon bundling / 0)
+		included: number; // free slots (FREE_TIER / 0 for add-on tenants)
 		paidSeats: number; // base sub seats on this workspace
 		total: number;
 		// `used` is supplied by the caller since "channels connected" lives
 		// across multiple credential/account tables.
 	};
-	members: {
-		included: number; // free-tier or base-plan included slots
-		addonSeats: number; // member_addon seats on this workspace
-		total: number;
-		members: number; // accepted memberships only
-		pendingInvites: number; // non-expired, non-revoked invites
-		used: number; // members + pendingInvites
-		remaining: number;
-	};
+};
+
+// Account-level seat pool. One seat = one human, assignable to any number
+// of workspaces the owner controls. Replaces the old per-workspace member
+// quota: a teammate added to three of your workspaces still consumes
+// exactly one seat.
+export type AccountSeats = {
+	included: number; // BASE_PLAN_MEMBERS_INCLUDED (paid) or FREE_TIER_MEMBERS
+	addonSeats: number; // sum of member_addon seats across owned workspaces
+	total: number;
+	used: number; // distinct accepted member user IDs across all owned workspaces
+	pendingInvites: number; // distinct pending-invite emails across owned workspaces
+	consumed: number; // used + pendingInvites
+	remaining: number;
 };
 
 // Fetches every subscription row on every workspace the user owns. Used
@@ -109,7 +111,12 @@ async function loadOwnedSubscriptions(userId: string) {
 type SubRow = {
 	id: string;
 	workspaceId: string;
-	productKey: "basic" | "bundle" | "workspace_addon" | "member_addon";
+	productKey:
+		| "basic"
+		| "bundle"
+		| "workspace_addon"
+		| "member_addon"
+		| "credits_boost";
 	status: "incomplete" | "active" | "past_due" | "canceled" | "revoked";
 	seats: number;
 };
@@ -167,26 +174,7 @@ export async function getWorkspaceQuota(
 		throw new Error(`Workspace ${workspaceId} not found`);
 	}
 
-	const [ownerSubs, memberCount, pendingCount] = await Promise.all([
-		loadOwnedSubscriptions(ws.ownerUserId),
-		db
-			.select({ userId: workspaceMembers.userId })
-			.from(workspaceMembers)
-			.where(eq(workspaceMembers.workspaceId, workspaceId))
-			.then((rows) => rows.length),
-		db
-			.select({ id: workspaceInvites.id })
-			.from(workspaceInvites)
-			.where(
-				and(
-					eq(workspaceInvites.workspaceId, workspaceId),
-					isNull(workspaceInvites.acceptedAt),
-					isNull(workspaceInvites.revokedAt),
-					gt(workspaceInvites.expiresAt, new Date()),
-				),
-			)
-			.then((rows) => rows.length),
-	]);
+	const ownerSubs = await loadOwnedSubscriptions(ws.ownerUserId);
 
 	const isOwnerPaid = ownerSubs.rows.some(
 		(r) => r.productKey === "basic" || r.productKey === "bundle",
@@ -203,10 +191,8 @@ export async function getWorkspaceQuota(
 
 	// Channel included allowance per workspace:
 	//   - Has its own base sub: 0 free (seats carry total channels).
-	//   - Is an add-on workspace (owner has workspace_addon seats,
-	//     this workspace is not the primary): 3 free from the add-on.
+	//   - Is an add-on tenant: 0 free (channels are bought independently).
 	//   - Free tier primary: FREE_TIER_CHANNELS.
-	// Note: `paidSeats` is the base sub's seat count on THIS workspace.
 	const basePlanSeats = ownerSubs.rows
 		.filter(
 			(r) =>
@@ -215,36 +201,8 @@ export async function getWorkspaceQuota(
 		)
 		.reduce((sum, r) => sum + r.seats, 0);
 
-	let channelsIncluded: number;
-	if (hasBasePlan) {
-		// Seats already carry the full allowance.
-		channelsIncluded = 0;
-	} else if (hasAddonCoverage) {
-		channelsIncluded = WORKSPACE_ADDON_CHANNELS_INCLUDED;
-	} else {
-		channelsIncluded = FREE_TIER_CHANNELS;
-	}
-
-	// Member included allowance per workspace:
-	//   - This workspace has base plan: BASE_PLAN_MEMBERS_INCLUDED (5).
-	//   - Add-on covered: WORKSPACE_ADDON_MEMBERS_INCLUDED (3).
-	//   - Free tier: FREE_TIER_MEMBERS (3).
-	const membersIncluded = hasBasePlan
-		? BASE_PLAN_MEMBERS_INCLUDED
-		: hasAddonCoverage
-			? WORKSPACE_ADDON_MEMBERS_INCLUDED
-			: FREE_TIER_MEMBERS;
-
-	const memberAddonSeats = ownerSubs.rows
-		.filter(
-			(r) =>
-				r.productKey === "member_addon" &&
-				r.workspaceId === workspaceId,
-		)
-		.reduce((sum, r) => sum + r.seats, 0);
-
-	const memberTotal = membersIncluded + memberAddonSeats;
-	const memberUsed = memberCount + pendingCount;
+	const channelsIncluded =
+		hasBasePlan || hasAddonCoverage ? 0 : FREE_TIER_CHANNELS;
 
 	return {
 		workspaceId,
@@ -256,14 +214,67 @@ export async function getWorkspaceQuota(
 			paidSeats: basePlanSeats,
 			total: channelsIncluded + basePlanSeats,
 		},
-		members: {
-			included: membersIncluded,
-			addonSeats: memberAddonSeats,
-			total: memberTotal,
-			members: memberCount,
-			pendingInvites: pendingCount,
-			used: memberUsed,
-			remaining: Math.max(0, memberTotal - memberUsed),
-		},
+	};
+}
+
+// Account-level seat pool resolver. Sums member_addon seats across every
+// workspace the owner controls and counts distinct human heads (members +
+// pending invites by email) across the same set. One human in N workspaces
+// still costs one seat.
+export async function getAccountSeats(userId: string): Promise<AccountSeats> {
+	const { workspaceIds, rows } = await loadOwnedSubscriptions(userId);
+
+	const isPaid = rows.some(
+		(r) => r.productKey === "basic" || r.productKey === "bundle",
+	);
+	const included = isPaid ? BASE_PLAN_MEMBERS_INCLUDED : FREE_TIER_MEMBERS;
+
+	const addonSeats = rows
+		.filter((r) => r.productKey === "member_addon")
+		.reduce((sum, r) => sum + r.seats, 0);
+
+	if (workspaceIds.length === 0) {
+		const total = included + addonSeats;
+		return {
+			included,
+			addonSeats,
+			total,
+			used: 0,
+			pendingInvites: 0,
+			consumed: 0,
+			remaining: total,
+		};
+	}
+
+	const memberRows = await db
+		.selectDistinct({ userId: workspaceMembers.userId })
+		.from(workspaceMembers)
+		.where(inArray(workspaceMembers.workspaceId, workspaceIds));
+
+	const inviteRows = await db
+		.selectDistinct({ email: workspaceInvites.email })
+		.from(workspaceInvites)
+		.where(
+			and(
+				inArray(workspaceInvites.workspaceId, workspaceIds),
+				isNull(workspaceInvites.acceptedAt),
+				isNull(workspaceInvites.revokedAt),
+				gt(workspaceInvites.expiresAt, new Date()),
+			),
+		);
+
+	const used = memberRows.length;
+	const pendingInvites = inviteRows.length;
+	const consumed = used + pendingInvites;
+	const total = included + addonSeats;
+
+	return {
+		included,
+		addonSeats,
+		total,
+		used,
+		pendingInvites,
+		consumed,
+		remaining: Math.max(0, total - consumed),
 	};
 }

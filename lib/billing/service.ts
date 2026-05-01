@@ -6,7 +6,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { subscriptions, users, workspaces } from "@/db/schema";
 import { polar } from "./polar";
-import { productId, productSlot, type Interval, type ProductKey } from "./products";
+import {
+	productId,
+	productSlot,
+	type Interval,
+	type ProductKey,
+	type SubscriptionProductKey,
+} from "./products";
 import { env } from "@/lib/env";
 
 // Resolves the billing workspace for a given user. Billing rides on the
@@ -390,7 +396,9 @@ export async function upsertSubscriptionFromPolar(payload: {
 	}
 }
 
-function productKeyFromPolarProductId(id: string): ProductKey | null {
+function productKeyFromPolarProductId(
+	id: string,
+): SubscriptionProductKey | null {
 	if (id === env.POLAR_PRODUCT_BASIC_MONTH || id === env.POLAR_PRODUCT_BASIC_YEAR) {
 		return "basic";
 	}
@@ -409,6 +417,14 @@ function productKeyFromPolarProductId(id: string): ProductKey | null {
 	) {
 		return "member_addon";
 	}
+	if (
+		id === env.POLAR_PRODUCT_CREDITS_BOOST_MONTH ||
+		id === env.POLAR_PRODUCT_CREDITS_BOOST_YEAR
+	) {
+		return "credits_boost";
+	}
+	// credits_topup is intentionally not handled here — it's a one-off
+	// order, not a subscription. The webhook handles order.paid separately.
 	return null;
 }
 
@@ -417,7 +433,8 @@ function intervalFromPolarProductId(id: string): Interval | null {
 		id === env.POLAR_PRODUCT_BASIC_MONTH ||
 		id === env.POLAR_PRODUCT_BUNDLE_MONTH ||
 		id === env.POLAR_PRODUCT_WORKSPACE_ADDON_MONTH ||
-		id === env.POLAR_PRODUCT_MEMBER_ADDON_MONTH
+		id === env.POLAR_PRODUCT_MEMBER_ADDON_MONTH ||
+		id === env.POLAR_PRODUCT_CREDITS_BOOST_MONTH
 	) {
 		return "month";
 	}
@@ -425,7 +442,8 @@ function intervalFromPolarProductId(id: string): Interval | null {
 		id === env.POLAR_PRODUCT_BASIC_YEAR ||
 		id === env.POLAR_PRODUCT_BUNDLE_YEAR ||
 		id === env.POLAR_PRODUCT_WORKSPACE_ADDON_YEAR ||
-		id === env.POLAR_PRODUCT_MEMBER_ADDON_YEAR
+		id === env.POLAR_PRODUCT_MEMBER_ADDON_YEAR ||
+		id === env.POLAR_PRODUCT_CREDITS_BOOST_YEAR
 	) {
 		return "year";
 	}

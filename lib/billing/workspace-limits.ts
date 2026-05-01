@@ -8,7 +8,7 @@
 
 import {
 	getAccountEntitlements,
-	getWorkspaceQuota,
+	getAccountSeats,
 } from "./account-entitlements";
 
 export type WorkspaceCreationEntitlement = {
@@ -19,9 +19,12 @@ export type WorkspaceCreationEntitlement = {
 	reason?: string;
 };
 
-export type WorkspaceMemberEntitlement = {
+// Account-level seat entitlement. Replaces the old per-workspace
+// WorkspaceMemberEntitlement: one seat = one human across the whole
+// account, not per-workspace.
+export type AccountSeatEntitlement = {
 	allowed: boolean;
-	current: number; // members + pending invites
+	current: number; // members + pending invites (distinct heads)
 	members: number;
 	pendingInvites: number;
 	limit: number;
@@ -52,26 +55,33 @@ export async function getWorkspaceCreationEntitlement(
 	};
 }
 
-export async function getWorkspaceMemberEntitlement(
-	workspaceId: string,
-): Promise<WorkspaceMemberEntitlement> {
-	const quota = await getWorkspaceQuota(workspaceId);
-	const allowed = quota.members.remaining > 0;
+// Returns the seat allowance/usage for a workspace owner's whole account.
+// Pass the OWNER's userId — not the inviter's — so seat math reflects the
+// person who pays. Callers in invite/accept flows should resolve the
+// workspace's owner first.
+export async function getAccountSeatEntitlement(
+	ownerUserId: string,
+): Promise<AccountSeatEntitlement> {
+	const [seats, ent] = await Promise.all([
+		getAccountSeats(ownerUserId),
+		getAccountEntitlements(ownerUserId),
+	]);
+	const allowed = seats.remaining > 0;
 
 	let reason: string | undefined;
 	if (!allowed) {
-		reason = quota.isOwnerPaid
-			? `This workspace is at its ${quota.members.total}-member cap. Add seats from billing to invite more.`
-			: `Free plan is limited to ${quota.members.total} members per workspace. Upgrade to add more.`;
+		reason = ent.isPaid
+			? `Account is at its ${seats.total}-seat cap. Add seats from billing to invite more.`
+			: `Free plan is limited to ${seats.total} seats. Upgrade to add more.`;
 	}
 
 	return {
 		allowed,
-		current: quota.members.used,
-		members: quota.members.members,
-		pendingInvites: quota.members.pendingInvites,
-		limit: quota.members.total,
-		isPaid: quota.isOwnerPaid,
+		current: seats.consumed,
+		members: seats.used,
+		pendingInvites: seats.pendingInvites,
+		limit: seats.total,
+		isPaid: ent.isPaid,
 		reason,
 	};
 }

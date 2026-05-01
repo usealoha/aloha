@@ -15,14 +15,35 @@ import { env } from "@/lib/env";
 //   "member_addon"    = extra member slots on a single workspace. One sub
 //                       per workspace; seats = extra members beyond the
 //                       included allowance.
+//
+// Credit families:
+//   "credits_topup"  = one-off purchase (no recurringInterval). Polar
+//                      fires order.paid; webhook grants the bundle to
+//                      the buyer's ledger.
+//   "credits_boost"  = recurring monthly subscription that grants extra
+//                      credits on every renewal, on top of the plan's
+//                      normal monthly grant.
 export type ProductKey =
 	| "basic"
 	| "bundle"
 	| "workspace_addon"
-	| "member_addon";
+	| "member_addon"
+	| "credits_topup"
+	| "credits_boost";
+
+// Subset of ProductKey that lands as a row in `subscriptions`. The
+// credits_topup product is fulfilled via a one-off order, so it never
+// has a subscription representation. Drizzle's column enum mirrors this.
+export type SubscriptionProductKey = Exclude<ProductKey, "credits_topup">;
+
 export type Interval = "month" | "year";
 
-export type ProductSlot = `${ProductKey}_${Interval}`;
+// Recurring slots are <key>_<interval>. The top-up has no interval — it
+// gets its own bare slot. Encoded as a literal string union so consumers
+// can index into ENV_BY_SLOT without runtime hand-waving.
+export type ProductSlot =
+	| `${Exclude<ProductKey, "credits_topup">}_${Interval}`
+	| "credits_topup";
 
 export const PRODUCT_SLOTS: ProductSlot[] = [
 	"basic_month",
@@ -33,10 +54,14 @@ export const PRODUCT_SLOTS: ProductSlot[] = [
 	"workspace_addon_year",
 	"member_addon_month",
 	"member_addon_year",
+	"credits_boost_month",
+	"credits_boost_year",
+	"credits_topup",
 ];
 
 export function productSlot(key: ProductKey, interval: Interval): ProductSlot {
-	return `${key}_${interval}`;
+	if (key === "credits_topup") return "credits_topup";
+	return `${key}_${interval}` as ProductSlot;
 }
 
 const ENV_BY_SLOT: Record<ProductSlot, () => string | undefined> = {
@@ -48,6 +73,9 @@ const ENV_BY_SLOT: Record<ProductSlot, () => string | undefined> = {
 	workspace_addon_year: () => env.POLAR_PRODUCT_WORKSPACE_ADDON_YEAR,
 	member_addon_month: () => env.POLAR_PRODUCT_MEMBER_ADDON_MONTH,
 	member_addon_year: () => env.POLAR_PRODUCT_MEMBER_ADDON_YEAR,
+	credits_boost_month: () => env.POLAR_PRODUCT_CREDITS_BOOST_MONTH,
+	credits_boost_year: () => env.POLAR_PRODUCT_CREDITS_BOOST_YEAR,
+	credits_topup: () => env.POLAR_PRODUCT_CREDITS_TOPUP,
 };
 
 export function productId(slot: ProductSlot): string {
