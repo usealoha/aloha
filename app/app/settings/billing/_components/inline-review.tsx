@@ -28,8 +28,7 @@ type Props = {
 	preview: PreviewOutput;
 	proposedChannels: number;
 	proposedMuse: boolean;
-	// Only passed by the interval-switch section. Omitted → the server
-	// action keeps the current interval.
+	// Omitted → server action keeps the current interval.
 	proposedInterval?: "month" | "year";
 	onCancel: () => void;
 };

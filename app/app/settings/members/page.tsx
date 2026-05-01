@@ -4,7 +4,7 @@ import { getCurrentContext } from "@/lib/current-context";
 import { listWorkspaceMembers } from "@/app/actions/workspace-members";
 import { listPendingInvites } from "@/app/actions/workspace-invites";
 import { hasRole, ROLES } from "@/lib/workspaces/roles";
-import { getWorkspaceMemberEntitlement } from "@/lib/billing/workspace-limits";
+import { getAccountSeatEntitlement } from "@/lib/billing/workspace-limits";
 import { MembersList } from "./_components/members-list";
 import { InviteForm } from "./_components/invite-form";
 import { PendingInvitesList } from "./_components/pending-invites";
@@ -19,7 +19,7 @@ export default async function MembersSettingsPage() {
 		listWorkspaceMembers(),
 		canInvite ? listPendingInvites() : Promise.resolve([]),
 		canInvite
-			? getWorkspaceMemberEntitlement(ctx.workspace.id)
+			? getAccountSeatEntitlement(ctx.workspace.ownerUserId)
 			: Promise.resolve(null),
 	]);
 
@@ -44,9 +44,9 @@ export default async function MembersSettingsPage() {
 								Invite someone
 							</h2>
 						</div>
-						{entitlement && !entitlement.isPaid ? (
+						{entitlement ? (
 							<span className="text-[11.5px] text-ink/55">
-								{entitlement.current} / {entitlement.limit} on free plan
+								{entitlement.current} / {entitlement.limit} seats used
 							</span>
 						) : null}
 					</div>
@@ -57,18 +57,19 @@ export default async function MembersSettingsPage() {
 							</span>
 							<div className="min-w-0 flex-1">
 								<p className="text-[13px] font-medium text-ink">
-									Free plan is capped at {entitlement.limit} members
+									Account is at its {entitlement.limit}-seat cap
 								</p>
 								<p className="mt-0.5 text-[12px] text-ink/65 leading-[1.5]">
-									Upgrade to invite more teammates. Current count includes
-									pending invites.
+									{entitlement.isPaid
+										? "Add seats from billing to invite more teammates. Each seat is one human, assignable to any workspace."
+										: "Upgrade to invite more teammates. One seat = one human across all your workspaces."}
 								</p>
 							</div>
 							<Link
-								href="/app/settings/billing#members"
+								href="/app/settings/billing#addons"
 								className="inline-flex items-center h-9 px-4 rounded-full bg-ink text-background text-[12.5px] font-medium hover:bg-primary transition-colors shrink-0"
 							>
-								Upgrade
+								{entitlement.isPaid ? "Add seats" : "Upgrade"}
 							</Link>
 						</div>
 					) : (

@@ -12,41 +12,27 @@ import {
 import { getLogicalSubscription, listInvoices } from "@/lib/billing/service";
 import {
 	getAccountEntitlements,
-	getWorkspaceQuota,
+	getAccountSeats,
 } from "@/lib/billing/account-entitlements";
+import { getCreditsSnapshot } from "@/lib/billing/credits";
 import { getConnectedChannels } from "@/lib/channels/connected";
 import { routes } from "@/lib/routes";
 import { eq } from "drizzle-orm";
-import { Sparkle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { FlashToast } from "@/components/ui/flash-toast";
 import { getCurrentContext } from "@/lib/current-context";
 import { hasRole, ROLES } from "@/lib/workspaces/roles";
+import { AddonsSection } from "./_components/addons-section";
 import { ChannelAdjuster } from "./_components/channel-adjuster";
+import { CreditsCard } from "./_components/credits-card";
 import { DangerZone } from "./_components/danger-zone";
-import { IntervalSwitch } from "./_components/interval-switch";
 import { InvoicesList } from "./_components/invoices";
-import { MemberAddonSection } from "./_components/member-addon-section";
-import { MuseToggleSection } from "./_components/muse-toggle-section";
 import { PastDueBanner } from "./_components/past-due-banner";
-import { WorkspaceAddonSection } from "./_components/workspace-addon-section";
+import { PlanSummary } from "./_components/plan-summary";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
 export const dynamic = "force-dynamic";
-
-function formatMoney(n: number) {
-	const r = Math.round(n * 100) / 100;
-	return Number.isInteger(r) ? `${r}` : r.toFixed(2);
-}
-
-function formatDate(d: Date) {
-	return new Intl.DateTimeFormat("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	}).format(d);
-}
 
 export default async function BillingPage() {
 	const session = await auth();
@@ -131,10 +117,11 @@ export default async function BillingPage() {
 	const invoices = await listInvoices(userId);
 
 	// Aggregated entitlements across all owned workspaces. Powers the
-	// workspace + member add-on counters.
-	const [accountEnt, workspaceQuota] = await Promise.all([
+	// workspace + seat add-on counters and the credits card.
+	const [accountEnt, accountSeats, credits] = await Promise.all([
 		getAccountEntitlements(userId),
-		getWorkspaceQuota(workspaceId),
+		getAccountSeats(userId),
+		getCreditsSnapshot(userId),
 	]);
 
 	return (
@@ -146,10 +133,21 @@ export default async function BillingPage() {
 				plan={sub.plan}
 				channels={sub.channels}
 				interval={interval}
+				museEnabled={sub.museEnabled}
 				perMonth={price.effectivePerMonth}
 				annualTotal={price.annualTotal}
 				nextBilling={sub.currentPeriodEnd}
 				cancelAtPeriodEnd={sub.cancelAtPeriodEnd}
+				currentPeriodEndISO={currentPeriodEndISO}
+			/>
+
+			<CreditsCard
+				balance={credits.balance}
+				monthlyGrant={credits.monthlyGrant}
+				periodEndsAt={credits.periodEndsAt}
+				isPaid={credits.isPaid}
+				trialActive={credits.trialActive}
+				boost={credits.boost}
 			/>
 
 			<ChannelAdjuster
@@ -160,37 +158,21 @@ export default async function BillingPage() {
 				currentPeriodEndISO={currentPeriodEndISO}
 			/>
 
-			<WorkspaceAddonSection
-				included={accountEnt.workspaces.included}
-				addonSeats={accountEnt.workspaces.addonSeats}
-				usedWorkspaces={accountEnt.workspaces.used}
-				monthlyPerSeat={WORKSPACE_ADDON_MONTHLY_USD}
+			<AddonsSection
 				interval={interval}
-			/>
-
-			<MemberAddonSection
-				workspaceId={ctx.workspace.id}
-				workspaceName={ctx.workspace.name}
-				included={workspaceQuota.members.included}
-				addonSeats={workspaceQuota.members.addonSeats}
-				usedMembers={workspaceQuota.members.members}
-				pendingInvites={workspaceQuota.members.pendingInvites}
-				monthlyPerSeat={MEMBER_ADDON_MONTHLY_USD}
-				interval={interval}
-			/>
-
-			<MuseToggleSection
-				enabled={sub.museEnabled}
-				channels={sub.channels}
-				interval={interval}
-				currentPeriodEndISO={currentPeriodEndISO}
-			/>
-
-			<IntervalSwitch
-				interval={interval}
-				channels={sub.channels}
-				museEnabled={sub.museEnabled}
-				currentPeriodEndISO={currentPeriodEndISO}
+				workspace={{
+					included: accountEnt.workspaces.included,
+					addonSeats: accountEnt.workspaces.addonSeats,
+					used: accountEnt.workspaces.used,
+					monthlyPerSeat: WORKSPACE_ADDON_MONTHLY_USD,
+				}}
+				seat={{
+					included: accountSeats.included,
+					addonSeats: accountSeats.addonSeats,
+					used: accountSeats.used,
+					pendingInvites: accountSeats.pendingInvites,
+					monthlyPerSeat: MEMBER_ADDON_MONTHLY_USD,
+				}}
 			/>
 
 			<InvoicesList invoices={invoices} />
@@ -210,11 +192,11 @@ function FreePlanHero({ connectedChannels }: { connectedChannels: number }) {
 		<div className="rounded-3xl bg-background-elev border border-border overflow-hidden">
 			<div className="px-8 lg:px-12 py-8 bg-peach-100 border-b border-border">
 				<p className="text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/60 mb-3">
-					Current plan
+					Current plan · trial
 				</p>
 				<div className="flex flex-wrap items-end justify-between gap-4">
 					<p className="font-display text-[44px] lg:text-[56px] leading-[0.95] tracking-[-0.025em]">
-						Free
+						Basic trial
 					</p>
 					<p className="text-[13px] text-ink/65 font-mono">
 						{connectedChannels} of {FREE_TIER_CHANNELS} channels in use
@@ -222,9 +204,9 @@ function FreePlanHero({ connectedChannels }: { connectedChannels: number }) {
 				</div>
 			</div>
 			<div className="px-8 lg:px-12 py-7 grid sm:grid-cols-3 gap-6 text-[13px] text-ink/75">
+				<Bullet>30 days of Basic — full publishing & AI</Bullet>
 				<Bullet>Up to {FREE_TIER_CHANNELS} connected channels</Bullet>
-				<Bullet>AI companion (50 generations / mo)</Bullet>
-				<Bullet>Calendar, scheduling, link-in-bio</Bullet>
+				<Bullet>Drops to view-only after trial unless upgraded</Bullet>
 			</div>
 		</div>
 	);
@@ -259,82 +241,6 @@ function UpgradeBlock({ initialChannels }: { initialChannels: number }) {
 				submitLabel="Continue to checkout"
 			/>
 		</section>
-	);
-}
-
-function PlanSummary({
-	plan,
-	channels,
-	interval,
-	perMonth,
-	annualTotal,
-	nextBilling,
-	cancelAtPeriodEnd,
-}: {
-	plan: "basic" | "basic_muse";
-	channels: number;
-	interval: "month" | "year";
-	perMonth: number;
-	annualTotal: number;
-	nextBilling: Date | null;
-	cancelAtPeriodEnd: boolean;
-}) {
-	return (
-		<div className="rounded-3xl bg-background-elev border border-border overflow-hidden">
-			<div className="px-8 lg:px-12 py-8 bg-peach-100 border-b border-border">
-				<div className="flex flex-wrap items-start justify-between gap-6">
-					<div>
-						<p className="text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/60 mb-3 inline-flex items-center gap-2">
-							{plan === "basic_muse" ? (
-								<>
-									<Sparkle className="w-3 h-3 text-primary" />
-									Basic + Muse
-								</>
-							) : (
-								"Basic"
-							)}
-							<span className="text-ink/40">·</span>
-							<span>
-								{interval === "year" ? "billed yearly" : "billed monthly"}
-							</span>
-						</p>
-						<p className="font-display text-[48px] lg:text-[64px] leading-[0.95] tracking-[-0.025em]">
-							${formatMoney(perMonth)}
-							<span className="text-[18px] lg:text-[22px] text-ink/50 font-mono ml-3">
-								/ mo
-							</span>
-						</p>
-						<p className="mt-2 text-[13px] text-ink/65">
-							{channels} channel{channels === 1 ? "" : "s"}
-							{interval === "year" ? (
-								<>
-									<span className="text-ink/40"> · </span>
-									<span className="font-mono">
-										${Math.round(annualTotal).toLocaleString()} / yr
-									</span>
-								</>
-							) : null}
-						</p>
-					</div>
-					<div className="text-right">
-						<p className="text-[10.5px] font-mono uppercase tracking-[0.22em] text-ink/55 mb-1">
-							{cancelAtPeriodEnd ? "Cancels on" : "Renews on"}
-						</p>
-						<p className="font-display text-[22px] tracking-[-0.005em]">
-							{nextBilling ? formatDate(nextBilling) : "—"}
-						</p>
-						<form action="/api/billing/portal" method="post" className="mt-2">
-							<button
-								type="submit"
-								className="pencil-link text-[11.5px] text-ink/55 hover:text-ink font-medium"
-							>
-								Update payment method
-							</button>
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
 	);
 }
 
