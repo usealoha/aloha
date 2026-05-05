@@ -27,6 +27,13 @@ import { loadCurrentVoice } from "./voice";
 import { buildVoiceBlock } from "./voice-context";
 import { getBestWindowsForUser } from "@/lib/best-time";
 import { requireActiveWorkspaceId } from "@/lib/workspaces/resolve";
+import {
+  defaultFormatFor,
+  formatAllowlistBlock,
+  formatGuidanceBlock,
+  formatGuidanceFor as formatGuidanceForChannel,
+  isValidFormat,
+} from "@/lib/campaigns/channel-formats";
 import { desc, inArray, isNotNull } from "drizzle-orm";
 
 export const CAMPAIGN_KINDS = [
@@ -35,11 +42,16 @@ export const CAMPAIGN_KINDS = [
   "sale",
   "drip",
   "evergreen",
+  "reach",
   "custom",
 ] as const;
 export type CampaignKind = (typeof CAMPAIGN_KINDS)[number];
 
-export const CADENCE_KINDS = ["drip", "evergreen"] as const satisfies readonly CampaignKind[];
+export const CADENCE_KINDS = [
+  "drip",
+  "evergreen",
+  "reach",
+] as const satisfies readonly CampaignKind[];
 export const isCadenceKind = (k: CampaignKind): boolean =>
   (CADENCE_KINDS as readonly string[]).includes(k);
 
@@ -55,15 +67,10 @@ export const BEAT_PHASES = [
 ] as const;
 export type BeatPhase = (typeof BEAT_PHASES)[number];
 
-const VALID_FORMATS = [
-  "single",
-  "thread",
-  "carousel",
-  "long-form",
-  "short-video",
-  "link",
-] as const;
-type BeatFormat = (typeof VALID_FORMATS)[number];
+// Format slugs are validated per-channel against lib/campaigns/channel-formats.
+// The beat carries an opaque string; the parser + UI dropdowns enforce the
+// channel's allowlist at the boundary.
+export type BeatFormat = string;
 
 export type CampaignBeat = {
   id: string;
@@ -144,6 +151,8 @@ export async function generateCampaign(
     yourIdeas: formatIdeas(userIdeas),
     topPerformers: formatTopPerformers(topPerformers),
     voiceBlock: buildVoiceBlock(voice),
+    formatAllowlist: formatAllowlistBlock(input.channels),
+    formatGuidance: formatGuidanceBlock(input.channels),
   };
 
   const result = cadence
@@ -254,10 +263,9 @@ function parseCampaignJson(
         ? (r.phase as BeatPhase)
         : "announce";
     const format =
-      typeof r.format === "string" &&
-      (VALID_FORMATS as readonly string[]).includes(r.format)
-        ? (r.format as BeatFormat)
-        : "single";
+      typeof r.format === "string" && isValidFormat(channel, r.format)
+        ? r.format
+        : defaultFormatFor(channel);
 
     if (!title || !date || !allowed.has(channel)) continue;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
@@ -560,6 +568,7 @@ export async function listCampaigns(userId: string) {
       name: campaigns.name,
       goal: campaigns.goal,
       kind: campaigns.kind,
+      channels: campaigns.channels,
       status: campaigns.status,
       rangeStart: campaigns.rangeStart,
       rangeEnd: campaigns.rangeEnd,
@@ -618,6 +627,8 @@ export async function regenerateCampaignBeat(
     yourIdeas: formatIdeas(userIdeas),
     topPerformers: formatTopPerformers(topPerformers),
     voiceBlock: buildVoiceBlock(voice),
+    formatAllowlist: formatAllowlistBlock(campaign.channels),
+    formatGuidance: formatGuidanceBlock(campaign.channels),
   };
 
   const userMessage = [
@@ -712,20 +723,267 @@ export function composeBeatBody(beat: CampaignBeat): string {
 }
 
 // Short human-readable format hint shown in the composer sidebar. Not
-// prompt context — just UI copy.
+// prompt context — just UI copy. Now delegates to the per-channel registry
+// so a "thread" on X reads differently than a "thread" on Threads.
 export function formatGuidanceFor(format: string, channel: string): string {
-  switch (format) {
-    case "thread":
-      return `Thread on ${channel} — each beat is one post, hook carries the reader to the next.`;
-    case "carousel":
-      return "Carousel — each beat is one slide, big type, one idea per card.";
-    case "long-form":
-      return "Long-form — headline + scannable sections, aim for depth over brevity.";
-    case "short-video":
-      return "Short video — hook in the first 3s, beats pace the script, caption is the CTA.";
-    case "link":
-      return "Link post — framing sits outside the preview, let the link title do work.";
-    default:
-      return "Single post — hook, payoff, close. Tight.";
+  return formatGuidanceForChannel(channel, format);
+}
+
+// ---- beat mutations -------------------------------------------------------
+//
+// All mutations write the entire `beats` jsonb array back. Concurrent edits
+// to different beats on the same campaign would race; campaigns are single-
+// user-edited in practice and revalidatePath flushes the cached view, so
+// the cost of a row-level lock isn't worth it yet.
+
+async function loadBeatsForUser(
+  userId: string,
+  campaignId: string,
+): Promise<CampaignBeat[] | null> {
+  const [row] = await db
+    .select({ beats: campaigns.beats })
+    .from(campaigns)
+    .where(
+      and(
+        eq(campaigns.id, campaignId),
+        eq(campaigns.createdByUserId, userId),
+      ),
+    )
+    .limit(1);
+  return row ? (row.beats as CampaignBeat[]) : null;
+}
+
+async function writeBeats(
+  userId: string,
+  campaignId: string,
+  beats: CampaignBeat[],
+): Promise<void> {
+  await db
+    .update(campaigns)
+    .set({
+      beats: beats as unknown as Array<Record<string, unknown>>,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(campaigns.id, campaignId),
+        eq(campaigns.createdByUserId, userId),
+      ),
+    );
+}
+
+export type BeatEditPatch = Partial<
+  Pick<
+    CampaignBeat,
+    | "title"
+    | "angle"
+    | "hook"
+    | "keyPoints"
+    | "cta"
+    | "hashtags"
+    | "mediaSuggestion"
+    | "rationale"
+  >
+>;
+
+export async function editCampaignBeat(
+  userId: string,
+  campaignId: string,
+  beatId: string,
+  patch: BeatEditPatch,
+): Promise<CampaignBeat> {
+  const beats = await loadBeatsForUser(userId, campaignId);
+  if (!beats) throw new Error("Campaign not found.");
+  const target = beats.find((b) => b.id === beatId);
+  if (!target) throw new Error("Beat not found.");
+  if (target.accepted) {
+    throw new Error("This beat is drafted — edit the post in composer.");
   }
+  const updated: CampaignBeat = { ...target, ...patch };
+  const next = beats.map((b) => (b.id === beatId ? updated : b));
+  await writeBeats(userId, campaignId, next);
+  return updated;
+}
+
+export async function changeCampaignBeatFormat(
+  userId: string,
+  campaignId: string,
+  beatId: string,
+  newFormat: string,
+): Promise<CampaignBeat> {
+  const beats = await loadBeatsForUser(userId, campaignId);
+  if (!beats) throw new Error("Campaign not found.");
+  const target = beats.find((b) => b.id === beatId);
+  if (!target) throw new Error("Beat not found.");
+  if (target.accepted) {
+    throw new Error("This beat is drafted — change format in composer.");
+  }
+  if (!isValidFormat(target.channel, newFormat)) {
+    throw new Error(`'${newFormat}' isn't valid for ${target.channel}.`);
+  }
+  const updated: CampaignBeat = { ...target, format: newFormat };
+  const next = beats.map((b) => (b.id === beatId ? updated : b));
+  await writeBeats(userId, campaignId, next);
+  return updated;
+}
+
+export async function rescheduleCampaignBeat(
+  userId: string,
+  campaignId: string,
+  beatId: string,
+  newDate: string,
+): Promise<CampaignBeat> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+    throw new Error("Date must be YYYY-MM-DD.");
+  }
+  const beats = await loadBeatsForUser(userId, campaignId);
+  if (!beats) throw new Error("Campaign not found.");
+  const target = beats.find((b) => b.id === beatId);
+  if (!target) throw new Error("Beat not found.");
+  if (target.accepted) {
+    throw new Error(
+      "This beat is drafted — reschedule the post in composer instead.",
+    );
+  }
+  const updated: CampaignBeat = { ...target, date: newDate };
+  const next = beats.map((b) => (b.id === beatId ? updated : b));
+  await writeBeats(userId, campaignId, next);
+  return updated;
+}
+
+export async function deleteCampaignBeat(
+  userId: string,
+  campaignId: string,
+  beatId: string,
+): Promise<void> {
+  const beats = await loadBeatsForUser(userId, campaignId);
+  if (!beats) throw new Error("Campaign not found.");
+  const target = beats.find((b) => b.id === beatId);
+  if (!target) return;
+  if (target.accepted) {
+    throw new Error(
+      "This beat is drafted — delete the post in composer instead.",
+    );
+  }
+  const next = beats.filter((b) => b.id !== beatId);
+  await writeBeats(userId, campaignId, next);
+}
+
+// Drafts a sibling beat — same date, channel, phase as the source beat,
+// but a *different* format. Used by the inspector "add another format for
+// this slot" action. Refuses if the target format already exists for that
+// (date, channel) pair.
+export async function addSiblingBeat(
+  userId: string,
+  campaignId: string,
+  sourceBeatId: string,
+  targetFormat: string,
+): Promise<CampaignBeat> {
+  const campaign = await loadCampaign(userId, campaignId);
+  if (!campaign) throw new Error("Campaign not found.");
+
+  const source = campaign.beats.find((b) => b.id === sourceBeatId);
+  if (!source) throw new Error("Source beat not found.");
+  if (!isValidFormat(source.channel, targetFormat)) {
+    throw new Error(
+      `'${targetFormat}' isn't valid for ${source.channel}.`,
+    );
+  }
+  const collision = campaign.beats.find(
+    (b) =>
+      b.date === source.date &&
+      b.channel === source.channel &&
+      b.format === targetFormat,
+  );
+  if (collision) {
+    throw new Error(
+      `A ${targetFormat} beat already exists on ${source.date} for ${source.channel}.`,
+    );
+  }
+
+  const cadence = isCadenceKind(campaign.kind);
+  const duplicateGuard = campaign.beats
+    .map((b) => `  - [${b.channel} · ${b.phase} · ${b.format}] ${b.title}`)
+    .join("\n");
+
+  await registerPrompts();
+
+  const [voice, bestWindowsByChannel, inspiration, userIdeas, topPerformers] =
+    await Promise.all([
+      loadCurrentVoice(userId),
+      getBestWindowsForUser(userId, "UTC"),
+      loadRecentInspiration(userId),
+      loadUserIdeas(userId),
+      loadPastHighPerformers(userId, campaign.channels),
+    ]);
+
+  const sharedVars = {
+    goal: campaign.goal,
+    channels: campaign.channels.join(", "),
+    rangeStart: source.date,
+    rangeEnd: source.date,
+    bestWindows: formatBestWindows(campaign.channels, bestWindowsByChannel),
+    inspiration: formatInspiration(inspiration),
+    yourIdeas: formatIdeas(userIdeas),
+    topPerformers: formatTopPerformers(topPerformers),
+    voiceBlock: buildVoiceBlock(voice),
+    formatAllowlist: formatAllowlistBlock(campaign.channels),
+    formatGuidance: formatGuidanceBlock(campaign.channels),
+  };
+
+  const userMessage = [
+    "Draft ONE single beat — a sibling for an existing beat in a different format.",
+    `It must target: date ${source.date}, channel ${source.channel}, phase ${source.phase}, format ${targetFormat}.`,
+    `Pivot the angle so it doesn't repeat the source beat — same goal, different format-native angle for ${targetFormat}.`,
+    'Produce exactly one beat in the "beats" array.',
+    "Do NOT repeat any of these existing beats:",
+    duplicateGuard || "  (none)",
+    "Return strict JSON — no markdown, no prose outside the JSON object.",
+  ].join("\n");
+
+  const result = cadence
+    ? await generate({
+        userId,
+        feature: "campaign.cadence",
+        template: PROMPTS.campaignCadence,
+        vars: {
+          ...sharedVars,
+          kind: campaign.kind,
+          themes:
+            campaign.themes.length > 0
+              ? campaign.themes.join(", ")
+              : "(none specified)",
+          frequency: String(campaign.postsPerWeek ?? 1),
+        },
+        userMessage,
+        temperature: 0.85,
+      })
+    : await generate({
+        userId,
+        feature: "campaign.beatsheet",
+        template: PROMPTS.campaignBeatsheet,
+        vars: { ...sharedVars, kind: campaign.kind },
+        userMessage,
+        temperature: 0.85,
+      });
+
+  const parsed = parseCampaignJson(result.text, campaign.channels);
+  const fresh = parsed.beats[0];
+  if (!fresh) throw new Error("Sibling generation came back empty.");
+
+  const newBeat: CampaignBeat = {
+    ...fresh,
+    id: crypto.randomUUID(),
+    date: source.date,
+    channel: source.channel,
+    phase: source.phase,
+    // Force the requested format even if Muse drifted.
+    format: isValidFormat(source.channel, targetFormat)
+      ? targetFormat
+      : fresh.format,
+  };
+
+  const next = [...campaign.beats, newBeat];
+  await writeBeats(userId, campaignId, next);
+  return newBeat;
 }
