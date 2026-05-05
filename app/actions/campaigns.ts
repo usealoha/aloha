@@ -3,14 +3,20 @@
 import { db } from "@/db";
 import { campaigns, posts } from "@/db/schema";
 import {
+	addSiblingBeat,
 	CAMPAIGN_KINDS,
+	changeCampaignBeatFormat,
 	composeBeatBody,
+	deleteCampaignBeat,
+	editCampaignBeat,
 	formatGuidanceFor,
 	generateCampaign,
 	isCadenceKind,
 	loadCampaign,
 	markBeatAccepted,
 	regenerateCampaignBeat,
+	rescheduleCampaignBeat,
+	type BeatEditPatch,
 	type CampaignKind,
 } from "@/lib/ai/campaign";
 import { CostCapExceededError } from "@/lib/ai/cost-cap";
@@ -270,7 +276,6 @@ export async function approveCampaignAction(formData: FormData) {
 // whose original QStash message has already fired-and-noop'd.
 export async function pauseCampaignAction(formData: FormData) {
 	const ctx = await assertRole(ROLES.ADMIN);
-	const user = ctx.user;
 
 	const campaignId = String(formData.get("campaignId") ?? "");
 	if (!campaignId) throw new Error("campaignId required");
@@ -318,7 +323,6 @@ export async function pauseCampaignAction(formData: FormData) {
 // resuming after it has passed lands on "complete".
 export async function resumeCampaignAction(formData: FormData) {
 	const ctx = await assertRole(ROLES.ADMIN);
-	const user = ctx.user;
 
 	const campaignId = String(formData.get("campaignId") ?? "");
 	if (!campaignId) throw new Error("campaignId required");
@@ -402,7 +406,6 @@ export async function resumeCampaignAction(formData: FormData) {
 // shouldn't wipe history. Irreversible; UI must confirm.
 export async function deleteCampaignAction(formData: FormData) {
 	const ctx = await assertRole(ROLES.ADMIN);
-	const user = ctx.user;
 
 	const campaignId = String(formData.get("campaignId") ?? "");
 	if (!campaignId) throw new Error("campaignId required");
@@ -437,4 +440,135 @@ export async function deleteCampaignAction(formData: FormData) {
 	revalidatePath("/app/calendar");
 	revalidatePath("/app/dashboard");
 	redirect("/app/campaigns");
+}
+
+// ---- single-beat mutations (inspector pane) -------------------------------
+
+const parseHashtags = (raw: string): string[] =>
+	raw
+		.split(/[\s,]+/)
+		.map((t) => t.trim())
+		.filter(Boolean)
+		.map((t) => (t.startsWith("#") ? t : `#${t}`))
+		.filter((t) => /^#[\w-]+$/.test(t))
+		.slice(0, 20);
+
+const parseKeyPoints = (raw: string): string[] =>
+	raw
+		.split("\n")
+		.map((s) => s.trim())
+		.filter(Boolean)
+		.slice(0, 8);
+
+export async function editBeatAction(formData: FormData) {
+	const ctx = await assertRole(ROLES.ADMIN);
+
+	const campaignId = String(formData.get("campaignId") ?? "");
+	const beatId = String(formData.get("beatId") ?? "");
+	if (!campaignId || !beatId) throw new Error("campaignId and beatId required");
+
+	const patch: BeatEditPatch = {};
+	const fields: ReadonlyArray<keyof BeatEditPatch> = [
+		"title",
+		"angle",
+		"hook",
+		"cta",
+		"mediaSuggestion",
+		"rationale",
+	];
+	for (const f of fields) {
+		const raw = formData.get(f);
+		if (raw === null) continue;
+		const v = String(raw).trim();
+		// Empty string is a valid clear for optional fields, but keep title/
+		// angle non-empty when present.
+		if ((f === "title" || f === "angle") && !v) continue;
+		(patch as Record<string, unknown>)[f] = v;
+	}
+	const keyPointsRaw = formData.get("keyPoints");
+	if (keyPointsRaw !== null) {
+		patch.keyPoints = parseKeyPoints(String(keyPointsRaw));
+	}
+	const hashtagsRaw = formData.get("hashtags");
+	if (hashtagsRaw !== null) {
+		patch.hashtags = parseHashtags(String(hashtagsRaw));
+	}
+
+	await editCampaignBeat(ctx.user.id, campaignId, beatId, patch);
+
+	revalidatePath(`/app/campaigns/${campaignId}`);
+	redirect(`/app/campaigns/${campaignId}?beat=${beatId}`);
+}
+
+export async function changeBeatFormatAction(formData: FormData) {
+	const ctx = await assertRole(ROLES.ADMIN);
+
+	const campaignId = String(formData.get("campaignId") ?? "");
+	const beatId = String(formData.get("beatId") ?? "");
+	const format = String(formData.get("format") ?? "").trim();
+	if (!campaignId || !beatId || !format) {
+		throw new Error("campaignId, beatId, format required");
+	}
+
+	await changeCampaignBeatFormat(ctx.user.id, campaignId, beatId, format);
+
+	revalidatePath(`/app/campaigns/${campaignId}`);
+	redirect(`/app/campaigns/${campaignId}?beat=${beatId}`);
+}
+
+export async function rescheduleBeatAction(formData: FormData) {
+	const ctx = await assertRole(ROLES.ADMIN);
+
+	const campaignId = String(formData.get("campaignId") ?? "");
+	const beatId = String(formData.get("beatId") ?? "");
+	const date = String(formData.get("date") ?? "").trim();
+	if (!campaignId || !beatId || !date) {
+		throw new Error("campaignId, beatId, date required");
+	}
+
+	await rescheduleCampaignBeat(ctx.user.id, campaignId, beatId, date);
+
+	revalidatePath(`/app/campaigns/${campaignId}`);
+	redirect(`/app/campaigns/${campaignId}?beat=${beatId}`);
+}
+
+export async function deleteBeatAction(formData: FormData) {
+	const ctx = await assertRole(ROLES.ADMIN);
+
+	const campaignId = String(formData.get("campaignId") ?? "");
+	const beatId = String(formData.get("beatId") ?? "");
+	if (!campaignId || !beatId) throw new Error("campaignId and beatId required");
+
+	await deleteCampaignBeat(ctx.user.id, campaignId, beatId);
+
+	revalidatePath(`/app/campaigns/${campaignId}`);
+	redirect(`/app/campaigns/${campaignId}`);
+}
+
+export async function addSiblingBeatAction(formData: FormData) {
+	const ctx = await assertRole(ROLES.ADMIN);
+	await requireMuseAccess(ctx.user.id);
+
+	const campaignId = String(formData.get("campaignId") ?? "");
+	const sourceBeatId = String(formData.get("sourceBeatId") ?? "");
+	const targetFormat = String(formData.get("targetFormat") ?? "").trim();
+	if (!campaignId || !sourceBeatId || !targetFormat) {
+		throw new Error("campaignId, sourceBeatId, targetFormat required");
+	}
+
+	let newBeat: Awaited<ReturnType<typeof addSiblingBeat>>;
+	try {
+		newBeat = await addSiblingBeat(
+			ctx.user.id,
+			campaignId,
+			sourceBeatId,
+			targetFormat,
+		);
+	} catch (err) {
+		if (err instanceof CostCapExceededError) throw err;
+		throw err;
+	}
+
+	revalidatePath(`/app/campaigns/${campaignId}`);
+	redirect(`/app/campaigns/${campaignId}?beat=${newBeat.id}`);
 }
