@@ -17,7 +17,6 @@ import { revalidatePath } from "next/cache";
 import { Client } from "@upstash/qstash";
 import { env } from "@/lib/env";
 import { canPublish } from "@/lib/billing/trial";
-import { requireContext } from "@/lib/current-context";
 import { ROLES } from "@/lib/workspaces/roles";
 import { assertRole } from "@/lib/workspaces/assert-role";
 import { unpublishPost } from "@/lib/unpublishers";
@@ -29,6 +28,10 @@ import {
   notifyPostSubmitted,
 } from "@/lib/posts/review-notifications";
 import { markDeliveryAsManuallyPublished } from "@/lib/posts/manual-completion";
+import {
+  formatGuidanceFor as channelFormatGuidanceFor,
+  isValidFormat,
+} from "@/lib/campaigns/channel-formats";
 
 const qstashClient = new Client({
   token: env.QSTASH_TOKEN,
@@ -809,4 +812,47 @@ export async function markDeliveryPosted(
     alreadyPublished: result.alreadyPublished ?? false,
     postStatusFlipped: result.postStatusFlipped ?? false,
   };
+}
+
+// Switch a draft post's format. Updates `draftMeta.format` and
+// `draftMeta.formatGuidance` for the post's primary channel; the body is
+// left intact so the user's edits aren't clobbered. Locked / published /
+// scheduled posts are rejected — the post needs to be in draft to change
+// format. Validates against the per-channel allowlist.
+export async function setPostFormat(postId: string, format: string) {
+  const ctx = await assertRole(ROLES.EDITOR);
+
+  const [post] = await db
+    .select({
+      id: posts.id,
+      status: posts.status,
+      platforms: posts.platforms,
+      draftMeta: posts.draftMeta,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.workspaceId, ctx.workspace.id)))
+    .limit(1);
+  if (!post) throw new Error("Post not found");
+  if (post.status !== "draft") {
+    throw new Error("Move the post back to draft to change its format.");
+  }
+  const channel = post.platforms[0];
+  if (!channel) throw new Error("Pick a channel before changing format.");
+  if (!isValidFormat(channel, format)) {
+    throw new Error(`'${format}' isn't valid for ${channel}.`);
+  }
+
+  const nextDraftMeta: DraftMeta = {
+    ...(post.draftMeta ?? {}),
+    format,
+    formatGuidance: channelFormatGuidanceFor(channel, format),
+  };
+
+  await db
+    .update(posts)
+    .set({ draftMeta: nextDraftMeta, updatedAt: new Date() })
+    .where(eq(posts.id, postId));
+
+  revalidatePostPaths(postId);
+  return { success: true, format };
 }
