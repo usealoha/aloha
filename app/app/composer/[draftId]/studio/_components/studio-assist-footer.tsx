@@ -243,7 +243,6 @@ export function StudioAssistFooter({
 								meta={draftMeta}
 								onSwapHook={handleSwapHook}
 								onApplyHashtags={handleApplyHashtags}
-								onClose={close}
 							/>
 						) : null}
 

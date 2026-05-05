@@ -11,26 +11,39 @@ import {
   ImageIcon,
   Layers as LayersIcon,
   Lightbulb,
+  Loader2,
   RefreshCw,
   Sparkles,
-  X as XIcon,
 } from "lucide-react";
+import { useTransition } from "react";
+import { setPostFormat } from "@/app/actions/posts";
 import type { DraftMeta } from "@/db/schema";
+import { formatsFor } from "@/lib/campaigns/channel-formats";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function DraftMetaPanel({
   meta,
+  postId,
+  channel,
   onSwapHook,
   onApplyHashtags,
-  onClose,
+  onFormatChanged,
 }: {
   meta: DraftMeta;
+  // The post being edited. When provided alongside a single channel, the
+  // Shape section becomes a format picker; otherwise it's read-only.
+  postId?: string | null;
+  channel?: string | null;
   // Replace the first line of the editor body with the picked hook. Caller
   // owns the editor state; this panel stays pure.
   onSwapHook: (hook: string) => void;
   // Append / merge hashtags into the editor. Caller decides dedupe.
   onApplyHashtags: (hashtags: string[]) => void;
-  onClose: () => void;
+  // Optional: notify the parent that draftMeta changed server-side so it
+  // can re-fetch / refresh state. The composer revalidates via redirect-
+  // free server action results.
+  onFormatChanged?: (next: { format: string; guidance: string }) => void;
 }) {
   const hasAnything =
     meta.rationale ||
@@ -59,15 +72,25 @@ export function DraftMetaPanel({
           </Section>
         ) : null}
 
-        {meta.formatGuidance ? (
+        {meta.formatGuidance || (postId && channel) ? (
           <Section
             icon={<LayersIcon className="w-3 h-3" />}
             label="Shape"
             sub={meta.format ? meta.format : undefined}
           >
-            <p className="text-[13px] text-ink/75 leading-[1.55]">
-              {meta.formatGuidance}
-            </p>
+            {postId && channel ? (
+              <FormatPicker
+                postId={postId}
+                channel={channel}
+                current={meta.format ?? null}
+                onChanged={onFormatChanged}
+              />
+            ) : null}
+            {meta.formatGuidance ? (
+              <p className="mt-2 text-[13px] text-ink/75 leading-[1.55]">
+                {meta.formatGuidance}
+              </p>
+            ) : null}
           </Section>
         ) : null}
 
@@ -153,6 +176,59 @@ export function DraftMetaPanel({
         ) : null}
       </div>
     </>
+  );
+}
+
+function FormatPicker({
+  postId,
+  channel,
+  current,
+  onChanged,
+}: {
+  postId: string;
+  channel: string;
+  current: string | null;
+  onChanged?: (next: { format: string; guidance: string }) => void;
+}) {
+  const [pending, start] = useTransition();
+  const options = formatsFor(channel);
+  if (options.length <= 1) return null;
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        defaultValue={current ?? options[0].slug}
+        disabled={pending}
+        onChange={(e) => {
+          const next = e.currentTarget.value;
+          if (next === current) return;
+          start(async () => {
+            try {
+              await setPostFormat(postId, next);
+              onChanged?.({
+                format: next,
+                guidance:
+                  options.find((o) => o.slug === next)?.guidance ?? "",
+              });
+              toast.success("Format updated.");
+            } catch (err) {
+              toast.error(
+                err instanceof Error ? err.message : "Couldn't change format.",
+              );
+            }
+          });
+        }}
+        className="h-9 px-3 pr-8 rounded-full border border-border bg-background text-[12.5px] text-ink focus:outline-none focus:border-ink disabled:opacity-60"
+      >
+        {options.map((o) => (
+          <option key={o.slug} value={o.slug}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {pending ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-ink/55" />
+      ) : null}
+    </div>
   );
 }
 

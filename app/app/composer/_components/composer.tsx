@@ -40,11 +40,6 @@ import {
 } from "@/app/auth/_components/provider-icons";
 import { SchedulePopover } from "@/components/schedule-popover";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -56,16 +51,10 @@ import { formatWindow } from "@/lib/best-time-format";
 import type { EffectiveState } from "@/lib/channel-state-format";
 import { stateOr, stateStyles } from "@/lib/channel-state-format";
 import type { ChannelProfileView } from "@/components/channel-identity";
-import {
-	buildTzLocalInput,
-	formatTzLocalInputForDisplay,
-	tzLocalInputToUtcDate,
-	utcIsoToTzLocalInput,
-} from "@/lib/tz";
+import { tzLocalInputToUtcDate, utcIsoToTzLocalInput } from "@/lib/tz";
 import { cn } from "@/lib/utils";
 import {
 	AlertCircle,
-	CalendarClock,
 	Clock,
 	FileText,
 	FileType,
@@ -854,33 +843,6 @@ export function Composer({
 				});
 			}
 		});
-	};
-
-	// Reset composer state back to a fresh-draft baseline. Used after
-	// publishing so the user lands on an empty composer without needing to
-	// navigate away and come back.
-	const resetComposer = () => {
-		setBaseContent("");
-		setBaseMedia([]);
-		setOverrides({});
-		setSelected(
-			connectedProviders.length > 0 ? [connectedProviders[0]] : ["twitter"],
-		);
-		setActiveTab("all");
-		setScheduledAt("");
-		setShowSchedule(false);
-		setDraftMeta(null);
-		setShowDraftMeta(false);
-		setShowGenerate(false);
-		setGenerateTopic("");
-		setShowVariants(false);
-		setShowFanout(false);
-		setShowImport(false);
-		setShowScore(false);
-		setShowLibrary(false);
-		setShowImageGen(false);
-		setImagePrompt("");
-		setHashSuggestions([]);
 	};
 
 	const handleSchedule = () => {
@@ -1786,9 +1748,21 @@ export function Composer({
 								{activeDrawer === "scaffolding" && draftMeta ? (
 									<DraftMetaPanel
 										meta={draftMeta}
+										postId={editingPostId}
+										channel={selected.length === 1 ? selected[0] : null}
 										onSwapHook={handleSwapHook}
 										onApplyHashtags={handleApplyHashtags}
-										onClose={closeAllDrawers}
+										onFormatChanged={(next) =>
+											setDraftMeta((prev) =>
+												prev
+													? {
+															...prev,
+															format: next.format,
+															formatGuidance: next.guidance,
+														}
+													: prev,
+											)
+										}
 									/>
 								) : null}
 
