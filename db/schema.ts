@@ -1004,7 +1004,7 @@ export const campaigns = pgTable("campaigns", {
   name: text("name").notNull(),
   goal: text("goal").notNull(),
   kind: text("kind", {
-    enum: ["launch", "webinar", "sale", "drip", "evergreen", "custom"],
+    enum: ["launch", "webinar", "sale", "drip", "evergreen", "reach", "custom"],
   }).notNull(),
   channels: text("channels").array().default([]).notNull(),
   themes: text("themes").array().default([]).notNull(),
