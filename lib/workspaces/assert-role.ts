@@ -1,3 +1,6 @@
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { workspaceMembers } from "@/db/schema";
 import { requireContext, type CurrentContext, type WorkspaceRole } from "@/lib/current-context";
 import { PermissionError } from "@/lib/workspaces/roles";
 
@@ -5,14 +8,35 @@ import { PermissionError } from "@/lib/workspaces/roles";
 // `required`, return context for the action body to use. Throws with a
 // structured error so UI layers can distinguish "not signed in" from
 // "not allowed" when they catch.
+//
+// The membership role is re-read from the DB here rather than trusted
+// from the JWT — getCurrentContext is JWT-backed for speed, but a
+// demoted user's token persists until their next session refresh. One
+// small index lookup on the mutation path is cheap and closes the
+// elevation window. The returned ctx reflects the fresh role.
 export async function assertRole(
   required: readonly WorkspaceRole[],
 ): Promise<CurrentContext> {
   const ctx = await requireContext();
-  if (!required.includes(ctx.role)) {
+  const [row] = await db
+    .select({ role: workspaceMembers.role })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, ctx.workspace.id),
+        eq(workspaceMembers.userId, ctx.user.id),
+      ),
+    )
+    .limit(1);
+  const liveRole = row?.role as WorkspaceRole | undefined;
+  if (!liveRole) {
+    // Membership was revoked since the token was minted.
     throw new PermissionError(required, ctx.role);
   }
-  return ctx;
+  if (!required.includes(liveRole)) {
+    throw new PermissionError(required, liveRole);
+  }
+  return { ...ctx, role: liveRole };
 }
 
 // Curried wrapper for server actions. Hides the role check in one line
