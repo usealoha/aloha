@@ -27,6 +27,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 	if (!user.onboardedAt) {
 		redirect(routes.onboarding.workspace);
 	}
+	// JWT says "signed in" but the token lacks an active workspace /
+	// membership (deleted account, missing onboarding state). Pure-JWT
+	// read, no DB cost — required so every page below can safely do
+	// `(await getCurrentContext())!` without crashing.
+	const ctx = await getCurrentContext();
+	if (!ctx) {
+		redirect(`${routes.signin}?callbackUrl=/app/dashboard`);
+	}
 
 	return (
 		<ThemeProvider>
