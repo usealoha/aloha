@@ -24,6 +24,12 @@ export const getCurrentUser = cache(async () => {
     onboardedAt: user.onboardedAt,
     activeWorkspaceId: user.activeWorkspaceId,
     activeWorkspaceRole: user.activeWorkspaceRole,
+    activeWorkspaceName: user.activeWorkspaceName,
+    activeWorkspaceOwnerId: user.activeWorkspaceOwnerId,
+    activeWorkspaceTimezone: user.activeWorkspaceTimezone,
+    activeWorkspaceSemanticRole: user.activeWorkspaceSemanticRole,
+    activeWorkspacePolarCustomerId: user.activeWorkspacePolarCustomerId,
+    activeWorkspaceFrozenAt: user.activeWorkspaceFrozenAt,
   };
 });
 

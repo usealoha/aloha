@@ -36,9 +36,21 @@ const credentialsSchema = z.object({
 });
 
 // Shared loader used by both the sign-in and refresh branches of the
-// JWT callback. Pulls the user row + their active-workspace membership
-// role so the JWT can answer "who is this, which workspace are they in,
-// and what can they do there?" without a DB hit on every request.
+// JWT callback. Pulls the user row + their active workspace row (name,
+// timezone, owner, billing, freeze) + the membership role inside it, so
+// getCurrentContext() can answer "who is this, which workspace are they
+// in, and what can they do there?" without a DB hit on every request.
+//
+// Staleness notes:
+//   - activeWorkspaceFrozenAt is flipped by the quota reconciler, which
+//     runs on Polar webhooks and on seat/workspace mutations made by
+//     other members — none have the affected user's session, so
+//     unstable_update can't refresh their token. The render-side banner
+//     can lag until the user's next sign-in / unstable_update. Mutation
+//     guards must re-check freshly from the DB.
+//   - workspaceMemberRole is authoritative for UI affordances. assertRole
+//     re-reads it from the DB on mutations so a demoted user can't
+//     leverage a stale JWT to keep writing as admin.
 async function loadUserJwtFields(userId: string) {
   return db
     .select({
@@ -51,6 +63,12 @@ async function loadUserJwtFields(userId: string) {
       onboardedAt: users.onboardedAt,
       activeWorkspaceId: users.activeWorkspaceId,
       activeWorkspaceRole: workspaceMembers.role,
+      activeWorkspaceName: workspaces.name,
+      activeWorkspaceOwnerId: workspaces.ownerUserId,
+      activeWorkspaceTimezone: workspaces.timezone,
+      activeWorkspaceSemanticRole: workspaces.role,
+      activeWorkspacePolarCustomerId: workspaces.polarCustomerId,
+      activeWorkspaceFrozenAt: workspaces.frozenAt,
     })
     .from(users)
     .leftJoin(
@@ -85,6 +103,14 @@ function applyUserRowToToken(
     : null;
   token.activeWorkspaceId = row.activeWorkspaceId;
   token.activeWorkspaceRole = row.activeWorkspaceRole;
+  token.activeWorkspaceName = row.activeWorkspaceName;
+  token.activeWorkspaceOwnerId = row.activeWorkspaceOwnerId;
+  token.activeWorkspaceTimezone = row.activeWorkspaceTimezone;
+  token.activeWorkspaceSemanticRole = row.activeWorkspaceSemanticRole;
+  token.activeWorkspacePolarCustomerId = row.activeWorkspacePolarCustomerId;
+  token.activeWorkspaceFrozenAt = row.activeWorkspaceFrozenAt
+    ? row.activeWorkspaceFrozenAt.toISOString()
+    : null;
 }
 
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
@@ -405,7 +431,9 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       //  - the token predates the fields we now stash in the JWT.
       const needsBackfill =
         token.sub &&
-        (!("onboardedAt" in token) || !("activeWorkspaceId" in token));
+        (!("onboardedAt" in token) ||
+          !("activeWorkspaceId" in token) ||
+          !("activeWorkspaceName" in token));
       if ((trigger === "update" && token.sub) || needsBackfill) {
         const [row] = await loadUserJwtFields(token.sub!);
         if (row) applyUserRowToToken(token, row);

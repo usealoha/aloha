@@ -21,19 +21,31 @@ export default {
   callbacks: {
     async session({ session, token }) {
       if (session.user && token.sub) {
+        type SemanticRole =
+          | "solo"
+          | "creator"
+          | "team"
+          | "agency"
+          | "nonprofit";
+        type MemberRole =
+          | "owner"
+          | "admin"
+          | "editor"
+          | "reviewer"
+          | "viewer";
         const t = token as typeof token & {
           workspaceName?: string | null;
-          role?: "solo" | "creator" | "team" | "agency" | "nonprofit" | null;
+          role?: SemanticRole | null;
           timezone?: string | null;
           onboardedAt?: string | null;
           activeWorkspaceId?: string | null;
-          activeWorkspaceRole?:
-            | "owner"
-            | "admin"
-            | "editor"
-            | "reviewer"
-            | "viewer"
-            | null;
+          activeWorkspaceRole?: MemberRole | null;
+          activeWorkspaceName?: string | null;
+          activeWorkspaceOwnerId?: string | null;
+          activeWorkspaceTimezone?: string | null;
+          activeWorkspaceSemanticRole?: SemanticRole | null;
+          activeWorkspacePolarCustomerId?: string | null;
+          activeWorkspaceFrozenAt?: string | null;
         };
         session.user.id = token.sub;
         session.user.name = (token.name as string | null) ?? null;
@@ -48,6 +60,18 @@ export default {
           : null;
         session.user.activeWorkspaceId = t.activeWorkspaceId ?? null;
         session.user.activeWorkspaceRole = t.activeWorkspaceRole ?? null;
+        session.user.activeWorkspaceName = t.activeWorkspaceName ?? null;
+        session.user.activeWorkspaceOwnerId =
+          t.activeWorkspaceOwnerId ?? null;
+        session.user.activeWorkspaceTimezone =
+          t.activeWorkspaceTimezone ?? null;
+        session.user.activeWorkspaceSemanticRole =
+          t.activeWorkspaceSemanticRole ?? null;
+        session.user.activeWorkspacePolarCustomerId =
+          t.activeWorkspacePolarCustomerId ?? null;
+        session.user.activeWorkspaceFrozenAt = t.activeWorkspaceFrozenAt
+          ? new Date(t.activeWorkspaceFrozenAt)
+          : null;
       }
       return session;
     },

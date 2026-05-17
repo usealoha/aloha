@@ -8,8 +8,17 @@ type WorkspaceMemberRole =
   | "reviewer"
   | "viewer";
 
+type WorkspaceSemanticRole =
+  | "solo"
+  | "creator"
+  | "team"
+  | "agency"
+  | "nonprofit";
+
 // Extra fields stashed in the JWT on sign-in and on unstable_update,
-// so getCurrentUser() can read them without a DB round trip.
+// so getCurrentUser() / getCurrentContext() can read them without a DB
+// round trip. The `activeWorkspace*` group mirrors the workspaces row
+// for the user's active workspace — see auth.ts:loadUserJwtFields.
 type SessionExtras = {
   id: string;
   workspaceName: string | null;
@@ -20,6 +29,12 @@ type SessionExtras = {
   // onboarding yet; backfilled / re-minted when the user switches.
   activeWorkspaceId: string | null;
   activeWorkspaceRole: WorkspaceMemberRole | null;
+  activeWorkspaceName: string | null;
+  activeWorkspaceOwnerId: string | null;
+  activeWorkspaceTimezone: string | null;
+  activeWorkspaceSemanticRole: WorkspaceSemanticRole | null;
+  activeWorkspacePolarCustomerId: string | null;
+  activeWorkspaceFrozenAt: Date | null;
 };
 
 declare module "next-auth" {
@@ -37,5 +52,12 @@ declare module "@auth/core/jwt" {
     onboardedAt?: string | null;
     activeWorkspaceId?: string | null;
     activeWorkspaceRole?: WorkspaceMemberRole | null;
+    activeWorkspaceName?: string | null;
+    activeWorkspaceOwnerId?: string | null;
+    activeWorkspaceTimezone?: string | null;
+    activeWorkspaceSemanticRole?: WorkspaceSemanticRole | null;
+    activeWorkspacePolarCustomerId?: string | null;
+    // Serialized as ISO string in the JWT cookie.
+    activeWorkspaceFrozenAt?: string | null;
   }
 }
