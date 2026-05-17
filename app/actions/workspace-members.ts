@@ -2,6 +2,7 @@
 
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { unstable_update } from "@/auth";
 import { db } from "@/db";
 import { users, workspaceMembers, workspaces } from "@/db/schema";
 import { ROLES } from "@/lib/workspaces/roles";
@@ -195,5 +196,10 @@ export async function transferOwnership(formData: FormData) {
       );
   });
 
+  // Caller just demoted themselves from owner to admin; refresh their
+  // JWT so workspace.ownerUserId + activeWorkspaceRole reflect reality
+  // on the next request. (The new owner gets refreshed on their next
+  // sign-in or unstable_update — JWT can only refresh the caller's.)
+  await unstable_update({ user: {} });
   revalidatePath("/app/settings/members");
 }
